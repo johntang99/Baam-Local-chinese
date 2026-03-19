@@ -1,10 +1,10 @@
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyRow = Record<string, any>;
 
 export default async function AdminSitesPage() {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   // Fetch all regions
   const { data: rawRegions } = await supabase

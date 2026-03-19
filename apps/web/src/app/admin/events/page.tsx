@@ -1,15 +1,29 @@
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { getAdminSiteContext } from '@/lib/admin-context';
 import Link from 'next/link';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyRow = Record<string, any>;
 
-export default async function AdminEventsPage() {
-  const supabase = await createClient();
+interface Props {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
+
+export default async function AdminEventsPage({ searchParams }: Props) {
+  const ctx = getAdminSiteContext(await searchParams);
+  const supabase = createAdminClient();
+
+  // Resolve region IDs from slugs
+  const { data: regionRows } = await supabase
+    .from('regions')
+    .select('id, slug')
+    .in('slug', ctx.regionSlugs);
+  const regionIds = (regionRows || []).map((r: AnyRow) => r.id);
 
   const { data: rawEvents } = await supabase
     .from('events')
     .select('*')
+    .in('region_id', regionIds)
     .order('start_at', { ascending: false })
     .limit(30);
   const events = (rawEvents || []) as AnyRow[];
@@ -23,9 +37,14 @@ export default async function AdminEventsPage() {
             <h1 className="text-xl font-bold">活动管理</h1>
             <p className="text-sm text-text-muted">Admin / Events</p>
           </div>
-          <Link href="/admin/events/new" className="btn btn-primary h-9 px-4 text-sm">
-            添加活动
-          </Link>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-text-muted bg-bg-page border border-border rounded px-2 py-1">
+              Site: {ctx.siteId}
+            </span>
+            <Link href="/admin/events/new" className="btn btn-primary h-9 px-4 text-sm">
+              添加活动
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -46,7 +65,7 @@ export default async function AdminEventsPage() {
               <tbody>
                 {events.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="text-center text-text-muted py-8">暂无活动</td>
+                    <td colSpan={6} className="text-center text-text-muted py-8">该站点暂无活动</td>
                   </tr>
                 ) : (
                   events.map((event) => (

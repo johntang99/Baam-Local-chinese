@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import Link from 'next/link';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -17,7 +17,7 @@ function formatCost(cost: number | null): string {
 }
 
 export default async function AdminAiJobsPage() {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);

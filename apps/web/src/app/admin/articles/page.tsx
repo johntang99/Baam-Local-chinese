@@ -1,111 +1,87 @@
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { getAdminSiteContext } from '@/lib/admin-context';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyRow = Record<string, any>;
 
-function statusBadge(status: string) {
-  const map: Record<string, string> = {
-    draft: 'badge-gray',
-    published: 'badge-green',
-    archived: 'badge-red',
-  };
-  return map[status] || 'badge-gray';
+interface Props {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
-export default async function AdminArticlesPage() {
-  const supabase = await createClient();
+const statusBadge: Record<string, string> = {
+  draft: 'bg-gray-100 text-gray-600',
+  ai_drafted: 'bg-yellow-100 text-yellow-700',
+  human_reviewed: 'bg-blue-100 text-blue-700',
+  published: 'bg-green-100 text-green-700',
+  archived: 'bg-red-100 text-red-700',
+};
 
-  const { data: rawArticles, count } = await supabase
+const verticalLabel: Record<string, string> = {
+  news_alert: '快报', news_brief: '简报', news_explainer: '解读', news_roundup: '汇总', news_community: '社区',
+  guide_howto: 'How-To', guide_checklist: 'Checklist', guide_bestof: 'Best-of', guide_comparison: '对比',
+};
+
+export default async function AdminArticlesPage({ searchParams }: Props) {
+  const params = await searchParams;
+  const ctx = getAdminSiteContext(params);
+  const supabase = createAdminClient();
+
+  // Resolve region IDs from site slugs
+  const { data: regionRows } = await supabase.from('regions').select('id, slug, name_zh').in('slug', ctx.regionSlugs);
+  const regionIds = (regionRows || []).map((r: AnyRow) => r.id);
+  const regionNameMap: Record<string, string> = {};
+  (regionRows || []).forEach((r: AnyRow) => { regionNameMap[r.id] = r.name_zh || r.slug; });
+
+  // Query articles filtered by region
+  const { data: rawArticles } = await supabase
     .from('articles')
-    .select('*', { count: 'exact' })
+    .select('*')
+    .in('region_id', regionIds)
     .order('created_at', { ascending: false })
     .limit(50);
-
   const articles = (rawArticles || []) as AnyRow[];
 
+  const siteName = ctx.siteId === 'ny-zh' ? 'New York Chinese' : 'Middletown OC English';
+
   return (
-    <div>
-      {/* Header */}
-      <div className="bg-bg-card border-b border-border px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold">内容管理</h1>
-            <p className="text-sm text-text-muted">Admin / Articles</p>
-          </div>
-          <Link href="/admin/articles?new=true" className="btn btn-primary h-9 px-4 text-sm">
-            + 新建文章
-          </Link>
+    <div className="p-6">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <p className="text-sm text-gray-500 mb-1">站点：{siteName} · {ctx.locale === 'zh' ? '中文' : 'English'}</p>
+          <p className="text-gray-500">共 {articles.length} 篇文章</p>
         </div>
+        <button className="h-9 px-4 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary-dark">+ 新建文章</button>
       </div>
 
-      <div className="p-6 space-y-6">
-        {/* Count */}
-        <p className="text-sm text-text-muted">共 {count ?? articles.length} 篇文章</p>
-
-        {articles.length === 0 ? (
-          <div className="bg-bg-card border border-border rounded-xl p-10 text-center">
-            <p className="text-text-muted">暂无文章</p>
-            <Link href="/admin/articles?new=true" className="btn btn-primary h-9 px-4 text-sm mt-4 inline-block">
-              + 新建文章
-            </Link>
-          </div>
-        ) : (
-          <div className="bg-bg-card border border-border rounded-xl overflow-hidden">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>标题</th>
-                  <th>频道</th>
-                  <th>状态</th>
-                  <th>地区</th>
-                  <th>发布时间</th>
-                  <th>操作</th>
+      {articles.length === 0 ? (
+        <div className="bg-white border border-gray-200 rounded-xl p-12 text-center">
+          <p className="text-4xl mb-4">📝</p>
+          <p className="text-gray-500">该站点暂无文章</p>
+          <p className="text-sm text-gray-400 mt-1">切换站点或创建新文章</p>
+        </div>
+      ) : (
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+          <table className="data-table">
+            <thead>
+              <tr><th>标题</th><th>频道</th><th>状态</th><th>地区</th><th>浏览</th><th>发布时间</th><th>操作</th></tr>
+            </thead>
+            <tbody>
+              {articles.map((a) => (
+                <tr key={a.id}>
+                  <td className="max-w-[300px]"><p className="font-medium truncate">{a.title_zh || a.title_en || '无标题'}</p></td>
+                  <td><span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{verticalLabel[a.content_vertical] || a.content_vertical}</span></td>
+                  <td><span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusBadge[a.editorial_status] || 'bg-gray-100'}`}>{a.editorial_status}</span></td>
+                  <td className="text-sm text-gray-500">{a.region_id ? (regionNameMap[a.region_id] || '—') : '—'}</td>
+                  <td className="text-sm text-gray-500">{a.view_count || 0}</td>
+                  <td className="text-sm text-gray-500">{a.published_at ? new Date(a.published_at).toLocaleDateString('zh-CN') : '—'}</td>
+                  <td><Link href={`/admin/articles?region=${ctx.siteId}&locale=${ctx.locale}`} className="text-sm text-primary hover:underline">编辑</Link></td>
                 </tr>
-              </thead>
-              <tbody>
-                {articles.map((article) => (
-                  <tr key={article.id}>
-                    <td className="max-w-[240px]">
-                      <p className="truncate text-sm font-medium">
-                        {article.title_zh || article.title_en || '无标题'}
-                      </p>
-                    </td>
-                    <td>
-                      {article.content_vertical && (
-                        <span className="badge badge-blue text-xs">{article.content_vertical}</span>
-                      )}
-                    </td>
-                    <td>
-                      <span className={`badge ${statusBadge(article.editorial_status)} text-xs`}>
-                        {article.editorial_status}
-                      </span>
-                    </td>
-                    <td>
-                      <span className="text-xs text-text-muted">—</span>
-                    </td>
-                    <td>
-                      <span className="text-xs text-text-muted">
-                        {article.published_at
-                          ? new Date(article.published_at).toLocaleDateString('zh-CN')
-                          : '未发布'}
-                      </span>
-                    </td>
-                    <td>
-                      <Link
-                        href={`/admin/articles?edit=${article.id}`}
-                        className="text-xs text-primary hover:underline"
-                      >
-                        编辑
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

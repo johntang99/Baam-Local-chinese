@@ -1,10 +1,10 @@
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyRow = Record<string, any>;
 
 export default async function AdminSponsorsPage() {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const { data: rawSlots } = await supabase
     .from('sponsor_slots')

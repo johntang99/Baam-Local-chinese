@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { getAdminSiteContext } from '@/lib/admin-context';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyRow = Record<string, any>;
@@ -14,8 +15,20 @@ function statusBadge(status: string) {
   return map[status] || 'badge-gray';
 }
 
-export default async function AdminForumPage() {
-  const supabase = await createClient();
+interface Props {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
+
+export default async function AdminForumPage({ searchParams }: Props) {
+  const ctx = getAdminSiteContext(await searchParams);
+  const supabase = createAdminClient();
+
+  // Resolve region IDs from slugs
+  const { data: regionRows } = await supabase
+    .from('regions')
+    .select('id, slug')
+    .in('slug', ctx.regionSlugs);
+  const regionIds = (regionRows || []).map((r: AnyRow) => r.id);
 
   const [
     { data: rawPendingThreads },
@@ -24,12 +37,14 @@ export default async function AdminForumPage() {
     supabase
       .from('forum_threads')
       .select('*')
+      .in('region_id', regionIds)
       .or('status.eq.pending,ai_spam_score.gt.0.7')
       .order('created_at', { ascending: false })
       .limit(20),
     supabase
       .from('forum_threads')
       .select('*')
+      .in('region_id', regionIds)
       .order('created_at', { ascending: false })
       .limit(30),
   ]);
@@ -46,6 +61,9 @@ export default async function AdminForumPage() {
             <h1 className="text-xl font-bold">论坛管理</h1>
             <p className="text-sm text-text-muted">Admin / Forum</p>
           </div>
+          <span className="text-xs text-text-muted bg-bg-page border border-border rounded px-2 py-1">
+            Site: {ctx.siteId}
+          </span>
         </div>
       </div>
 
@@ -111,7 +129,7 @@ export default async function AdminForumPage() {
           </div>
 
           {allThreads.length === 0 ? (
-            <p className="text-sm text-text-muted py-4 text-center">暂无帖子</p>
+            <p className="text-sm text-text-muted py-4 text-center">该站点暂无帖子</p>
           ) : (
             <table className="data-table">
               <thead>

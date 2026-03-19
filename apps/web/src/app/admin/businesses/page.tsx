@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { getAdminSiteContext } from '@/lib/admin-context';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyRow = Record<string, any>;
@@ -33,8 +34,13 @@ function planBadge(plan: string) {
   return map[plan] || 'badge-gray';
 }
 
-export default async function AdminBusinessesPage() {
-  const supabase = await createClient();
+interface Props {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
+
+export default async function AdminBusinessesPage({ searchParams }: Props) {
+  const ctx = getAdminSiteContext(await searchParams);
+  const supabase = createAdminClient();
 
   const [
     { data: rawBusinesses, count },
@@ -69,9 +75,14 @@ export default async function AdminBusinessesPage() {
             </h1>
             <p className="text-sm text-text-muted">Admin / Businesses</p>
           </div>
-          <Link href="/admin/businesses?new=true" className="btn btn-primary h-9 px-4 text-sm">
-            + 添加商家
-          </Link>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-text-muted bg-bg-page border border-border rounded px-2 py-1">
+              Site: {ctx.siteId}
+            </span>
+            <Link href="/admin/businesses?new=true" className="btn btn-primary h-9 px-4 text-sm">
+              + 添加商家
+            </Link>
+          </div>
         </div>
       </div>
 

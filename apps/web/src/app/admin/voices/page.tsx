@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { getAdminSiteContext } from '@/lib/admin-context';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyRow = Record<string, any>;
@@ -14,13 +15,26 @@ function profileTypeBadge(type: string) {
   return map[type] || 'badge-gray';
 }
 
-export default async function AdminVoicesPage() {
-  const supabase = await createClient();
+interface Props {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
+
+export default async function AdminVoicesPage({ searchParams }: Props) {
+  const ctx = getAdminSiteContext(await searchParams);
+  const supabase = createAdminClient();
+
+  // Resolve region IDs from slugs
+  const { data: regionRows } = await supabase
+    .from('regions')
+    .select('id, slug')
+    .in('slug', ctx.regionSlugs);
+  const regionIds = (regionRows || []).map((r: AnyRow) => r.id);
 
   const { data: rawProfiles } = await supabase
     .from('profiles')
     .select('*')
     .neq('profile_type', 'user')
+    .in('region_id', regionIds)
     .order('follower_count', { ascending: false })
     .limit(50);
 
@@ -36,6 +50,9 @@ export default async function AdminVoicesPage() {
             <h1 className="text-xl font-bold">达人管理</h1>
             <p className="text-sm text-text-muted">Admin / Voices</p>
           </div>
+          <span className="text-xs text-text-muted bg-bg-page border border-border rounded px-2 py-1">
+            Site: {ctx.siteId}
+          </span>
         </div>
       </div>
 
@@ -82,7 +99,7 @@ export default async function AdminVoicesPage() {
           </div>
 
           {profiles.length === 0 ? (
-            <p className="text-sm text-text-muted py-4 text-center">暂无达人</p>
+            <p className="text-sm text-text-muted py-4 text-center">该站点暂无达人</p>
           ) : (
             <table className="data-table">
               <thead>

@@ -1,10 +1,10 @@
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyRow = Record<string, any>;
 
 export default async function AdminSettingsPage() {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const [{ data: rawRegions }, { data: rawCategories }] = await Promise.all([
     supabase.from('regions').select('*').order('slug'),

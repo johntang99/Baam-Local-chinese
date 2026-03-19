@@ -1,4 +1,5 @@
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { getAdminSiteContext } from '@/lib/admin-context';
 import Link from 'next/link';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -12,7 +13,7 @@ function maskPhone(phone: string | null): string {
 
 function truncate(text: string | null, max = 50): string {
   if (!text) return '—';
-  return text.length > max ? text.slice(0, max) + '…' : text;
+  return text.length > max ? text.slice(0, max) + '...' : text;
 }
 
 const statusBadge: Record<string, string> = {
@@ -23,8 +24,20 @@ const statusBadge: Record<string, string> = {
   closed: 'badge-gray',
 };
 
-export default async function AdminLeadsPage() {
-  const supabase = await createClient();
+interface Props {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
+
+export default async function AdminLeadsPage({ searchParams }: Props) {
+  const ctx = getAdminSiteContext(await searchParams);
+  const supabase = createAdminClient();
+
+  // Resolve region IDs from slugs
+  const { data: regionRows } = await supabase
+    .from('regions')
+    .select('id, slug')
+    .in('slug', ctx.regionSlugs);
+  const regionIds = (regionRows || []).map((r: AnyRow) => r.id);
 
   const [
     { count: totalCount },
@@ -32,15 +45,16 @@ export default async function AdminLeadsPage() {
     { count: contactedCount },
     { count: convertedCount },
   ] = await Promise.all([
-    supabase.from('leads').select('*', { count: 'exact', head: true }),
-    supabase.from('leads').select('*', { count: 'exact', head: true }).eq('status', 'new'),
-    supabase.from('leads').select('*', { count: 'exact', head: true }).eq('status', 'contacted'),
-    supabase.from('leads').select('*', { count: 'exact', head: true }).eq('status', 'converted'),
+    supabase.from('leads').select('*', { count: 'exact', head: true }).in('region_id', regionIds),
+    supabase.from('leads').select('*', { count: 'exact', head: true }).in('region_id', regionIds).eq('status', 'new'),
+    supabase.from('leads').select('*', { count: 'exact', head: true }).in('region_id', regionIds).eq('status', 'contacted'),
+    supabase.from('leads').select('*', { count: 'exact', head: true }).in('region_id', regionIds).eq('status', 'converted'),
   ]);
 
   const { data: rawLeads } = await supabase
     .from('leads')
     .select('*')
+    .in('region_id', regionIds)
     .order('created_at', { ascending: false })
     .limit(50);
   const leads = (rawLeads || []) as AnyRow[];
@@ -61,7 +75,12 @@ export default async function AdminLeadsPage() {
             <h1 className="text-xl font-bold">线索管理</h1>
             <p className="text-sm text-text-muted">Admin / Leads</p>
           </div>
-          <button className="btn btn-outline h-9 px-4 text-sm">导出CSV</button>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-text-muted bg-bg-page border border-border rounded px-2 py-1">
+              Site: {ctx.siteId}
+            </span>
+            <button className="btn btn-outline h-9 px-4 text-sm">导出CSV</button>
+          </div>
         </div>
       </div>
 
@@ -94,7 +113,7 @@ export default async function AdminLeadsPage() {
               <tbody>
                 {leads.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="text-center text-text-muted py-8">暂无线索</td>
+                    <td colSpan={7} className="text-center text-text-muted py-8">该站点暂无线索</td>
                   </tr>
                 ) : (
                   leads.map((lead) => (
