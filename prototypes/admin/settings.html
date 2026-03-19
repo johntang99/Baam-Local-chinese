@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Baam Admin · 系统设置</title>
+  <title>系统设置 — Baam Admin</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -18,140 +18,168 @@
   </script>
   <link rel="stylesheet" href="../assets/css/prototype.css">
   <style>
-    .tree-item { padding-left: 1.5rem; }
-    .tree-item .tree-item { padding-left: 1.5rem; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+    .sidebar-link { transition: all 0.15s ease; }
+    .sidebar-link:hover { background-color: rgba(249, 115, 22, 0.1); }
+    .sidebar-link.active { background-color: rgba(249, 115, 22, 0.15); border-right: 3px solid #F97316; }
+    .tab-btn { transition: all 0.15s ease; }
+    .tab-btn.active { color: #F97316; border-bottom-color: #F97316; }
+    .toggle-switch { width: 44px; height: 24px; background: #D1D5DB; border-radius: 12px; position: relative; cursor: pointer; transition: background 0.2s; }
+    .toggle-switch.on { background: #F97316; }
+    .toggle-switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; background: white; border-radius: 50%; transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .toggle-switch.on::after { transform: translateX(20px); }
+    @media (max-width: 1023px) {
+      .sidebar { transform: translateX(-100%); transition: transform 0.3s ease; }
+      .sidebar.open { transform: translateX(0); }
+      .content-area { margin-left: 0 !important; }
+    }
   </style>
 </head>
-<body class="bg-gray-100 text-gray-900">
-<div class="flex min-h-screen">
+<body class="bg-gray-100 min-h-screen">
+
+  <div id="sidebarOverlay" class="fixed inset-0 bg-black/50 z-40 hidden lg:hidden" onclick="toggleSidebar()"></div>
 
   <!-- ==================== SIDEBAR ==================== -->
-  <aside class="w-60 bg-[#1F2937] text-gray-300 flex-shrink-0 flex flex-col fixed inset-y-0 left-0 z-40 lg:static transition-transform -translate-x-full lg:translate-x-0" id="sidebar">
-    <div class="flex items-center gap-2 px-5 py-5 border-b border-gray-700">
-      <div class="w-8 h-8 bg-baam-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">B</div>
-      <span class="text-lg font-bold text-white">Baam Admin</span>
+  <aside id="sidebar" class="sidebar fixed top-0 left-0 bottom-0 w-60 bg-gray-800 z-50 flex flex-col lg:translate-x-0">
+    <div class="flex items-center gap-3 px-5 py-5 border-b border-gray-700">
+      <div class="w-9 h-9 rounded-lg bg-baam-500 flex items-center justify-center">
+        <span class="text-white font-bold text-lg">B</span>
+      </div>
+      <div>
+        <span class="text-white font-bold text-lg tracking-tight">Baam</span>
+        <span class="ml-1.5 text-[10px] font-semibold uppercase tracking-wider bg-baam-500/20 text-baam-400 px-1.5 py-0.5 rounded">Admin</span>
+      </div>
     </div>
-    <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto text-sm">
-      <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-700/50 transition">📊 <span>Dashboard</span></a>
-      <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-700/50 transition">📝 <span>内容管理</span></a>
-      <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-700/50 transition">🏪 <span>商家管理</span></a>
-      <a href="forum-management.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-700/50 transition">💬 <span>论坛管理</span></a>
-      <a href="voices-management.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-700/50 transition">🎙️ <span>达人管理</span></a>
-      <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-700/50 transition">📅 <span>活动管理</span></a>
-      <a href="leads.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-700/50 transition">📥 <span>线索管理</span></a>
-      <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-700/50 transition">👥 <span>用户管理</span></a>
-      <a href="ai-jobs.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-700/50 transition">🤖 <span>AI任务</span></a>
-      <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-700/50 transition">💰 <span>广告管理</span></a>
-      <a href="settings.html" class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-baam-500/20 text-baam-400 font-medium">⚙️ <span>系统设置</span></a>
+    <nav class="flex-1 py-4 overflow-y-auto">
+      <ul class="space-y-0.5 px-3">
+        <li><a href="dashboard.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-300"><span class="w-5 text-center opacity-80">📊</span><span>Dashboard</span></a></li>
+        <li><a href="articles.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-300"><span class="w-5 text-center opacity-80">📝</span><span>内容管理</span></a></li>
+        <li><a href="businesses.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-300"><span class="w-5 text-center opacity-80">🏪</span><span>商家管理</span></a></li>
+        <li><a href="forum-management.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-300"><span class="w-5 text-center opacity-80">💬</span><span>论坛管理</span></a></li>
+        <li><a href="voices-management.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-300"><span class="w-5 text-center opacity-80">🎙️</span><span>达人管理</span></a></li>
+        <li><a href="events.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-300"><span class="w-5 text-center opacity-80">📅</span><span>活动管理</span></a></li>
+        <li><a href="leads.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-300"><span class="w-5 text-center opacity-80">📥</span><span>线索管理</span></a></li>
+        <li><a href="users.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-300"><span class="w-5 text-center opacity-80">👥</span><span>用户管理</span></a></li>
+        <li><a href="ai-jobs.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-300"><span class="w-5 text-center opacity-80">🤖</span><span>AI任务</span></a></li>
+        <li><a href="sponsors.html" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-300"><span class="w-5 text-center opacity-80">💰</span><span>广告管理</span></a></li>
+        <li><a href="settings.html" class="sidebar-link active flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white"><span class="w-5 text-center opacity-80">⚙️</span><span>系统设置</span></a></li>
+      </ul>
     </nav>
-    <div class="px-5 py-4 border-t border-gray-700 text-xs text-gray-500">Baam Admin v0.1</div>
+    <div class="border-t border-gray-700 px-4 py-4">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-full bg-gray-600 flex items-center justify-center text-white text-sm font-medium">JT</div>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-medium text-white truncate">John Tang</p>
+          <p class="text-xs text-gray-400">Super Admin</p>
+        </div>
+        <button class="text-gray-400 hover:text-white text-xs transition-colors">退出</button>
+      </div>
+    </div>
   </aside>
 
   <!-- ==================== MAIN CONTENT ==================== -->
-  <div class="flex-1 flex flex-col min-w-0">
-    <header class="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between sticky top-0 z-30">
-      <button class="lg:hidden p-2 text-gray-500 hover:text-gray-700" onclick="document.getElementById('sidebar').classList.toggle('-translate-x-full')">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
-      </button>
-      <h1 class="text-xl font-bold text-gray-900">⚙️ 系统设置</h1>
-      <div class="flex items-center gap-3">
-        <button class="px-4 py-2 bg-baam-500 text-white text-sm rounded-lg hover:bg-baam-600 transition">保存设置</button>
-        <div class="w-8 h-8 bg-baam-500 rounded-full flex items-center justify-center text-white text-sm font-bold">A</div>
+  <div class="content-area lg:ml-60 min-h-screen">
+
+    <header class="sticky top-0 z-30 bg-white border-b border-gray-200">
+      <div class="flex items-center justify-between px-4 sm:px-6 lg:px-8 h-16">
+        <div class="flex items-center gap-4">
+          <button onclick="toggleSidebar()" class="lg:hidden p-2 -ml-2 text-gray-500 hover:text-gray-700">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+          </button>
+          <div>
+            <h1 class="text-lg font-semibold text-gray-900">系统设置</h1>
+            <nav class="text-xs text-gray-400"><span>Admin</span><span class="mx-1">/</span><span class="text-gray-600">系统设置</span></nav>
+          </div>
+        </div>
       </div>
     </header>
 
-    <main class="flex-1 p-6">
-      <!-- Tabs -->
+    <div class="p-4 sm:p-6 lg:p-8">
+
+      <!-- ===== Tabs ===== -->
       <div class="border-b border-gray-200 mb-6">
-        <nav class="flex gap-6 -mb-px" id="settings-tabs">
-          <button class="tab-btn pb-3 px-1 text-sm font-medium border-b-2 border-baam-500 text-baam-600" data-tab="regions">地区管理</button>
-          <button class="tab-btn pb-3 px-1 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700" data-tab="categories">分类管理</button>
-          <button class="tab-btn pb-3 px-1 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700" data-tab="homepage">首页配置</button>
-          <button class="tab-btn pb-3 px-1 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700" data-tab="params">系统参数</button>
-        </nav>
+        <div class="flex gap-6 -mb-px overflow-x-auto">
+          <button class="tab-btn active text-sm font-medium pb-3 border-b-2 border-baam-500 text-baam-600 whitespace-nowrap" onclick="switchSettingsTab('regions', this)">地区管理</button>
+          <button class="tab-btn text-sm font-medium pb-3 border-b-2 border-transparent text-gray-500 hover:text-gray-700 whitespace-nowrap" onclick="switchSettingsTab('categories', this)">分类管理</button>
+          <button class="tab-btn text-sm font-medium pb-3 border-b-2 border-transparent text-gray-500 hover:text-gray-700 whitespace-nowrap" onclick="switchSettingsTab('homepage', this)">首页配置</button>
+          <button class="tab-btn text-sm font-medium pb-3 border-b-2 border-transparent text-gray-500 hover:text-gray-700 whitespace-nowrap" onclick="switchSettingsTab('system', this)">系统参数</button>
+        </div>
       </div>
 
-      <!-- Tab: 地区管理 -->
+      <!-- ===== Tab Content: Regions ===== -->
       <div id="tab-regions" class="tab-content">
         <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div class="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
-            <h3 class="font-semibold text-gray-900">地区列表</h3>
-            <button class="px-4 py-2 bg-baam-500 text-white text-sm rounded-lg hover:bg-baam-600 transition">+ 新建地区</button>
+          <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+            <h2 class="text-base font-semibold text-gray-900">地区列表</h2>
+            <button class="text-xs bg-baam-500 hover:bg-baam-600 text-white font-medium px-4 py-2 rounded-lg transition-colors">+ 添加地区</button>
           </div>
           <div class="overflow-x-auto">
             <table class="w-full text-sm">
-              <thead class="bg-gray-50 text-left text-xs text-gray-500 uppercase tracking-wider">
+              <thead class="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th class="px-5 py-3">中文名</th>
-                  <th class="px-5 py-3">English</th>
-                  <th class="px-5 py-3">类型</th>
-                  <th class="px-5 py-3">父级</th>
-                  <th class="px-5 py-3">启用</th>
+                  <th class="text-left px-6 py-3 font-medium text-gray-500 text-xs uppercase">Slug</th>
+                  <th class="text-left px-6 py-3 font-medium text-gray-500 text-xs uppercase">中文名称</th>
+                  <th class="text-left px-6 py-3 font-medium text-gray-500 text-xs uppercase">English Name</th>
+                  <th class="text-left px-6 py-3 font-medium text-gray-500 text-xs uppercase">类型</th>
+                  <th class="text-left px-6 py-3 font-medium text-gray-500 text-xs uppercase">上级地区</th>
+                  <th class="text-center px-6 py-3 font-medium text-gray-500 text-xs uppercase">启用</th>
+                  <th class="text-center px-6 py-3 font-medium text-gray-500 text-xs uppercase">操作</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-100">
-                <tr class="hover:bg-gray-50 bg-gray-50/50">
-                  <td class="px-5 py-3 font-semibold">纽约</td>
-                  <td class="px-5 py-3 text-gray-500">New York</td>
-                  <td class="px-5 py-3"><span class="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full">城市</span></td>
-                  <td class="px-5 py-3 text-gray-400">--</td>
-                  <td class="px-5 py-3"><label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" class="sr-only peer" checked><div class="w-9 h-5 bg-gray-200 peer-checked:bg-baam-500 rounded-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full"></div></label></td>
+                <tr class="hover:bg-gray-50">
+                  <td class="px-6 py-3"><code class="text-xs bg-gray-100 px-2 py-0.5 rounded text-gray-700">flushing</code></td>
+                  <td class="px-6 py-3 font-medium text-gray-900">法拉盛</td>
+                  <td class="px-6 py-3 text-gray-600">Flushing</td>
+                  <td class="px-6 py-3"><span class="px-2 py-0.5 bg-blue-50 text-blue-700 text-xs rounded-full">neighborhood</span></td>
+                  <td class="px-6 py-3 text-gray-500">Queens</td>
+                  <td class="px-6 py-3 text-center"><div class="toggle-switch on mx-auto" onclick="this.classList.toggle('on')"></div></td>
+                  <td class="px-6 py-3 text-center"><div class="flex items-center justify-center gap-1"><button class="p-1.5 text-gray-400 hover:text-blue-500 rounded" title="编辑"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button><button class="p-1.5 text-gray-400 hover:text-red-500 rounded" title="删除"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></div></td>
                 </tr>
                 <tr class="hover:bg-gray-50">
-                  <td class="px-5 py-3 pl-10">法拉盛</td>
-                  <td class="px-5 py-3 text-gray-500">Flushing</td>
-                  <td class="px-5 py-3"><span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full">社区</span></td>
-                  <td class="px-5 py-3 text-gray-500">纽约</td>
-                  <td class="px-5 py-3"><label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" class="sr-only peer" checked><div class="w-9 h-5 bg-gray-200 peer-checked:bg-baam-500 rounded-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full"></div></label></td>
+                  <td class="px-6 py-3"><code class="text-xs bg-gray-100 px-2 py-0.5 rounded text-gray-700">chinatown-manhattan</code></td>
+                  <td class="px-6 py-3 font-medium text-gray-900">曼哈顿唐人街</td>
+                  <td class="px-6 py-3 text-gray-600">Chinatown Manhattan</td>
+                  <td class="px-6 py-3"><span class="px-2 py-0.5 bg-blue-50 text-blue-700 text-xs rounded-full">neighborhood</span></td>
+                  <td class="px-6 py-3 text-gray-500">Manhattan</td>
+                  <td class="px-6 py-3 text-center"><div class="toggle-switch on mx-auto" onclick="this.classList.toggle('on')"></div></td>
+                  <td class="px-6 py-3 text-center"><div class="flex items-center justify-center gap-1"><button class="p-1.5 text-gray-400 hover:text-blue-500 rounded" title="编辑"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button><button class="p-1.5 text-gray-400 hover:text-red-500 rounded" title="删除"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></div></td>
                 </tr>
                 <tr class="hover:bg-gray-50">
-                  <td class="px-5 py-3 pl-10">Elmhurst</td>
-                  <td class="px-5 py-3 text-gray-500">Elmhurst</td>
-                  <td class="px-5 py-3"><span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full">社区</span></td>
-                  <td class="px-5 py-3 text-gray-500">纽约</td>
-                  <td class="px-5 py-3"><label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" class="sr-only peer" checked><div class="w-9 h-5 bg-gray-200 peer-checked:bg-baam-500 rounded-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full"></div></label></td>
+                  <td class="px-6 py-3"><code class="text-xs bg-gray-100 px-2 py-0.5 rounded text-gray-700">elmhurst</code></td>
+                  <td class="px-6 py-3 font-medium text-gray-900">埃尔姆赫斯特</td>
+                  <td class="px-6 py-3 text-gray-600">Elmhurst</td>
+                  <td class="px-6 py-3"><span class="px-2 py-0.5 bg-blue-50 text-blue-700 text-xs rounded-full">neighborhood</span></td>
+                  <td class="px-6 py-3 text-gray-500">Queens</td>
+                  <td class="px-6 py-3 text-center"><div class="toggle-switch on mx-auto" onclick="this.classList.toggle('on')"></div></td>
+                  <td class="px-6 py-3 text-center"><div class="flex items-center justify-center gap-1"><button class="p-1.5 text-gray-400 hover:text-blue-500 rounded" title="编辑"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button><button class="p-1.5 text-gray-400 hover:text-red-500 rounded" title="删除"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></div></td>
                 </tr>
                 <tr class="hover:bg-gray-50">
-                  <td class="px-5 py-3 pl-10">曼哈顿华埠</td>
-                  <td class="px-5 py-3 text-gray-500">Manhattan Chinatown</td>
-                  <td class="px-5 py-3"><span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full">社区</span></td>
-                  <td class="px-5 py-3 text-gray-500">纽约</td>
-                  <td class="px-5 py-3"><label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" class="sr-only peer" checked><div class="w-9 h-5 bg-gray-200 peer-checked:bg-baam-500 rounded-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full"></div></label></td>
+                  <td class="px-6 py-3"><code class="text-xs bg-gray-100 px-2 py-0.5 rounded text-gray-700">sunset-park</code></td>
+                  <td class="px-6 py-3 font-medium text-gray-900">日落公园</td>
+                  <td class="px-6 py-3 text-gray-600">Sunset Park</td>
+                  <td class="px-6 py-3"><span class="px-2 py-0.5 bg-blue-50 text-blue-700 text-xs rounded-full">neighborhood</span></td>
+                  <td class="px-6 py-3 text-gray-500">Brooklyn</td>
+                  <td class="px-6 py-3 text-center"><div class="toggle-switch on mx-auto" onclick="this.classList.toggle('on')"></div></td>
+                  <td class="px-6 py-3 text-center"><div class="flex items-center justify-center gap-1"><button class="p-1.5 text-gray-400 hover:text-blue-500 rounded" title="编辑"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button><button class="p-1.5 text-gray-400 hover:text-red-500 rounded" title="删除"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></div></td>
                 </tr>
                 <tr class="hover:bg-gray-50">
-                  <td class="px-5 py-3 pl-10">布鲁克林八大道</td>
-                  <td class="px-5 py-3 text-gray-500">Brooklyn 8th Ave</td>
-                  <td class="px-5 py-3"><span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full">社区</span></td>
-                  <td class="px-5 py-3 text-gray-500">纽约</td>
-                  <td class="px-5 py-3"><label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" class="sr-only peer" checked><div class="w-9 h-5 bg-gray-200 peer-checked:bg-baam-500 rounded-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full"></div></label></td>
+                  <td class="px-6 py-3"><code class="text-xs bg-gray-100 px-2 py-0.5 rounded text-gray-700">bayside</code></td>
+                  <td class="px-6 py-3 font-medium text-gray-900">贝赛</td>
+                  <td class="px-6 py-3 text-gray-600">Bayside</td>
+                  <td class="px-6 py-3"><span class="px-2 py-0.5 bg-blue-50 text-blue-700 text-xs rounded-full">neighborhood</span></td>
+                  <td class="px-6 py-3 text-gray-500">Queens</td>
+                  <td class="px-6 py-3 text-center"><div class="toggle-switch mx-auto" onclick="this.classList.toggle('on')"></div></td>
+                  <td class="px-6 py-3 text-center"><div class="flex items-center justify-center gap-1"><button class="p-1.5 text-gray-400 hover:text-blue-500 rounded" title="编辑"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button><button class="p-1.5 text-gray-400 hover:text-red-500 rounded" title="删除"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></div></td>
                 </tr>
                 <tr class="hover:bg-gray-50">
-                  <td class="px-5 py-3 pl-10">Bayside</td>
-                  <td class="px-5 py-3 text-gray-500">Bayside</td>
-                  <td class="px-5 py-3"><span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full">社区</span></td>
-                  <td class="px-5 py-3 text-gray-500">纽约</td>
-                  <td class="px-5 py-3"><label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" class="sr-only peer"><div class="w-9 h-5 bg-gray-200 peer-checked:bg-baam-500 rounded-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full"></div></label></td>
-                </tr>
-                <tr class="hover:bg-gray-50 bg-gray-50/50">
-                  <td class="px-5 py-3 font-semibold">新泽西</td>
-                  <td class="px-5 py-3 text-gray-500">New Jersey</td>
-                  <td class="px-5 py-3"><span class="bg-purple-100 text-purple-700 text-xs px-2 py-0.5 rounded-full">州</span></td>
-                  <td class="px-5 py-3 text-gray-400">--</td>
-                  <td class="px-5 py-3"><label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" class="sr-only peer"><div class="w-9 h-5 bg-gray-200 peer-checked:bg-baam-500 rounded-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full"></div></label></td>
-                </tr>
-                <tr class="hover:bg-gray-50">
-                  <td class="px-5 py-3 pl-10">Fort Lee</td>
-                  <td class="px-5 py-3 text-gray-500">Fort Lee</td>
-                  <td class="px-5 py-3"><span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full">社区</span></td>
-                  <td class="px-5 py-3 text-gray-500">新泽西</td>
-                  <td class="px-5 py-3"><label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" class="sr-only peer"><div class="w-9 h-5 bg-gray-200 peer-checked:bg-baam-500 rounded-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full"></div></label></td>
-                </tr>
-                <tr class="hover:bg-gray-50">
-                  <td class="px-5 py-3 pl-10">Edison</td>
-                  <td class="px-5 py-3 text-gray-500">Edison</td>
-                  <td class="px-5 py-3"><span class="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full">社区</span></td>
-                  <td class="px-5 py-3 text-gray-500">新泽西</td>
-                  <td class="px-5 py-3"><label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" class="sr-only peer"><div class="w-9 h-5 bg-gray-200 peer-checked:bg-baam-500 rounded-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full"></div></label></td>
+                  <td class="px-6 py-3"><code class="text-xs bg-gray-100 px-2 py-0.5 rounded text-gray-700">midtown-manhattan</code></td>
+                  <td class="px-6 py-3 font-medium text-gray-900">曼哈顿中城</td>
+                  <td class="px-6 py-3 text-gray-600">Midtown Manhattan</td>
+                  <td class="px-6 py-3"><span class="px-2 py-0.5 bg-green-50 text-green-700 text-xs rounded-full">district</span></td>
+                  <td class="px-6 py-3 text-gray-500">Manhattan</td>
+                  <td class="px-6 py-3 text-center"><div class="toggle-switch on mx-auto" onclick="this.classList.toggle('on')"></div></td>
+                  <td class="px-6 py-3 text-center"><div class="flex items-center justify-center gap-1"><button class="p-1.5 text-gray-400 hover:text-blue-500 rounded" title="编辑"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button><button class="p-1.5 text-gray-400 hover:text-red-500 rounded" title="删除"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></div></td>
                 </tr>
               </tbody>
             </table>
@@ -159,346 +187,300 @@
         </div>
       </div>
 
-      <!-- Tab: 分类管理 -->
+      <!-- ===== Tab Content: Categories ===== -->
       <div id="tab-categories" class="tab-content hidden">
-        <div class="bg-white rounded-xl border border-gray-200">
-          <div class="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
-            <h3 class="font-semibold text-gray-900">分类树</h3>
-            <button class="px-4 py-2 bg-baam-500 text-white text-sm rounded-lg hover:bg-baam-600 transition">+ 新建分类</button>
-          </div>
-          <div class="p-5 space-y-1 text-sm">
-            <!-- Business Categories -->
-            <div class="border border-gray-200 rounded-lg">
-              <div class="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-t-lg cursor-pointer" onclick="this.nextElementSibling.classList.toggle('hidden')">
-                <div class="flex items-center gap-2">
-                  <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                  <span class="font-semibold">🏪 商家分类</span>
-                  <span class="text-xs text-gray-400">(12 项)</span>
-                </div>
-                <div class="flex gap-1">
-                  <button class="text-xs px-2 py-1 bg-blue-50 text-blue-600 rounded hover:bg-blue-100">编辑</button>
-                  <button class="text-xs px-2 py-1 bg-green-50 text-green-600 rounded hover:bg-green-100">+ 子分类</button>
-                </div>
-              </div>
-              <div class="divide-y divide-gray-100">
-                <div class="tree-item flex items-center justify-between px-4 py-2.5 hover:bg-gray-50">
-                  <div class="flex items-center gap-2"><span class="text-gray-400">├</span> 🍜 餐饮美食</div>
-                  <div class="flex gap-1"><button class="text-xs px-2 py-0.5 text-gray-500 hover:text-blue-600">编辑</button><button class="text-xs px-2 py-0.5 text-gray-500 hover:text-red-600">删除</button></div>
-                </div>
-                <div class="tree-item flex items-center justify-between px-4 py-2.5 hover:bg-gray-50">
-                  <div class="flex items-center gap-2"><span class="text-gray-400">├</span> 🏥 医疗健康</div>
-                  <div class="flex gap-1"><button class="text-xs px-2 py-0.5 text-gray-500 hover:text-blue-600">编辑</button><button class="text-xs px-2 py-0.5 text-gray-500 hover:text-red-600">删除</button></div>
-                </div>
-                <div class="tree-item flex items-center justify-between px-4 py-2.5 hover:bg-gray-50">
-                  <div class="flex items-center gap-2"><span class="text-gray-400">├</span> ⚖️ 法律服务</div>
-                  <div class="flex gap-1"><button class="text-xs px-2 py-0.5 text-gray-500 hover:text-blue-600">编辑</button><button class="text-xs px-2 py-0.5 text-gray-500 hover:text-red-600">删除</button></div>
-                </div>
-                <div class="tree-item flex items-center justify-between px-4 py-2.5 hover:bg-gray-50">
-                  <div class="flex items-center gap-2"><span class="text-gray-400">├</span> 💇 美容美发</div>
-                  <div class="flex gap-1"><button class="text-xs px-2 py-0.5 text-gray-500 hover:text-blue-600">编辑</button><button class="text-xs px-2 py-0.5 text-gray-500 hover:text-red-600">删除</button></div>
-                </div>
-                <div class="tree-item flex items-center justify-between px-4 py-2.5 hover:bg-gray-50">
-                  <div class="flex items-center gap-2"><span class="text-gray-400">├</span> 🏠 房产中介</div>
-                  <div class="flex gap-1"><button class="text-xs px-2 py-0.5 text-gray-500 hover:text-blue-600">编辑</button><button class="text-xs px-2 py-0.5 text-gray-500 hover:text-red-600">删除</button></div>
-                </div>
-                <div class="tree-item flex items-center justify-between px-4 py-2.5 hover:bg-gray-50">
-                  <div class="flex items-center gap-2"><span class="text-gray-400">├</span> 📚 教育培训</div>
-                  <div class="flex gap-1"><button class="text-xs px-2 py-0.5 text-gray-500 hover:text-blue-600">编辑</button><button class="text-xs px-2 py-0.5 text-gray-500 hover:text-red-600">删除</button></div>
-                </div>
-                <div class="tree-item flex items-center justify-between px-4 py-2.5 hover:bg-gray-50">
-                  <div class="flex items-center gap-2"><span class="text-gray-400">├</span> 🚗 汽车服务</div>
-                  <div class="flex gap-1"><button class="text-xs px-2 py-0.5 text-gray-500 hover:text-blue-600">编辑</button><button class="text-xs px-2 py-0.5 text-gray-500 hover:text-red-600">删除</button></div>
-                </div>
-                <div class="tree-item flex items-center justify-between px-4 py-2.5 hover:bg-gray-50">
-                  <div class="flex items-center gap-2"><span class="text-gray-400">└</span> 🔧 家居装修</div>
-                  <div class="flex gap-1"><button class="text-xs px-2 py-0.5 text-gray-500 hover:text-blue-600">编辑</button><button class="text-xs px-2 py-0.5 text-gray-500 hover:text-red-600">删除</button></div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Article Categories -->
-            <div class="border border-gray-200 rounded-lg mt-3">
-              <div class="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-t-lg cursor-pointer" onclick="this.nextElementSibling.classList.toggle('hidden')">
-                <div class="flex items-center gap-2">
-                  <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                  <span class="font-semibold">📝 文章分类</span>
-                  <span class="text-xs text-gray-400">(6 项)</span>
-                </div>
-                <div class="flex gap-1">
-                  <button class="text-xs px-2 py-1 bg-blue-50 text-blue-600 rounded hover:bg-blue-100">编辑</button>
-                  <button class="text-xs px-2 py-1 bg-green-50 text-green-600 rounded hover:bg-green-100">+ 子分类</button>
-                </div>
-              </div>
-              <div class="divide-y divide-gray-100">
-                <div class="tree-item flex items-center justify-between px-4 py-2.5 hover:bg-gray-50">
-                  <div class="flex items-center gap-2"><span class="text-gray-400">├</span> 📰 本地新闻</div>
-                  <div class="flex gap-1"><button class="text-xs px-2 py-0.5 text-gray-500 hover:text-blue-600">编辑</button><button class="text-xs px-2 py-0.5 text-gray-500 hover:text-red-600">删除</button></div>
-                </div>
-                <div class="tree-item flex items-center justify-between px-4 py-2.5 hover:bg-gray-50">
-                  <div class="flex items-center gap-2"><span class="text-gray-400">├</span> 📋 生活指南</div>
-                  <div class="flex gap-1"><button class="text-xs px-2 py-0.5 text-gray-500 hover:text-blue-600">编辑</button><button class="text-xs px-2 py-0.5 text-gray-500 hover:text-red-600">删除</button></div>
-                </div>
-                <div class="tree-item flex items-center justify-between px-4 py-2.5 hover:bg-gray-50">
-                  <div class="flex items-center gap-2"><span class="text-gray-400">├</span> 🏛️ 移民政策</div>
-                  <div class="flex gap-1"><button class="text-xs px-2 py-0.5 text-gray-500 hover:text-blue-600">编辑</button><button class="text-xs px-2 py-0.5 text-gray-500 hover:text-red-600">删除</button></div>
-                </div>
-                <div class="tree-item flex items-center justify-between px-4 py-2.5 hover:bg-gray-50">
-                  <div class="flex items-center gap-2"><span class="text-gray-400">├</span> 💰 理财税务</div>
-                  <div class="flex gap-1"><button class="text-xs px-2 py-0.5 text-gray-500 hover:text-blue-600">编辑</button><button class="text-xs px-2 py-0.5 text-gray-500 hover:text-red-600">删除</button></div>
-                </div>
-                <div class="tree-item flex items-center justify-between px-4 py-2.5 hover:bg-gray-50">
-                  <div class="flex items-center gap-2"><span class="text-gray-400">├</span> 🎓 教育升学</div>
-                  <div class="flex gap-1"><button class="text-xs px-2 py-0.5 text-gray-500 hover:text-blue-600">编辑</button><button class="text-xs px-2 py-0.5 text-gray-500 hover:text-red-600">删除</button></div>
-                </div>
-                <div class="tree-item flex items-center justify-between px-4 py-2.5 hover:bg-gray-50">
-                  <div class="flex items-center gap-2"><span class="text-gray-400">└</span> 🏥 健康医疗</div>
-                  <div class="flex gap-1"><button class="text-xs px-2 py-0.5 text-gray-500 hover:text-blue-600">编辑</button><button class="text-xs px-2 py-0.5 text-gray-500 hover:text-red-600">删除</button></div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Forum Categories -->
-            <div class="border border-gray-200 rounded-lg mt-3">
-              <div class="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-t-lg cursor-pointer" onclick="this.nextElementSibling.classList.toggle('hidden')">
-                <div class="flex items-center gap-2">
-                  <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                  <span class="font-semibold">💬 论坛类型</span>
-                  <span class="text-xs text-gray-400">(5 项)</span>
-                </div>
-                <div class="flex gap-1">
-                  <button class="text-xs px-2 py-1 bg-blue-50 text-blue-600 rounded hover:bg-blue-100">编辑</button>
-                  <button class="text-xs px-2 py-1 bg-green-50 text-green-600 rounded hover:bg-green-100">+ 子分类</button>
-                </div>
-              </div>
-              <div class="divide-y divide-gray-100">
-                <div class="tree-item flex items-center justify-between px-4 py-2.5 hover:bg-gray-50">
-                  <div class="flex items-center gap-2"><span class="text-gray-400">├</span> 💬 讨论帖</div>
-                  <div class="flex gap-1"><button class="text-xs px-2 py-0.5 text-gray-500 hover:text-blue-600">编辑</button><button class="text-xs px-2 py-0.5 text-gray-500 hover:text-red-600">删除</button></div>
-                </div>
-                <div class="tree-item flex items-center justify-between px-4 py-2.5 hover:bg-gray-50">
-                  <div class="flex items-center gap-2"><span class="text-gray-400">├</span> ❓ 求助帖</div>
-                  <div class="flex gap-1"><button class="text-xs px-2 py-0.5 text-gray-500 hover:text-blue-600">编辑</button><button class="text-xs px-2 py-0.5 text-gray-500 hover:text-red-600">删除</button></div>
-                </div>
-                <div class="tree-item flex items-center justify-between px-4 py-2.5 hover:bg-gray-50">
-                  <div class="flex items-center gap-2"><span class="text-gray-400">├</span> 🏷️ 交易帖</div>
-                  <div class="flex gap-1"><button class="text-xs px-2 py-0.5 text-gray-500 hover:text-blue-600">编辑</button><button class="text-xs px-2 py-0.5 text-gray-500 hover:text-red-600">删除</button></div>
-                </div>
-                <div class="tree-item flex items-center justify-between px-4 py-2.5 hover:bg-gray-50">
-                  <div class="flex items-center gap-2"><span class="text-gray-400">├</span> 📢 公告帖</div>
-                  <div class="flex gap-1"><button class="text-xs px-2 py-0.5 text-gray-500 hover:text-blue-600">编辑</button><button class="text-xs px-2 py-0.5 text-gray-500 hover:text-red-600">删除</button></div>
-                </div>
-                <div class="tree-item flex items-center justify-between px-4 py-2.5 hover:bg-gray-50">
-                  <div class="flex items-center gap-2"><span class="text-gray-400">└</span> 📌 精华帖</div>
-                  <div class="flex gap-1"><button class="text-xs px-2 py-0.5 text-gray-500 hover:text-blue-600">编辑</button><button class="text-xs px-2 py-0.5 text-gray-500 hover:text-red-600">删除</button></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Tab: 首页配置 -->
-      <div id="tab-homepage" class="tab-content hidden">
-        <div class="bg-white rounded-xl border border-gray-200">
-          <div class="px-5 py-4 border-b border-gray-200">
-            <h3 class="font-semibold text-gray-900">首页模块配置</h3>
-            <p class="text-sm text-gray-500 mt-1">拖拽调整模块顺序，切换开关控制显示/隐藏</p>
-          </div>
-          <div class="divide-y divide-gray-100">
-            <div class="px-5 py-4 flex items-center gap-4 hover:bg-gray-50">
-              <span class="drag-handle text-gray-400 text-lg cursor-grab">⠿</span>
-              <span class="text-sm font-bold text-baam-500 w-6">1</span>
-              <div class="flex-1">
-                <div class="font-medium">🚨 紧急公告栏</div>
-                <div class="text-xs text-gray-400">顶部警告横幅，紧急通知</div>
-              </div>
-              <label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" class="sr-only peer" checked><div class="w-9 h-5 bg-gray-200 peer-checked:bg-baam-500 rounded-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full"></div></label>
-              <button class="text-xs px-2 py-1 bg-gray-50 text-gray-600 rounded hover:bg-gray-100">配置</button>
-            </div>
-            <div class="px-5 py-4 flex items-center gap-4 hover:bg-gray-50">
-              <span class="drag-handle text-gray-400 text-lg cursor-grab">⠿</span>
-              <span class="text-sm font-bold text-baam-500 w-6">2</span>
-              <div class="flex-1">
-                <div class="font-medium">📰 头条新闻</div>
-                <div class="text-xs text-gray-400">焦点新闻轮播，最多5条</div>
-              </div>
-              <label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" class="sr-only peer" checked><div class="w-9 h-5 bg-gray-200 peer-checked:bg-baam-500 rounded-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full"></div></label>
-              <button class="text-xs px-2 py-1 bg-gray-50 text-gray-600 rounded hover:bg-gray-100">配置</button>
-            </div>
-            <div class="px-5 py-4 flex items-center gap-4 hover:bg-gray-50">
-              <span class="drag-handle text-gray-400 text-lg cursor-grab">⠿</span>
-              <span class="text-sm font-bold text-baam-500 w-6">3</span>
-              <div class="flex-1">
-                <div class="font-medium">📋 生活资讯</div>
-                <div class="text-xs text-gray-400">实用指南文章推荐</div>
-              </div>
-              <label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" class="sr-only peer" checked><div class="w-9 h-5 bg-gray-200 peer-checked:bg-baam-500 rounded-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full"></div></label>
-              <button class="text-xs px-2 py-1 bg-gray-50 text-gray-600 rounded hover:bg-gray-100">配置</button>
-            </div>
-            <div class="px-5 py-4 flex items-center gap-4 hover:bg-gray-50">
-              <span class="drag-handle text-gray-400 text-lg cursor-grab">⠿</span>
-              <span class="text-sm font-bold text-baam-500 w-6">4</span>
-              <div class="flex-1">
-                <div class="font-medium">🏪 推荐商家</div>
-                <div class="text-xs text-gray-400">精选商家卡片展示</div>
-              </div>
-              <label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" class="sr-only peer" checked><div class="w-9 h-5 bg-gray-200 peer-checked:bg-baam-500 rounded-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full"></div></label>
-              <button class="text-xs px-2 py-1 bg-gray-50 text-gray-600 rounded hover:bg-gray-100">配置</button>
-            </div>
-            <div class="px-5 py-4 flex items-center gap-4 hover:bg-gray-50">
-              <span class="drag-handle text-gray-400 text-lg cursor-grab">⠿</span>
-              <span class="text-sm font-bold text-baam-500 w-6">5</span>
-              <div class="flex-1">
-                <div class="font-medium">🎙️ 达人精选</div>
-                <div class="text-xs text-gray-400">Featured达人内容展示</div>
-              </div>
-              <label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" class="sr-only peer" checked><div class="w-9 h-5 bg-gray-200 peer-checked:bg-baam-500 rounded-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full"></div></label>
-              <button class="text-xs px-2 py-1 bg-gray-50 text-gray-600 rounded hover:bg-gray-100">配置</button>
-            </div>
-            <div class="px-5 py-4 flex items-center gap-4 hover:bg-gray-50">
-              <span class="drag-handle text-gray-400 text-lg cursor-grab">⠿</span>
-              <span class="text-sm font-bold text-baam-500 w-6">6</span>
-              <div class="flex-1">
-                <div class="font-medium">📅 近期活动</div>
-                <div class="text-xs text-gray-400">社区活动推荐</div>
-              </div>
-              <label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" class="sr-only peer" checked><div class="w-9 h-5 bg-gray-200 peer-checked:bg-baam-500 rounded-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full"></div></label>
-              <button class="text-xs px-2 py-1 bg-gray-50 text-gray-600 rounded hover:bg-gray-100">配置</button>
-            </div>
-            <div class="px-5 py-4 flex items-center gap-4 hover:bg-gray-50">
-              <span class="drag-handle text-gray-400 text-lg cursor-grab">⠿</span>
-              <span class="text-sm font-bold text-baam-500 w-6">7</span>
-              <div class="flex-1">
-                <div class="font-medium">💬 论坛热帖</div>
-                <div class="text-xs text-gray-400">热门帖子展示</div>
-              </div>
-              <label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" class="sr-only peer"><div class="w-9 h-5 bg-gray-200 peer-checked:bg-baam-500 rounded-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full"></div></label>
-              <button class="text-xs px-2 py-1 bg-gray-50 text-gray-600 rounded hover:bg-gray-100">配置</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Tab: 系统参数 -->
-      <div id="tab-params" class="tab-content hidden">
         <div class="space-y-6">
-          <!-- AI Settings -->
+
+          <!-- Business Categories -->
           <div class="bg-white rounded-xl border border-gray-200 p-6">
-            <h3 class="font-semibold text-gray-900 mb-4">🤖 AI模型配置</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">内容生成模型</label>
-                <select class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2.5 outline-none focus:ring-2 focus:ring-baam-500">
-                  <option selected>Claude Sonnet 4 (推荐)</option>
-                  <option>Claude Haiku 3.5</option>
-                  <option>Claude Opus 4</option>
-                </select>
-                <p class="text-xs text-gray-400 mt-1">用于文章摘要、翻译、FAQ生成等任务</p>
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="text-base font-semibold text-gray-900">商家分类</h2>
+              <button class="text-xs text-baam-500 hover:underline font-medium">+ 添加分类</button>
+            </div>
+            <div class="space-y-1">
+              <div class="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 group">
+                <div class="flex items-center gap-3">
+                  <span class="w-2 h-2 rounded-full bg-baam-500"></span>
+                  <span class="text-sm text-gray-800 font-medium">医疗健康</span>
+                  <span class="text-xs text-gray-400">(healthcare)</span>
+                  <span class="text-xs text-gray-400 ml-2">子分类: 家庭医生、牙科、眼科、中医针灸、药房</span>
+                </div>
+                <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button class="p-1.5 text-gray-400 hover:text-blue-500 rounded"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button>
+                  <button class="p-1.5 text-gray-400 hover:text-red-500 rounded"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>
+                </div>
               </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">轻量任务模型</label>
-                <select class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2.5 outline-none focus:ring-2 focus:ring-baam-500">
-                  <option>Claude Sonnet 4</option>
-                  <option selected>Claude Haiku 3.5 (推荐)</option>
-                  <option>Claude Opus 4</option>
-                </select>
-                <p class="text-xs text-gray-400 mt-1">用于标签、垃圾检测、商家匹配等任务</p>
+              <div class="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 group">
+                <div class="flex items-center gap-3">
+                  <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                  <span class="text-sm text-gray-800 font-medium">餐饮美食</span>
+                  <span class="text-xs text-gray-400">(restaurant)</span>
+                  <span class="text-xs text-gray-400 ml-2">子分类: 中餐、火锅、甜品、奶茶</span>
+                </div>
+                <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button class="p-1.5 text-gray-400 hover:text-blue-500 rounded"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button>
+                  <button class="p-1.5 text-gray-400 hover:text-red-500 rounded"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>
+                </div>
+              </div>
+              <div class="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 group">
+                <div class="flex items-center gap-3">
+                  <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                  <span class="text-sm text-gray-800 font-medium">法律服务</span>
+                  <span class="text-xs text-gray-400">(legal)</span>
+                  <span class="text-xs text-gray-400 ml-2">子分类: 移民律师、商业律师、房产律师</span>
+                </div>
+                <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button class="p-1.5 text-gray-400 hover:text-blue-500 rounded"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button>
+                  <button class="p-1.5 text-gray-400 hover:text-red-500 rounded"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>
+                </div>
+              </div>
+              <div class="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 group">
+                <div class="flex items-center gap-3">
+                  <span class="w-2 h-2 rounded-full bg-yellow-500"></span>
+                  <span class="text-sm text-gray-800 font-medium">教育培训</span>
+                  <span class="text-xs text-gray-400">(education)</span>
+                  <span class="text-xs text-gray-400 ml-2">子分类: 补习班、语言学校、艺术培训</span>
+                </div>
+                <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button class="p-1.5 text-gray-400 hover:text-blue-500 rounded"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button>
+                  <button class="p-1.5 text-gray-400 hover:text-red-500 rounded"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- Region & Language -->
+          <!-- Article Categories -->
           <div class="bg-white rounded-xl border border-gray-200 p-6">
-            <h3 class="font-semibold text-gray-900 mb-4">🌍 地区与语言</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">默认地区</label>
-                <select class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2.5 outline-none focus:ring-2 focus:ring-baam-500">
-                  <option selected>法拉盛 (Flushing)</option>
-                  <option>Elmhurst</option>
-                  <option>曼哈顿华埠</option>
-                  <option>布鲁克林八大道</option>
-                </select>
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="text-base font-semibold text-gray-900">文章分类</h2>
+              <button class="text-xs text-baam-500 hover:underline font-medium">+ 添加分类</button>
+            </div>
+            <div class="space-y-1">
+              <div class="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 group">
+                <div class="flex items-center gap-3"><span class="w-2 h-2 rounded-full bg-indigo-500"></span><span class="text-sm text-gray-800 font-medium">社区新闻</span><span class="text-xs text-gray-400">(community-news)</span></div>
+                <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"><button class="p-1.5 text-gray-400 hover:text-blue-500 rounded"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button><button class="p-1.5 text-gray-400 hover:text-red-500 rounded"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></div>
               </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">默认语言</label>
-                <select class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2.5 outline-none focus:ring-2 focus:ring-baam-500">
-                  <option selected>简体中文</option>
-                  <option>繁体中文</option>
-                  <option>English</option>
-                </select>
+              <div class="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 group">
+                <div class="flex items-center gap-3"><span class="w-2 h-2 rounded-full bg-green-500"></span><span class="text-sm text-gray-800 font-medium">生活指南</span><span class="text-xs text-gray-400">(living-guide)</span></div>
+                <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"><button class="p-1.5 text-gray-400 hover:text-blue-500 rounded"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button><button class="p-1.5 text-gray-400 hover:text-red-500 rounded"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></div>
+              </div>
+              <div class="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 group">
+                <div class="flex items-center gap-3"><span class="w-2 h-2 rounded-full bg-purple-500"></span><span class="text-sm text-gray-800 font-medium">移民政策</span><span class="text-xs text-gray-400">(immigration)</span></div>
+                <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"><button class="p-1.5 text-gray-400 hover:text-blue-500 rounded"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button><button class="p-1.5 text-gray-400 hover:text-red-500 rounded"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></div>
               </div>
             </div>
           </div>
 
-          <!-- System -->
+          <!-- Forum Categories -->
           <div class="bg-white rounded-xl border border-gray-200 p-6">
-            <h3 class="font-semibold text-gray-900 mb-4">🔧 系统控制</h3>
-            <div class="space-y-4">
-              <div class="flex items-center justify-between py-3 border-b border-gray-100">
-                <div>
-                  <div class="font-medium text-sm">维护模式</div>
-                  <div class="text-xs text-gray-400">开启后网站将显示维护页面，仅管理员可访问</div>
-                </div>
-                <label class="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" class="sr-only peer">
-                  <div class="w-9 h-5 bg-gray-200 peer-checked:bg-red-500 rounded-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full"></div>
-                </label>
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="text-base font-semibold text-gray-900">论坛板块</h2>
+              <button class="text-xs text-baam-500 hover:underline font-medium">+ 添加板块</button>
+            </div>
+            <div class="space-y-1">
+              <div class="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 group">
+                <div class="flex items-center gap-3"><span class="w-2 h-2 rounded-full bg-cyan-500"></span><span class="text-sm text-gray-800 font-medium">生活互助</span><span class="text-xs text-gray-400">(life-help)</span></div>
+                <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"><button class="p-1.5 text-gray-400 hover:text-blue-500 rounded"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button><button class="p-1.5 text-gray-400 hover:text-red-500 rounded"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></div>
               </div>
-              <div class="flex items-center justify-between py-3 border-b border-gray-100">
-                <div>
-                  <div class="font-medium text-sm">新用户注册</div>
-                  <div class="text-xs text-gray-400">是否允许新用户注册账号</div>
-                </div>
-                <label class="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" class="sr-only peer" checked>
-                  <div class="w-9 h-5 bg-gray-200 peer-checked:bg-baam-500 rounded-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full"></div>
-                </label>
+              <div class="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 group">
+                <div class="flex items-center gap-3"><span class="w-2 h-2 rounded-full bg-pink-500"></span><span class="text-sm text-gray-800 font-medium">房屋租售</span><span class="text-xs text-gray-400">(housing)</span></div>
+                <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"><button class="p-1.5 text-gray-400 hover:text-blue-500 rounded"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button><button class="p-1.5 text-gray-400 hover:text-red-500 rounded"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></div>
               </div>
-              <div class="flex items-center justify-between py-3 border-b border-gray-100">
-                <div>
-                  <div class="font-medium text-sm">自动AI处理</div>
-                  <div class="text-xs text-gray-400">新内容是否自动触发AI任务（摘要、翻译、标签）</div>
-                </div>
-                <label class="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" class="sr-only peer" checked>
-                  <div class="w-9 h-5 bg-gray-200 peer-checked:bg-baam-500 rounded-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full"></div>
-                </label>
-              </div>
-              <div class="flex items-center justify-between py-3">
-                <div>
-                  <div class="font-medium text-sm">论坛发帖审核</div>
-                  <div class="text-xs text-gray-400">新帖是否需要经过审核才能发布</div>
-                </div>
-                <label class="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" class="sr-only peer" checked>
-                  <div class="w-9 h-5 bg-gray-200 peer-checked:bg-baam-500 rounded-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-full"></div>
-                </label>
+              <div class="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 group">
+                <div class="flex items-center gap-3"><span class="w-2 h-2 rounded-full bg-amber-500"></span><span class="text-sm text-gray-800 font-medium">求职招聘</span><span class="text-xs text-gray-400">(jobs)</span></div>
+                <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"><button class="p-1.5 text-gray-400 hover:text-blue-500 rounded"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button><button class="p-1.5 text-gray-400 hover:text-red-500 rounded"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button></div>
               </div>
             </div>
           </div>
 
-          <!-- Save Button -->
-          <div class="flex justify-end">
-            <button class="px-6 py-3 bg-baam-500 text-white font-medium rounded-lg hover:bg-baam-600 transition">保存设置</button>
+        </div>
+      </div>
+
+      <!-- ===== Tab Content: Homepage Config ===== -->
+      <div id="tab-homepage" class="tab-content hidden">
+        <div class="bg-white rounded-xl border border-gray-200 p-6">
+          <h2 class="text-base font-semibold text-gray-900 mb-5">首页模块配置</h2>
+          <p class="text-sm text-gray-500 mb-6">开启或关闭首页各个模块，调整展示内容。</p>
+
+          <div class="space-y-4">
+            <div class="flex items-center justify-between p-4 border border-gray-100 rounded-lg hover:bg-gray-50">
+              <div>
+                <h3 class="text-sm font-medium text-gray-900">紧急提醒横幅</h3>
+                <p class="text-xs text-gray-500">页面顶部的紧急通知条</p>
+              </div>
+              <div class="toggle-switch on" onclick="this.classList.toggle('on')"></div>
+            </div>
+            <div class="flex items-center justify-between p-4 border border-gray-100 rounded-lg hover:bg-gray-50">
+              <div>
+                <h3 class="text-sm font-medium text-gray-900">热门新闻轮播</h3>
+                <p class="text-xs text-gray-500">首页头部新闻轮播区域</p>
+              </div>
+              <div class="toggle-switch on" onclick="this.classList.toggle('on')"></div>
+            </div>
+            <div class="flex items-center justify-between p-4 border border-gray-100 rounded-lg hover:bg-gray-50">
+              <div>
+                <h3 class="text-sm font-medium text-gray-900">推荐商家</h3>
+                <p class="text-xs text-gray-500">首页推荐商家展示区</p>
+              </div>
+              <div class="toggle-switch on" onclick="this.classList.toggle('on')"></div>
+            </div>
+            <div class="flex items-center justify-between p-4 border border-gray-100 rounded-lg hover:bg-gray-50">
+              <div>
+                <h3 class="text-sm font-medium text-gray-900">近期活动</h3>
+                <p class="text-xs text-gray-500">社区活动展示模块</p>
+              </div>
+              <div class="toggle-switch on" onclick="this.classList.toggle('on')"></div>
+            </div>
+            <div class="flex items-center justify-between p-4 border border-gray-100 rounded-lg hover:bg-gray-50">
+              <div>
+                <h3 class="text-sm font-medium text-gray-900">达人推荐</h3>
+                <p class="text-xs text-gray-500">达人内容推荐区</p>
+              </div>
+              <div class="toggle-switch" onclick="this.classList.toggle('on')"></div>
+            </div>
+            <div class="flex items-center justify-between p-4 border border-gray-100 rounded-lg hover:bg-gray-50">
+              <div>
+                <h3 class="text-sm font-medium text-gray-900">论坛热帖</h3>
+                <p class="text-xs text-gray-500">论坛热门帖子展示</p>
+              </div>
+              <div class="toggle-switch on" onclick="this.classList.toggle('on')"></div>
+            </div>
+            <div class="flex items-center justify-between p-4 border border-gray-100 rounded-lg hover:bg-gray-50">
+              <div>
+                <h3 class="text-sm font-medium text-gray-900">生活指南</h3>
+                <p class="text-xs text-gray-500">实用生活指南文章推荐</p>
+              </div>
+              <div class="toggle-switch on" onclick="this.classList.toggle('on')"></div>
+            </div>
+          </div>
+
+          <!-- Featured Content Selection -->
+          <div class="mt-8 pt-6 border-t border-gray-200">
+            <h3 class="text-sm font-semibold text-gray-900 mb-4">精选内容</h3>
+            <div class="grid sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1.5">精选文章 (首页展示)</label>
+                <select class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-baam-500/20 focus:border-baam-500">
+                  <option>2026纽约华人报税指南</option>
+                  <option>法拉盛新开业餐厅汇总</option>
+                  <option>纽约公立学校入学须知</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1.5">精选商家 (首页推荐位)</label>
+                <select class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-baam-500/20 focus:border-baam-500">
+                  <option>王氏家庭医疗中心</option>
+                  <option>李律师事务所</option>
+                  <option>金鼎餐厅</option>
+                </select>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </main>
-  </div>
-</div>
 
-<script src="../assets/js/prototype.js"></script>
-<script>
-  document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.tab-btn').forEach(b => { b.classList.remove('border-baam-500', 'text-baam-600'); b.classList.add('border-transparent', 'text-gray-500'); });
-      btn.classList.add('border-baam-500', 'text-baam-600');
-      btn.classList.remove('border-transparent', 'text-gray-500');
-      document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
-      document.getElementById('tab-' + btn.dataset.tab).classList.remove('hidden');
-    });
-  });
-</script>
+      <!-- ===== Tab Content: System Parameters ===== -->
+      <div id="tab-system" class="tab-content hidden">
+        <div class="space-y-6">
+
+          <div class="bg-white rounded-xl border border-gray-200 p-6">
+            <h2 class="text-base font-semibold text-gray-900 mb-5">AI配置</h2>
+            <div class="grid sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1.5">AI模型</label>
+                <select class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-baam-500/20 focus:border-baam-500">
+                  <option value="gpt-4o" selected>GPT-4o (推荐)</option>
+                  <option value="gpt-4o-mini">GPT-4o Mini (经济)</option>
+                  <option value="claude-3.5-sonnet">Claude 3.5 Sonnet</option>
+                  <option value="claude-3-opus">Claude 3 Opus</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1.5">AI翻译模型</label>
+                <select class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-baam-500/20 focus:border-baam-500">
+                  <option value="gpt-4o-mini" selected>GPT-4o Mini</option>
+                  <option value="gpt-4o">GPT-4o</option>
+                  <option value="deepl">DeepL API</option>
+                </select>
+              </div>
+              <div class="sm:col-span-2">
+                <label class="block text-xs font-medium text-gray-500 mb-1.5">每日AI任务限额</label>
+                <input type="number" value="500" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-baam-500/20 focus:border-baam-500">
+                <p class="text-xs text-gray-400 mt-1">今日已使用: 127 / 500</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-xl border border-gray-200 p-6">
+            <h2 class="text-base font-semibold text-gray-900 mb-5">通用设置</h2>
+            <div class="space-y-4">
+              <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1.5">默认地区</label>
+                <select class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-baam-500/20 focus:border-baam-500">
+                  <option value="flushing" selected>法拉盛 (Flushing)</option>
+                  <option value="chinatown-manhattan">曼哈顿唐人街</option>
+                  <option value="elmhurst">埃尔姆赫斯特</option>
+                  <option value="sunset-park">日落公园</option>
+                </select>
+              </div>
+              <div class="flex items-center justify-between p-4 border border-gray-100 rounded-lg">
+                <div>
+                  <h3 class="text-sm font-medium text-gray-900">维护模式</h3>
+                  <p class="text-xs text-gray-500">开启后前台显示维护页面，仅管理员可访问</p>
+                </div>
+                <div class="toggle-switch" onclick="this.classList.toggle('on')"></div>
+              </div>
+              <div class="flex items-center justify-between p-4 border border-gray-100 rounded-lg">
+                <div>
+                  <h3 class="text-sm font-medium text-gray-900">新用户注册</h3>
+                  <p class="text-xs text-gray-500">是否允许新用户自行注册账号</p>
+                </div>
+                <div class="toggle-switch on" onclick="this.classList.toggle('on')"></div>
+              </div>
+              <div class="flex items-center justify-between p-4 border border-gray-100 rounded-lg">
+                <div>
+                  <h3 class="text-sm font-medium text-gray-900">内容审核</h3>
+                  <p class="text-xs text-gray-500">用户发布内容是否需要人工审核</p>
+                </div>
+                <div class="toggle-switch on" onclick="this.classList.toggle('on')"></div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ===== Save Button ===== -->
+      <div class="mt-6 flex justify-end">
+        <button class="px-6 py-2.5 bg-baam-500 hover:bg-baam-600 text-white text-sm font-medium rounded-lg transition-colors">
+          保存设置
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="../assets/js/prototype.js"></script>
+  <script>
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('sidebarOverlay');
+      sidebar.classList.toggle('open');
+      overlay.classList.toggle('hidden');
+    }
+
+    function switchSettingsTab(tabName, btn) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(el => {
+        el.classList.remove('active', 'text-baam-600');
+        el.classList.add('text-gray-500');
+        el.style.borderBottomColor = 'transparent';
+      });
+      document.getElementById('tab-' + tabName).classList.remove('hidden');
+      btn.classList.add('active', 'text-baam-600');
+      btn.classList.remove('text-gray-500');
+      btn.style.borderBottomColor = '#F97316';
+    }
+  </script>
 </body>
 </html>

@@ -3,6 +3,8 @@ import { createServerClient } from '@supabase/ssr';
 import { NextRequest, NextResponse } from 'next/server';
 import { routing } from './lib/i18n/routing';
 
+type CookieToSet = { name: string; value: string; options?: Record<string, unknown> };
+
 const intlMiddleware = createMiddleware(routing);
 
 export default async function middleware(request: NextRequest) {
@@ -19,7 +21,7 @@ export default async function middleware(request: NextRequest) {
           getAll() {
             return request.cookies.getAll();
           },
-          setAll(cookiesToSet) {
+          setAll(cookiesToSet: CookieToSet[]) {
             cookiesToSet.forEach(({ name, value, options }) => {
               response.cookies.set(name, value, options);
             });
@@ -43,7 +45,7 @@ export default async function middleware(request: NextRequest) {
         getAll() {
           return request.cookies.getAll();
         },
-        setAll(cookiesToSet) {
+        setAll(cookiesToSet: CookieToSet[]) {
           cookiesToSet.forEach(({ name, value, options }) => {
             response.cookies.set(name, value, options);
           });
