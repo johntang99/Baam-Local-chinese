@@ -427,16 +427,10 @@ export default function BusinessForm({
             </div>
             <div>
               <label className="block text-xs text-text-muted mb-1">商家图片</label>
-              {!isNew && business?.slug ? (
-                <ImageUploader
-                  businessSlug={business.slug}
-                  existingImages={existingImages}
-                />
-              ) : (
-                <div className="border-2 border-dashed border-border rounded-lg p-6 text-center text-text-muted text-sm">
-                  保存商家后可上传图片
-                </div>
-              )}
+              <ImageUploader
+                businessSlug={business?.slug || 'temp-' + Date.now()}
+                existingImages={existingImages}
+              />
             </div>
           </div>
 
