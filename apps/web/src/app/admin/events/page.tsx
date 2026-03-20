@@ -1,6 +1,7 @@
+import Link from 'next/link';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getAdminSiteContext } from '@/lib/admin-context';
-import Link from 'next/link';
+import EventsTable from './EventsTable';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyRow = Record<string, any>;
@@ -9,100 +10,124 @@ interface Props {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
+const statusTabs = [
+  { key: '', label: '全部' },
+  { key: 'published', label: '已发布' },
+  { key: 'draft', label: '草稿' },
+  { key: 'cancelled', label: '已取消' },
+];
+
 export default async function AdminEventsPage({ searchParams }: Props) {
-  const ctx = await getAdminSiteContext(await searchParams);
-  const supabase = createAdminClient();
+  const params = await searchParams;
+  const ctx = await getAdminSiteContext(params);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = createAdminClient() as any;
 
+  // Resolve filters from searchParams
+  const statusFilter = typeof params.status === 'string' ? params.status : '';
 
-  const { data: rawEvents } = await supabase
+  // Page
+  const page = Math.max(1, parseInt(typeof params.page === 'string' ? params.page : '1', 10));
+  const pageSize = 50;
+
+  // Build base URL for filter links
+  const baseParams = new URLSearchParams();
+  if (params.region) baseParams.set('region', String(params.region));
+  if (params.locale) baseParams.set('locale', String(params.locale));
+
+  function filterUrl(overrides: Record<string, string>) {
+    const p = new URLSearchParams(baseParams);
+    for (const [k, v] of Object.entries(overrides)) {
+      if (v) p.set(k, v);
+      else p.delete(k);
+    }
+    if (!('status' in overrides) && statusFilter) p.set('status', statusFilter);
+    return `/admin/events?${p.toString()}`;
+  }
+
+  // Build query
+  let query = supabase
     .from('events')
-    .select('*')
+    .select('*', { count: 'exact' })
     .in('region_id', ctx.regionIds)
-    .order('start_at', { ascending: false })
-    .limit(30);
+    .order('start_at', { ascending: false });
+
+  if (statusFilter) {
+    query = query.eq('status', statusFilter);
+  }
+
+  const from = (page - 1) * pageSize;
+  query = query.range(from, from + pageSize - 1);
+
+  const { data: rawEvents, count } = await query;
   const events = (rawEvents || []) as AnyRow[];
+  const totalCount = count ?? events.length;
 
   return (
     <div>
-      {/* Header */}
-      <div className="bg-bg-card border-b border-border px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold">活动管理</h1>
-            <p className="text-sm text-text-muted">Admin / Events</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-text-muted bg-bg-page border border-border rounded px-2 py-1">
-              Site: {ctx.siteId}
-            </span>
-            <Link href="/admin/events/new" className="btn btn-primary h-9 px-4 text-sm">
-              添加活动
-            </Link>
+      <div className="p-6 space-y-4">
+        {/* New event button */}
+        <div className="flex justify-end">
+          <Link
+            href={`/admin/events/new?${baseParams.toString()}`}
+            className="h-9 px-4 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 inline-flex items-center"
+          >
+            + 添加活动
+          </Link>
+        </div>
+
+        {/* Filter bar */}
+        <div className="flex flex-wrap items-center gap-4">
+          {/* Status tabs */}
+          <div className="flex items-center gap-1 bg-bg-page border border-border rounded-lg p-1">
+            {statusTabs.map((tab) => (
+              <Link
+                key={tab.key}
+                href={filterUrl({ status: tab.key, page: '' })}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                  statusFilter === tab.key
+                    ? 'bg-bg-card text-text shadow-sm'
+                    : 'text-text-muted hover:text-text'
+                }`}
+              >
+                {tab.label}
+              </Link>
+            ))}
           </div>
         </div>
-      </div>
 
-      <div className="p-6">
-        <div className="card overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="data-table w-full">
-              <thead>
-                <tr>
-                  <th>标题</th>
-                  <th>开始时间</th>
-                  <th>场馆</th>
-                  <th>状态</th>
-                  <th>推荐</th>
-                  <th>浏览量</th>
-                </tr>
-              </thead>
-              <tbody>
-                {events.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="text-center text-text-muted py-8">该站点暂无活动</td>
-                  </tr>
-                ) : (
-                  events.map((event) => (
-                    <tr key={event.id}>
-                      <td className="font-medium">
-                        <Link href={`/admin/events/${event.id}`} className="hover:text-primary">
-                          {event.title_zh || event.title_en || '无标题'}
-                        </Link>
-                      </td>
-                      <td className="text-text-secondary text-sm">
-                        {event.start_at
-                          ? new Date(event.start_at).toLocaleDateString('zh-CN', {
-                              year: 'numeric',
-                              month: '2-digit',
-                              day: '2-digit',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })
-                          : '—'}
-                      </td>
-                      <td className="text-text-secondary">{event.venue_name || '—'}</td>
-                      <td>
-                        <span className={`badge ${
-                          event.status === 'published' ? 'badge-green' :
-                          event.status === 'draft' ? 'badge-gray' :
-                          event.status === 'cancelled' ? 'badge-red' : 'badge-blue'
-                        }`}>
-                          {event.status || '—'}
-                        </span>
-                      </td>
-                      <td>
-                        {event.is_featured ? (
-                          <span className="badge badge-purple">推荐</span>
-                        ) : (
-                          <span className="text-text-muted text-sm">—</span>
-                        )}
-                      </td>
-                      <td className="text-text-muted">{event.view_count ?? 0}</td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+        {/* Events table */}
+        {events.length === 0 ? (
+          <div className="bg-bg-card border border-border rounded-xl p-12 text-center">
+            <p className="text-text-muted">该站点暂无活动</p>
+            <p className="text-sm text-text-muted mt-1">点击上方按钮创建新活动</p>
+          </div>
+        ) : (
+          <EventsTable events={events} siteParams={baseParams.toString()} />
+        )}
+
+        {/* Pagination */}
+        <div className="flex items-center justify-between text-sm text-text-muted">
+          <span>
+            显示 {from + 1}-{Math.min(from + events.length, totalCount)} / 共 {totalCount} 条
+          </span>
+          <div className="flex items-center gap-2">
+            {page > 1 && (
+              <Link
+                href={filterUrl({ page: String(page - 1) })}
+                className="px-3 py-1.5 text-xs font-medium rounded-md border border-border hover:bg-bg-page"
+              >
+                上一页
+              </Link>
+            )}
+            {from + pageSize < totalCount && (
+              <Link
+                href={filterUrl({ page: String(page + 1) })}
+                className="px-3 py-1.5 text-xs font-medium rounded-md border border-border hover:bg-bg-page"
+              >
+                下一页
+              </Link>
+            )}
           </div>
         </div>
       </div>

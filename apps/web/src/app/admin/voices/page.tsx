@@ -1,29 +1,51 @@
 import Link from 'next/link';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getAdminSiteContext } from '@/lib/admin-context';
+import VoicesTable from './VoicesTable';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyRow = Record<string, any>;
-
-function profileTypeBadge(type: string) {
-  const map: Record<string, string> = {
-    kol: 'badge-purple',
-    expert: 'badge-blue',
-    influencer: 'badge-yellow',
-    creator: 'badge-green',
-  };
-  return map[type] || 'badge-gray';
-}
 
 interface Props {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
+const tabs = [
+  { key: 'applications', label: '申请审核' },
+  { key: 'creators', label: '达人列表' },
+  { key: 'featured', label: 'Featured管理' },
+];
+
 export default async function AdminVoicesPage({ searchParams }: Props) {
-  const ctx = await getAdminSiteContext(await searchParams);
-  const supabase = createAdminClient();
+  const params = await searchParams;
+  const ctx = await getAdminSiteContext(params);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = createAdminClient() as any;
 
+  const activeTab = typeof params.tab === 'string' ? params.tab : 'creators';
 
+  // Build base URL for filter links
+  const baseParams = new URLSearchParams();
+  if (params.region) baseParams.set('region', String(params.region));
+  if (params.locale) baseParams.set('locale', String(params.locale));
+
+  function tabUrl(tab: string) {
+    const p = new URLSearchParams(baseParams);
+    if (tab) p.set('tab', tab);
+    return `/admin/voices?${p.toString()}`;
+  }
+
+  // Fetch application profiles (users who might want to become creators)
+  const { data: rawApplications, count: applicationCount } = await supabase
+    .from('profiles')
+    .select('*', { count: 'exact' })
+    .eq('profile_type', 'user')
+    .in('region_id', ctx.regionIds)
+    .order('created_at', { ascending: false })
+    .limit(50);
+  const applicationProfiles = (rawApplications || []) as AnyRow[];
+
+  // Fetch all non-user profiles (creators, kols, etc.)
   const { data: rawProfiles } = await supabase
     .from('profiles')
     .select('*')
@@ -31,123 +53,45 @@ export default async function AdminVoicesPage({ searchParams }: Props) {
     .in('region_id', ctx.regionIds)
     .order('follower_count', { ascending: false })
     .limit(50);
-
   const profiles = (rawProfiles || []) as AnyRow[];
+
+  // Featured profiles
   const featuredProfiles = profiles.filter((p) => p.is_featured);
 
   return (
     <div>
-      {/* Header */}
-      <div className="bg-bg-card border-b border-border px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold">达人管理</h1>
-            <p className="text-sm text-text-muted">Admin / Voices</p>
-          </div>
-          <span className="text-xs text-text-muted bg-bg-page border border-border rounded px-2 py-1">
-            Site: {ctx.siteId}
-          </span>
-        </div>
-      </div>
-
-      <div className="p-6 space-y-6">
-        {/* Featured Section */}
-        <div className="bg-bg-card border border-border rounded-xl p-5">
-          <h2 className="font-semibold mb-4">
-            Featured管理
-            <span className="badge badge-blue text-xs ml-2">{featuredProfiles.length}</span>
-          </h2>
-
-          {featuredProfiles.length === 0 ? (
-            <p className="text-sm text-text-muted py-4 text-center">暂无Featured达人</p>
-          ) : (
-            <div className="flex flex-wrap gap-3">
-              {featuredProfiles.map((profile) => (
-                <div
-                  key={profile.id}
-                  className="flex items-center gap-2 bg-bg-page border border-border rounded-lg px-3 py-2"
-                >
-                  <span className="text-sm font-medium">{profile.display_name || '未命名'}</span>
-                  <span className={`badge ${profileTypeBadge(profile.profile_type)} text-xs`}>
-                    {profile.profile_type}
-                  </span>
-                  {profile.is_verified && (
-                    <span className="badge badge-green text-xs">已认证</span>
-                  )}
-                  <Link
-                    href={`/admin/voices?edit=${profile.id}`}
-                    className="text-xs text-primary hover:underline ml-1"
-                  >
-                    编辑
-                  </Link>
-                </div>
-              ))}
-            </div>
-          )}
+      <div className="p-6 space-y-4">
+        {/* Tabs */}
+        <div className="flex items-center gap-1 bg-bg-page border border-border rounded-lg p-1">
+          {tabs.map((tab) => (
+            <Link
+              key={tab.key}
+              href={tabUrl(tab.key)}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                activeTab === tab.key
+                  ? 'bg-bg-card text-text shadow-sm'
+                  : 'text-text-muted hover:text-text'
+              }`}
+            >
+              {tab.label}
+              {tab.key === 'applications' && (applicationCount ?? 0) > 0 && (
+                <span className="ml-1 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5">
+                  {applicationCount}
+                </span>
+              )}
+            </Link>
+          ))}
         </div>
 
-        {/* All Profiles Table */}
-        <div className="bg-bg-card border border-border rounded-xl overflow-hidden">
-          <div className="px-5 pt-5 pb-3">
-            <h2 className="font-semibold">全部达人 ({profiles.length})</h2>
-          </div>
-
-          {profiles.length === 0 ? (
-            <p className="text-sm text-text-muted py-4 text-center">该站点暂无达人</p>
-          ) : (
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>名称</th>
-                  <th>类型</th>
-                  <th>认证</th>
-                  <th>Featured</th>
-                  <th>粉丝数</th>
-                  <th>帖子数</th>
-                  <th>操作</th>
-                </tr>
-              </thead>
-              <tbody>
-                {profiles.map((profile) => (
-                  <tr key={profile.id}>
-                    <td>
-                      <span className="text-sm font-medium">{profile.display_name || '未命名'}</span>
-                    </td>
-                    <td>
-                      <span className={`badge ${profileTypeBadge(profile.profile_type)} text-xs`}>
-                        {profile.profile_type}
-                      </span>
-                    </td>
-                    <td>
-                      <span className={`badge ${profile.is_verified ? 'badge-green' : 'badge-gray'} text-xs`}>
-                        {profile.is_verified ? '已认证' : '未认证'}
-                      </span>
-                    </td>
-                    <td>
-                      <span className={`badge ${profile.is_featured ? 'badge-blue' : 'badge-gray'} text-xs`}>
-                        {profile.is_featured ? '是' : '否'}
-                      </span>
-                    </td>
-                    <td>
-                      <span className="text-sm">{profile.follower_count ?? 0}</span>
-                    </td>
-                    <td>
-                      <span className="text-sm">{profile.post_count ?? 0}</span>
-                    </td>
-                    <td>
-                      <Link
-                        href={`/admin/voices?edit=${profile.id}`}
-                        className="text-xs text-primary hover:underline"
-                      >
-                        编辑
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+        {/* Table content */}
+        <VoicesTable
+          tab={activeTab}
+          profiles={profiles}
+          applicationProfiles={applicationProfiles}
+          featuredProfiles={featuredProfiles}
+          siteParams={baseParams.toString()}
+          applicationCount={applicationCount ?? 0}
+        />
       </div>
     </div>
   );

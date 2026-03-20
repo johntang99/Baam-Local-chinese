@@ -1,38 +1,51 @@
+import Link from 'next/link';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getAdminSiteContext } from '@/lib/admin-context';
-import Link from 'next/link';
+import LeadsTable from './LeadsTable';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyRow = Record<string, any>;
-
-function maskPhone(phone: string | null): string {
-  if (!phone) return '—';
-  if (phone.length <= 4) return '****';
-  return phone.slice(0, -4) + '****';
-}
-
-function truncate(text: string | null, max = 50): string {
-  if (!text) return '—';
-  return text.length > max ? text.slice(0, max) + '...' : text;
-}
-
-const statusBadge: Record<string, string> = {
-  new: 'badge-red',
-  contacted: 'badge-blue',
-  qualified: 'badge-purple',
-  converted: 'badge-green',
-  closed: 'badge-gray',
-};
 
 interface Props {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
+const statusTabs = [
+  { key: '', label: '全部' },
+  { key: 'new', label: '新建' },
+  { key: 'contacted', label: '已联系' },
+  { key: 'converted', label: '已转化' },
+  { key: 'closed', label: '已关闭' },
+];
+
 export default async function AdminLeadsPage({ searchParams }: Props) {
-  const ctx = await getAdminSiteContext(await searchParams);
-  const supabase = createAdminClient();
+  const params = await searchParams;
+  const ctx = await getAdminSiteContext(params);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = createAdminClient() as any;
 
+  const statusFilter = typeof params.status === 'string' ? params.status : '';
 
+  // Page
+  const page = Math.max(1, parseInt(typeof params.page === 'string' ? params.page : '1', 10));
+  const pageSize = 50;
+
+  // Build base URL for filter links
+  const baseParams = new URLSearchParams();
+  if (params.region) baseParams.set('region', String(params.region));
+  if (params.locale) baseParams.set('locale', String(params.locale));
+
+  function filterUrl(overrides: Record<string, string>) {
+    const p = new URLSearchParams(baseParams);
+    for (const [k, v] of Object.entries(overrides)) {
+      if (v) p.set(k, v);
+      else p.delete(k);
+    }
+    if (!('status' in overrides) && statusFilter) p.set('status', statusFilter);
+    return `/admin/leads?${p.toString()}`;
+  }
+
+  // Fetch stats counts
   const [
     { count: totalCount },
     { count: newCount },
@@ -45,14 +58,6 @@ export default async function AdminLeadsPage({ searchParams }: Props) {
     supabase.from('leads').select('*', { count: 'exact', head: true }).in('region_id', ctx.regionIds).eq('status', 'converted'),
   ]);
 
-  const { data: rawLeads } = await supabase
-    .from('leads')
-    .select('*')
-    .in('region_id', ctx.regionIds)
-    .order('created_at', { ascending: false })
-    .limit(50);
-  const leads = (rawLeads || []) as AnyRow[];
-
   const stats = [
     { label: '总线索', value: totalCount || 0, color: 'text-text-primary' },
     { label: '新线索', value: newCount || 0, color: 'text-accent-red' },
@@ -60,80 +65,91 @@ export default async function AdminLeadsPage({ searchParams }: Props) {
     { label: '已转化', value: convertedCount || 0, color: 'text-accent-green' },
   ];
 
+  // Fetch leads with optional business join
+  let query = supabase
+    .from('leads')
+    .select('*, businesses(name_zh)', { count: 'exact' })
+    .in('region_id', ctx.regionIds)
+    .order('created_at', { ascending: false });
+
+  if (statusFilter) {
+    query = query.eq('status', statusFilter);
+  }
+
+  const from = (page - 1) * pageSize;
+  query = query.range(from, from + pageSize - 1);
+
+  const { data: rawLeads, count: leadsCount } = await query;
+  const leads = ((rawLeads || []) as AnyRow[]).map((lead) => ({
+    ...lead,
+    business_name: lead.businesses?.name_zh || null,
+  }));
+  const leadsTotal = leadsCount ?? leads.length;
+
   return (
     <div>
-      {/* Header */}
-      <div className="bg-bg-card border-b border-border px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold">线索管理</h1>
-            <p className="text-sm text-text-muted">Admin / Leads</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-text-muted bg-bg-page border border-border rounded px-2 py-1">
-              Site: {ctx.siteId}
-            </span>
-            <button className="btn btn-outline h-9 px-4 text-sm">导出CSV</button>
-          </div>
+      <div className="p-6 space-y-4">
+        {/* Export button */}
+        <div className="flex justify-end">
+          <button className="h-9 px-4 text-sm font-medium rounded-lg border border-border bg-bg-card hover:bg-bg-page inline-flex items-center">
+            导出CSV
+          </button>
         </div>
-      </div>
 
-      <div className="p-6 space-y-6">
-        {/* Stats */}
+        {/* Stats cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {stats.map((stat) => (
-            <div key={stat.label} className="card p-4">
+            <div key={stat.label} className="bg-bg-card border border-border rounded-xl p-4">
               <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
               <p className="text-xs text-text-muted mt-1">{stat.label}</p>
             </div>
           ))}
         </div>
 
-        {/* Table */}
-        <div className="card overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="data-table w-full">
-              <thead>
-                <tr>
-                  <th>联系人</th>
-                  <th>电话</th>
-                  <th>来源</th>
-                  <th>AI摘要</th>
-                  <th>状态</th>
-                  <th>创建时间</th>
-                  <th>操作</th>
-                </tr>
-              </thead>
-              <tbody>
-                {leads.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="text-center text-text-muted py-8">该站点暂无线索</td>
-                  </tr>
-                ) : (
-                  leads.map((lead) => (
-                    <tr key={lead.id}>
-                      <td className="font-medium">{lead.contact_name || '匿名'}</td>
-                      <td className="text-text-secondary">{maskPhone(lead.contact_phone)}</td>
-                      <td>{lead.source_type || '—'}</td>
-                      <td className="text-text-secondary text-sm">{truncate(lead.ai_summary)}</td>
-                      <td>
-                        <span className={`badge ${statusBadge[lead.status] || 'badge-gray'}`}>
-                          {lead.status}
-                        </span>
-                      </td>
-                      <td className="text-text-muted text-sm">
-                        {lead.created_at ? new Date(lead.created_at).toLocaleDateString('zh-CN') : '—'}
-                      </td>
-                      <td>
-                        <Link href={`/admin/leads/${lead.id}`} className="text-sm text-primary hover:underline">
-                          查看
-                        </Link>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+        {/* Status filter tabs */}
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-1 bg-bg-page border border-border rounded-lg p-1">
+            {statusTabs.map((tab) => (
+              <Link
+                key={tab.key}
+                href={filterUrl({ status: tab.key, page: '' })}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                  statusFilter === tab.key
+                    ? 'bg-bg-card text-text shadow-sm'
+                    : 'text-text-muted hover:text-text'
+                }`}
+              >
+                {tab.label}
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* Leads table */}
+        <LeadsTable leads={leads} />
+
+        {/* Pagination */}
+        <div className="flex items-center justify-between text-sm text-text-muted">
+          <span>
+            显示 {from + 1}-{Math.min(from + leads.length, leadsTotal)} / 共 {leadsTotal} 条
+          </span>
+          <div className="flex items-center gap-2">
+            {page > 1 && (
+              <Link
+                href={filterUrl({ page: String(page - 1) })}
+                className="px-3 py-1.5 text-xs font-medium rounded-md border border-border hover:bg-bg-page"
+              >
+                上一页
+              </Link>
+            )}
+            {from + pageSize < leadsTotal && (
+              <Link
+                href={filterUrl({ page: String(page + 1) })}
+                className="px-3 py-1.5 text-xs font-medium rounded-md border border-border hover:bg-bg-page"
+              >
+                下一页
+              </Link>
+            )}
           </div>
         </div>
       </div>
