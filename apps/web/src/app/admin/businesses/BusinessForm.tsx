@@ -516,7 +516,7 @@ export default function BusinessForm({
                 <option value="">请选择分类</option>
                 {parentCategories.map(({ parent }) => (
                   <option key={parent.id} value={parent.id}>
-                    {parent.name_zh || parent.name || parent.slug}
+                    {parent.name_zh || parent.name_en || parent.slug}
                   </option>
                 ))}
               </select>
@@ -532,7 +532,7 @@ export default function BusinessForm({
                   <option value="">请选择子分类</option>
                   {childCategories.map((child) => (
                     <option key={child.id} value={child.id}>
-                      {child.name_zh || child.name || child.slug}
+                      {child.name_zh || child.name_en || child.slug}
                     </option>
                   ))}
                 </select>

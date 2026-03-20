@@ -62,7 +62,7 @@ export default async function EditBusinessPage({ params, searchParams }: Props) 
   // Fetch categories for business type (including parent_id for tree)
   const { data: rawCategories } = await supabase
     .from('categories')
-    .select('id, name_zh, name, slug, type, parent_id')
+    .select('id, name_zh, name_en, slug, type, parent_id')
     .eq('type', 'business')
     .order('sort_order', { ascending: true });
   const categories = (rawCategories || []) as AnyRow[];

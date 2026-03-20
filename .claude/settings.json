@@ -4,7 +4,8 @@
       "Bash(*)",
       "Read(*)",
       "Write(*)",
-      "Edit(*)"
+      "Edit(*)",
+      "Bash(grep -n \"select.*name\" /Users/johntang/Desktop/clients/baam-local/apps/web/src/app/admin/businesses/[id]/edit/page.tsx)"
     ],
     "additionalDirectories": []
   }
