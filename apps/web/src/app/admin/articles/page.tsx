@@ -98,23 +98,16 @@ export default async function AdminArticlesPage({ searchParams }: Props) {
 
   return (
     <div>
-      {/* Header */}
-      <div className="bg-bg-card border-b border-border px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold">内容管理</h1>
-            <p className="text-sm text-text-muted">管理所有文章、新闻和指南内容</p>
-          </div>
+      <div className="p-6 space-y-4">
+        {/* New article button */}
+        <div className="flex justify-end">
           <Link
-            href="/admin/articles/new"
+            href={`/admin/articles/new?${baseParams.toString()}`}
             className="h-9 px-4 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 inline-flex items-center"
           >
             + 新建文章
           </Link>
         </div>
-      </div>
-
-      <div className="p-6 space-y-4">
         {/* Filter bar */}
         <div className="flex flex-wrap items-center gap-4">
           {/* Status tabs */}
@@ -189,7 +182,7 @@ export default async function AdminArticlesPage({ searchParams }: Props) {
             <p className="text-sm text-text-muted mt-1">切换站点或创建新文章</p>
           </div>
         ) : (
-          <ArticlesTable articles={articles} regionNameMap={regionNameMap} />
+          <ArticlesTable articles={articles} regionNameMap={regionNameMap} siteParams={baseParams.toString()} />
         )}
 
         {/* Pagination */}

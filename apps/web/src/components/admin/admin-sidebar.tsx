@@ -50,7 +50,7 @@ export function AdminSidebar() {
     <div className="w-60 bg-gray-800 text-gray-300 h-screen overflow-y-auto flex flex-col">
       {/* Logo */}
       <div className="p-5 border-b border-gray-700">
-        <Link href="/admin" className="flex items-center gap-2">
+        <Link href={buildHref('/admin')} className="flex items-center gap-2">
           <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white font-bold text-sm">B</div>
           <span className="text-lg font-bold text-white">Baam</span>
           <span className="text-xs bg-gray-700 text-gray-400 px-2 py-0.5 rounded ml-1">Admin</span>

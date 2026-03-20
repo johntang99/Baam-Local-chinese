@@ -48,9 +48,11 @@ interface ArticleFormProps {
   categories: AnyRow[];
   regions: AnyRow[];
   isNew: boolean;
+  siteParams?: string;
 }
 
-export default function ArticleForm({ article, categories, regions, isNew }: ArticleFormProps) {
+export default function ArticleForm({ article, categories, regions, isNew, siteParams = '' }: ArticleFormProps) {
+  const siteQuery = siteParams ? `?${siteParams}` : '';
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -86,6 +88,9 @@ export default function ArticleForm({ article, categories, regions, isNew }: Art
     fd.set('source_type', sourceType);
     fd.set('source_name', sourceName);
     fd.set('source_url', sourceUrl);
+    fd.set('seo_title_zh', seoTitleZh);
+    fd.set('seo_desc_zh', seoDescZh);
+    fd.set('audience_types', JSON.stringify(selectedAudiences));
     return fd;
   };
 
@@ -98,7 +103,7 @@ export default function ArticleForm({ article, categories, regions, isNew }: Art
         if (result.error) {
           setError(result.error);
         } else if (result.id) {
-          router.push(`/admin/articles/${result.id}/edit`);
+          router.push(`/admin/articles/${result.id}/edit${siteQuery}`);
         }
       } else {
         const result = await updateArticle(article!.id, fd);
@@ -144,9 +149,9 @@ export default function ArticleForm({ article, categories, regions, isNew }: Art
         <div className="flex items-center justify-between">
           <div>
             <p className="text-xs text-text-muted mb-1">
-              <a href="/admin" className="hover:underline">Admin</a>
+              <a href={`/admin${siteQuery}`} className="hover:underline">Admin</a>
               {' > '}
-              <a href="/admin/articles" className="hover:underline">内容管理</a>
+              <a href={`/admin/articles${siteQuery}`} className="hover:underline">内容管理</a>
               {' > '}
               {isNew ? '新建' : '编辑'}
             </p>

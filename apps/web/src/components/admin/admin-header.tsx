@@ -50,12 +50,14 @@ export function AdminHeader() {
   };
 
   const pageTitles: Record<string, string> = {
-    '/admin': 'Dashboard', '/admin/articles': '内容管理', '/admin/businesses': '商家管理',
+    '/admin': 'Dashboard', '/admin/articles/new': '新建文章', '/admin/articles': '内容管理', '/admin/businesses': '商家管理',
     '/admin/forum': '论坛管理', '/admin/voices': '达人管理', '/admin/events': '活动管理',
     '/admin/leads': '线索管理', '/admin/sites': '站点管理', '/admin/users': '用户管理',
     '/admin/ai-jobs': 'AI任务', '/admin/sponsors': '广告管理', '/admin/settings': '系统设置',
   };
-  const pageTitle = pageTitles[pathname] || 'Admin';
+  const pageTitle = Object.entries(pageTitles)
+    .filter(([path]) => pathname.startsWith(path))
+    .sort((a, b) => b[0].length - a[0].length)[0]?.[1] || 'Admin';
 
   const activeSite = sites.find(s => s.slug === currentRegion) || sites[0];
 

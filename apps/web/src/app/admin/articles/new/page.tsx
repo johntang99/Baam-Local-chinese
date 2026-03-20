@@ -30,12 +30,18 @@ export default async function NewArticlePage({ searchParams }: Props) {
     .in('id', ctx.regionIds);
   const regions = (rawRegions || []) as AnyRow[];
 
+  // Build site params string for links
+  const siteParamsObj = new URLSearchParams();
+  if (params.region) siteParamsObj.set('region', String(params.region));
+  if (params.locale) siteParamsObj.set('locale', String(params.locale));
+
   return (
     <ArticleForm
       article={null}
       categories={categories}
       regions={regions}
       isNew={true}
+      siteParams={siteParamsObj.toString()}
     />
   );
 }

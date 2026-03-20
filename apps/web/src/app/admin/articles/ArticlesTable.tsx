@@ -28,9 +28,10 @@ const statusBadge: Record<string, { cls: string; label: string }> = {
 interface ArticlesTableProps {
   articles: AnyRow[];
   regionNameMap: Record<string, string>;
+  siteParams?: string;
 }
 
-export default function ArticlesTable({ articles, regionNameMap }: ArticlesTableProps) {
+export default function ArticlesTable({ articles, regionNameMap, siteParams = '' }: ArticlesTableProps) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
@@ -175,7 +176,7 @@ export default function ArticlesTable({ articles, regionNameMap }: ArticlesTable
                   </td>
                   <td className="flex items-center gap-2">
                     <Link
-                      href={`/admin/articles/${a.id}/edit`}
+                      href={`/admin/articles/${a.id}/edit${siteParams ? `?${siteParams}` : ''}`}
                       className="text-xs text-primary hover:underline"
                     >
                       编辑

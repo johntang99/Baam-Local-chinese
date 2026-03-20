@@ -113,7 +113,7 @@ export default async function AdminDashboard({ searchParams }: Props) {
                     <p className="text-sm font-medium truncate">{article.title_zh || article.title_en || '无标题'}</p>
                     <p className="text-xs text-gray-400">{article.content_vertical} · {article.editorial_status}</p>
                   </div>
-                  <a href={`/admin/articles?region=${ctx.siteSlug}&locale=${ctx.locale}`} className="text-xs text-primary hover:underline ml-2">编辑</a>
+                  <a href={`/admin/articles/${article.id}/edit?region=${ctx.siteSlug}&locale=${ctx.locale}`} className="text-xs text-primary hover:underline ml-2">编辑</a>
                 </div>
               ))}
             </div>
@@ -147,7 +147,7 @@ export default async function AdminDashboard({ searchParams }: Props) {
       <div className="bg-white border border-gray-200 rounded-xl p-5">
         <h2 className="font-semibold mb-4">快捷操作</h2>
         <div className="flex flex-wrap gap-3">
-          <a href={`/admin/articles?region=${ctx.siteSlug}&locale=${ctx.locale}`} className="h-9 px-4 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary-dark inline-flex items-center">+ 新建文章</a>
+          <a href={`/admin/articles/new?region=${ctx.siteSlug}&locale=${ctx.locale}`} className="h-9 px-4 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary-dark inline-flex items-center">+ 新建文章</a>
           <a href={`/admin/businesses?region=${ctx.siteSlug}&locale=${ctx.locale}`} className="h-9 px-4 border border-gray-300 text-sm font-medium rounded-lg hover:bg-gray-50 inline-flex items-center">审核商家</a>
           <a href={`/admin/forum?region=${ctx.siteSlug}&locale=${ctx.locale}`} className="h-9 px-4 border border-gray-300 text-sm font-medium rounded-lg hover:bg-gray-50 inline-flex items-center">审核帖子</a>
           <a href={`/admin/leads?region=${ctx.siteSlug}&locale=${ctx.locale}`} className="h-9 px-4 border border-gray-300 text-sm font-medium rounded-lg hover:bg-gray-50 inline-flex items-center">处理线索</a>

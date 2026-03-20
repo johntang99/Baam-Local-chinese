@@ -36,6 +36,9 @@ export async function createArticle(formData: FormData) {
       source_type: formData.get('source_type') as string || null,
       source_name: formData.get('source_name') as string || null,
       source_url: formData.get('source_url') as string || null,
+      seo_title_zh: formData.get('seo_title_zh') as string || null,
+      seo_desc_zh: formData.get('seo_desc_zh') as string || null,
+      audience_types: JSON.parse((formData.get('audience_types') as string) || '[]'),
       slug,
     })
     .select('id')
@@ -66,6 +69,9 @@ export async function updateArticle(articleId: string, formData: FormData) {
       source_type: formData.get('source_type') as string || null,
       source_name: formData.get('source_name') as string || null,
       source_url: formData.get('source_url') as string || null,
+      seo_title_zh: formData.get('seo_title_zh') as string || null,
+      seo_desc_zh: formData.get('seo_desc_zh') as string || null,
+      audience_types: JSON.parse((formData.get('audience_types') as string) || '[]'),
     })
     .eq('id', articleId);
 
