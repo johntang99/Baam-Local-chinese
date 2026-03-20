@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin';
+import { CategoryTree } from './CategoryTree';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyRow = Record<string, any>;
@@ -6,12 +7,14 @@ type AnyRow = Record<string, any>;
 export default async function AdminSettingsPage() {
   const supabase = createAdminClient();
 
-  const [{ data: rawRegions }, { data: rawCategories }] = await Promise.all([
+  const [{ data: rawRegions }, { data: rawCategories }, { data: rawBusinessCategories }] = await Promise.all([
     supabase.from('regions').select('*').order('slug'),
     supabase.from('categories').select('*').order('type').order('sort_order'),
+    supabase.from('categories').select('*').eq('type', 'business').order('sort_order'),
   ]);
   const regions = (rawRegions || []) as AnyRow[];
   const categories = (rawCategories || []) as AnyRow[];
+  const businessCategories = (rawBusinessCategories || []) as AnyRow[];
 
   // Group categories by type
   const categoryGroups: Record<string, AnyRow[]> = {};
@@ -73,7 +76,12 @@ export default async function AdminSettingsPage() {
           </div>
         </section>
 
-        {/* Section 2: Categories */}
+        {/* Section 2: Business Category Tree Management */}
+        <section>
+          <CategoryTree categories={businessCategories} />
+        </section>
+
+        {/* Section 3: All Categories (by type) */}
         <section>
           <h2 className="text-lg font-semibold mb-4">分类管理</h2>
           {Object.keys(categoryGroups).length === 0 ? (
@@ -113,7 +121,7 @@ export default async function AdminSettingsPage() {
           )}
         </section>
 
-        {/* Section 3: System Parameters */}
+        {/* Section 4: System Parameters */}
         <section>
           <h2 className="text-lg font-semibold mb-4">系统参数</h2>
           <div className="card p-6">

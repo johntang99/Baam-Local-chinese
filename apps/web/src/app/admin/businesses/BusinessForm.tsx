@@ -9,64 +9,129 @@ type AnyRow = Record<string, any>;
 
 const statusOptions = [
   { value: 'active', label: '活跃' },
-  { value: 'inactive', label: '未激活' },
+  { value: 'pending', label: '待审核' },
   { value: 'suspended', label: '已暂停' },
-  { value: 'claimed', label: '已认领' },
 ];
 
 const verificationOptions = [
   { value: 'unverified', label: '未认证' },
   { value: 'pending', label: '待认证' },
   { value: 'verified', label: '已认证' },
-  { value: 'rejected', label: '已拒绝' },
 ];
 
 const planOptions = [
   { value: 'free', label: 'Free' },
-  { value: 'basic', label: 'Basic' },
-  { value: 'premium', label: 'Premium' },
-  { value: 'enterprise', label: 'Enterprise' },
+  { value: 'pro', label: 'Pro' },
+  { value: 'content', label: 'Content' },
+  { value: 'reputation', label: 'Reputation' },
+  { value: 'lead', label: 'Lead' },
+  { value: 'growth', label: 'Growth' },
 ];
+
+interface CategoryTreeItem {
+  parent: AnyRow;
+  children: AnyRow[];
+}
 
 interface BusinessFormProps {
   business?: AnyRow | null;
   categories: AnyRow[];
+  categoryTree: CategoryTreeItem[];
+  selectedCategoryIds?: string[];
   isNew: boolean;
   siteParams?: string;
 }
 
-export default function BusinessForm({ business, categories, isNew, siteParams = '' }: BusinessFormProps) {
+const inputClass = 'w-full h-10 px-3 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary';
+const textareaClass = 'w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-y';
+const selectClass = 'w-full h-10 px-3 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white';
+
+export default function BusinessForm({
+  business,
+  categories,
+  categoryTree,
+  selectedCategoryIds: initialSelectedCategoryIds = [],
+  isNew,
+  siteParams = '',
+}: BusinessFormProps) {
   const siteQuery = siteParams ? `?${siteParams}` : '';
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  // Form state
-  const [displayName, setDisplayName] = useState(business?.display_name || '');
+  // Form state — basic info
   const [displayNameZh, setDisplayNameZh] = useState(business?.display_name_zh || '');
+  const [displayName, setDisplayName] = useState(business?.display_name || '');
   const [shortDescZh, setShortDescZh] = useState(business?.short_desc_zh || '');
+  const [fullDescZh, setFullDescZh] = useState(business?.full_desc_zh || '');
+
+  // Address / NAP
+  const [addressFull, setAddressFull] = useState(business?.address_full || '');
+  const [city, setCity] = useState(business?.city || '');
+  const [state, setState] = useState(business?.state || 'NY');
+  const [zipCode, setZipCode] = useState(business?.zip_code || '');
+
+  // Contact
   const [phone, setPhone] = useState(business?.phone || '');
   const [email, setEmail] = useState(business?.email || '');
   const [websiteUrl, setWebsiteUrl] = useState(business?.website_url || '');
   const [wechatId, setWechatId] = useState(business?.wechat_id || '');
+
+  // Social media
+  const [facebookUrl, setFacebookUrl] = useState(business?.facebook_url || '');
+  const [instagramUrl, setInstagramUrl] = useState(business?.instagram_url || '');
+  const [tiktokUrl, setTiktokUrl] = useState(business?.tiktok_url || '');
+  const [youtubeUrl, setYoutubeUrl] = useState(business?.youtube_url || '');
+  const [twitterUrl, setTwitterUrl] = useState(business?.twitter_url || '');
+
+  // Media
+  const [videoUrl, setVideoUrl] = useState(business?.video_url || '');
+
+  // Right column
   const [status, setStatus] = useState(business?.status || 'active');
   const [verificationStatus, setVerificationStatus] = useState(business?.verification_status || 'unverified');
   const [currentPlan, setCurrentPlan] = useState(business?.current_plan || 'free');
-  const [categoryId, setCategoryId] = useState(business?.category_id || '');
+  const [isFeatured, setIsFeatured] = useState(business?.is_featured || false);
+
+  // Categories — multi-select (1–3)
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>(initialSelectedCategoryIds);
+
+  const toggleCategory = (catId: string) => {
+    setSelectedCategoryIds((prev) => {
+      if (prev.includes(catId)) {
+        return prev.filter((id) => id !== catId);
+      }
+      if (prev.length >= 3) return prev; // max 3
+      return [...prev, catId];
+    });
+  };
 
   const buildFormData = () => {
     const fd = new FormData();
     fd.set('display_name', displayName);
     fd.set('display_name_zh', displayNameZh);
     fd.set('short_desc_zh', shortDescZh);
+    fd.set('full_desc_zh', fullDescZh);
+    fd.set('address_full', addressFull);
+    fd.set('city', city);
+    fd.set('state', state);
+    fd.set('zip_code', zipCode);
     fd.set('phone', phone);
     fd.set('email', email);
     fd.set('website_url', websiteUrl);
     fd.set('wechat_id', wechatId);
+    fd.set('facebook_url', facebookUrl);
+    fd.set('instagram_url', instagramUrl);
+    fd.set('tiktok_url', tiktokUrl);
+    fd.set('youtube_url', youtubeUrl);
+    fd.set('twitter_url', twitterUrl);
+    fd.set('video_url', videoUrl);
     fd.set('status', status);
     fd.set('verification_status', verificationStatus);
     fd.set('current_plan', currentPlan);
-    fd.set('category_id', categoryId);
+    fd.set('is_featured', isFeatured ? 'true' : 'false');
+    // Send category ids as JSON array
+    fd.set('category_ids', JSON.stringify(selectedCategoryIds));
     return fd;
   };
 
@@ -140,7 +205,7 @@ export default function BusinessForm({ business, categories, isNew, siteParams =
               value={displayNameZh}
               onChange={(e) => setDisplayNameZh(e.target.value)}
               placeholder="输入商家中文名称"
-              className="w-full h-10 px-3 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              className={inputClass}
             />
           </div>
 
@@ -152,7 +217,7 @@ export default function BusinessForm({ business, categories, isNew, siteParams =
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               placeholder="Enter business name in English"
-              className="w-full h-10 px-3 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              className={inputClass}
             />
           </div>
 
@@ -163,12 +228,72 @@ export default function BusinessForm({ business, categories, isNew, siteParams =
               value={shortDescZh}
               onChange={(e) => setShortDescZh(e.target.value)}
               placeholder="输入商家简短描述"
-              rows={4}
-              className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-y"
+              rows={3}
+              className={textareaClass}
             />
           </div>
 
-          {/* Contact Info */}
+          {/* Full Description ZH */}
+          <div className="bg-bg-card border border-border rounded-xl p-5">
+            <label className="block text-sm font-medium mb-2">完整描述（中文）</label>
+            <textarea
+              value={fullDescZh}
+              onChange={(e) => setFullDescZh(e.target.value)}
+              placeholder="输入商家完整描述，支持 Markdown 格式"
+              rows={8}
+              className={textareaClass}
+            />
+            <p className="text-xs text-text-muted mt-1">支持 Markdown 格式：**粗体**、- 列表、## 标题 等</p>
+          </div>
+
+          {/* NAP 信息 */}
+          <div className="bg-bg-card border border-border rounded-xl p-5 space-y-4">
+            <label className="block text-sm font-medium">NAP信息</label>
+            <div>
+              <label className="block text-xs text-text-muted mb-1">地址</label>
+              <input
+                type="text"
+                value={addressFull}
+                onChange={(e) => setAddressFull(e.target.value)}
+                placeholder="完整地址，例如：123 Main St, Suite 100"
+                className={inputClass}
+              />
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <label className="block text-xs text-text-muted mb-1">城市</label>
+                <input
+                  type="text"
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  placeholder="例如：New York"
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-text-muted mb-1">州</label>
+                <input
+                  type="text"
+                  value={state}
+                  onChange={(e) => setState(e.target.value)}
+                  placeholder="NY"
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-text-muted mb-1">邮编</label>
+                <input
+                  type="text"
+                  value={zipCode}
+                  onChange={(e) => setZipCode(e.target.value)}
+                  placeholder="10001"
+                  className={inputClass}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* 联系方式 */}
           <div className="bg-bg-card border border-border rounded-xl p-5 space-y-4">
             <label className="block text-sm font-medium">联系方式</label>
             <div className="grid grid-cols-2 gap-4">
@@ -179,8 +304,9 @@ export default function BusinessForm({ business, categories, isNew, siteParams =
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="例如：+1 (555) 123-4567"
-                  className="w-full h-10 px-3 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  className={inputClass}
                 />
+                <p className="text-xs text-text-muted mt-0.5">格式：tel:+15551234567</p>
               </div>
               <div>
                 <label className="block text-xs text-text-muted mb-1">邮箱</label>
@@ -189,7 +315,7 @@ export default function BusinessForm({ business, categories, isNew, siteParams =
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="例如：info@business.com"
-                  className="w-full h-10 px-3 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  className={inputClass}
                 />
               </div>
               <div>
@@ -199,7 +325,7 @@ export default function BusinessForm({ business, categories, isNew, siteParams =
                   value={websiteUrl}
                   onChange={(e) => setWebsiteUrl(e.target.value)}
                   placeholder="https://..."
-                  className="w-full h-10 px-3 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  className={inputClass}
                 />
               </div>
               <div>
@@ -209,8 +335,86 @@ export default function BusinessForm({ business, categories, isNew, siteParams =
                   value={wechatId}
                   onChange={(e) => setWechatId(e.target.value)}
                   placeholder="微信号"
-                  className="w-full h-10 px-3 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  className={inputClass}
                 />
+              </div>
+            </div>
+          </div>
+
+          {/* 社交媒体 */}
+          <div className="bg-bg-card border border-border rounded-xl p-5 space-y-4">
+            <label className="block text-sm font-medium">社交媒体</label>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs text-text-muted mb-1">Facebook</label>
+                <input
+                  type="url"
+                  value={facebookUrl}
+                  onChange={(e) => setFacebookUrl(e.target.value)}
+                  placeholder="https://facebook.com/yourpage"
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-text-muted mb-1">Instagram</label>
+                <input
+                  type="url"
+                  value={instagramUrl}
+                  onChange={(e) => setInstagramUrl(e.target.value)}
+                  placeholder="https://instagram.com/yourpage"
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-text-muted mb-1">TikTok</label>
+                <input
+                  type="url"
+                  value={tiktokUrl}
+                  onChange={(e) => setTiktokUrl(e.target.value)}
+                  placeholder="https://tiktok.com/@yourpage"
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-text-muted mb-1">YouTube</label>
+                <input
+                  type="url"
+                  value={youtubeUrl}
+                  onChange={(e) => setYoutubeUrl(e.target.value)}
+                  placeholder="https://youtube.com/@yourchannel"
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-text-muted mb-1">Twitter / X</label>
+                <input
+                  type="url"
+                  value={twitterUrl}
+                  onChange={(e) => setTwitterUrl(e.target.value)}
+                  placeholder="https://x.com/yourhandle"
+                  className={inputClass}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* 媒体 */}
+          <div className="bg-bg-card border border-border rounded-xl p-5 space-y-4">
+            <label className="block text-sm font-medium">媒体</label>
+            <div>
+              <label className="block text-xs text-text-muted mb-1">视频链接</label>
+              <input
+                type="url"
+                value={videoUrl}
+                onChange={(e) => setVideoUrl(e.target.value)}
+                placeholder="YouTube 或其他视频链接"
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-text-muted mb-1">封面图片</label>
+              <div className="border-2 border-dashed border-border rounded-lg p-6 text-center text-text-muted text-sm">
+                图片上传功能即将上线
               </div>
             </div>
           </div>
@@ -242,7 +446,7 @@ export default function BusinessForm({ business, categories, isNew, siteParams =
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value)}
-              className="w-full h-10 px-3 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white"
+              className={selectClass}
             >
               {statusOptions.map((s) => (
                 <option key={s.value} value={s.value}>{s.label}</option>
@@ -256,7 +460,7 @@ export default function BusinessForm({ business, categories, isNew, siteParams =
             <select
               value={verificationStatus}
               onChange={(e) => setVerificationStatus(e.target.value)}
-              className="w-full h-10 px-3 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white"
+              className={selectClass}
             >
               {verificationOptions.map((v) => (
                 <option key={v.value} value={v.value}>{v.label}</option>
@@ -270,7 +474,7 @@ export default function BusinessForm({ business, categories, isNew, siteParams =
             <select
               value={currentPlan}
               onChange={(e) => setCurrentPlan(e.target.value)}
-              className="w-full h-10 px-3 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white"
+              className={selectClass}
             >
               {planOptions.map((p) => (
                 <option key={p.value} value={p.value}>{p.label}</option>
@@ -278,19 +482,63 @@ export default function BusinessForm({ business, categories, isNew, siteParams =
             </select>
           </div>
 
-          {/* Category */}
+          {/* Categories — hierarchical multi-select */}
           <div className="bg-bg-card border border-border rounded-xl p-5">
-            <label className="block text-sm font-medium mb-2">分类</label>
-            <select
-              value={categoryId}
-              onChange={(e) => setCategoryId(e.target.value)}
-              className="w-full h-10 px-3 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white"
-            >
-              <option value="">选择分类</option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>{c.name_zh || c.name || c.slug}</option>
+            <label className="block text-sm font-medium mb-2">
+              分类 <span className="text-xs text-text-muted font-normal">（可选1-3个）</span>
+            </label>
+            <p className="text-xs text-text-muted mb-3">
+              已选 {selectedCategoryIds.length} / 3
+            </p>
+            <div className="max-h-64 overflow-y-auto space-y-4">
+              {categoryTree.map(({ parent, children }) => (
+                <div key={parent.id}>
+                  <p className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-1">
+                    {parent.name_zh || parent.name || parent.slug}
+                  </p>
+                  {children.length > 0 ? (
+                    <div className="space-y-1 ml-1">
+                      {children.map((child) => (
+                        <label key={child.id} className="flex items-center gap-2 cursor-pointer text-sm hover:bg-bg-page rounded px-1 py-0.5">
+                          <input
+                            type="checkbox"
+                            checked={selectedCategoryIds.includes(child.id)}
+                            onChange={() => toggleCategory(child.id)}
+                            disabled={!selectedCategoryIds.includes(child.id) && selectedCategoryIds.length >= 3}
+                            className="rounded border-border"
+                          />
+                          {child.name_zh || child.name || child.slug}
+                        </label>
+                      ))}
+                    </div>
+                  ) : (
+                    <label className="flex items-center gap-2 cursor-pointer text-sm hover:bg-bg-page rounded px-1 py-0.5 ml-1">
+                      <input
+                        type="checkbox"
+                        checked={selectedCategoryIds.includes(parent.id)}
+                        onChange={() => toggleCategory(parent.id)}
+                        disabled={!selectedCategoryIds.includes(parent.id) && selectedCategoryIds.length >= 3}
+                        className="rounded border-border"
+                      />
+                      {parent.name_zh || parent.name || parent.slug}
+                    </label>
+                  )}
+                </div>
               ))}
-            </select>
+            </div>
+          </div>
+
+          {/* Is Featured */}
+          <div className="bg-bg-card border border-border rounded-xl p-5">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isFeatured}
+                onChange={(e) => setIsFeatured(e.target.checked)}
+                className="rounded border-border"
+              />
+              <span className="text-sm font-medium">是否推荐</span>
+            </label>
           </div>
 
           {/* Business Stats (edit mode only) */}
@@ -311,7 +559,7 @@ export default function BusinessForm({ business, categories, isNew, siteParams =
                   <p className="text-xs text-text-muted">线索数</p>
                 </div>
                 <div className="bg-bg-page rounded-lg p-3 text-center">
-                  <p className="text-lg font-bold">{business.is_featured ? 'Yes' : 'No'}</p>
+                  <p className="text-lg font-bold">{isFeatured ? 'Yes' : 'No'}</p>
                   <p className="text-xs text-text-muted">推荐</p>
                 </div>
               </div>

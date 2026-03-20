@@ -17,63 +17,109 @@ function generateSlug(name: string): string {
   return `${base}-${suffix}`;
 }
 
+function extractBusinessFields(formData: FormData) {
+  return {
+    display_name: formData.get('display_name') as string,
+    display_name_zh: formData.get('display_name_zh') as string,
+    short_desc_zh: (formData.get('short_desc_zh') as string) || null,
+    full_desc_zh: (formData.get('full_desc_zh') as string) || null,
+    address_full: (formData.get('address_full') as string) || null,
+    city: (formData.get('city') as string) || null,
+    state: (formData.get('state') as string) || null,
+    zip_code: (formData.get('zip_code') as string) || null,
+    phone: (formData.get('phone') as string) || null,
+    email: (formData.get('email') as string) || null,
+    website_url: (formData.get('website_url') as string) || null,
+    wechat_id: (formData.get('wechat_id') as string) || null,
+    facebook_url: (formData.get('facebook_url') as string) || null,
+    instagram_url: (formData.get('instagram_url') as string) || null,
+    tiktok_url: (formData.get('tiktok_url') as string) || null,
+    youtube_url: (formData.get('youtube_url') as string) || null,
+    twitter_url: (formData.get('twitter_url') as string) || null,
+    video_url: (formData.get('video_url') as string) || null,
+    status: (formData.get('status') as string) || 'active',
+    verification_status: (formData.get('verification_status') as string) || 'unverified',
+    current_plan: (formData.get('current_plan') as string) || 'free',
+    is_featured: formData.get('is_featured') === 'true',
+  };
+}
+
+function parseCategoryIds(formData: FormData): string[] {
+  const raw = formData.get('category_ids') as string;
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter(Boolean) : [];
+  } catch {
+    return [];
+  }
+}
+
+async function syncBusinessCategories(supabase: ReturnType<typeof db>, businessId: string, categoryIds: string[]) {
+  // Delete existing
+  await supabase
+    .from('business_categories')
+    .delete()
+    .eq('business_id', businessId);
+
+  // Insert new ones
+  if (categoryIds.length > 0) {
+    const rows = categoryIds.map((catId) => ({
+      business_id: businessId,
+      category_id: catId,
+    }));
+    await supabase.from('business_categories').insert(rows);
+  }
+}
+
 export async function createBusiness(formData: FormData) {
   const supabase = db();
-  const displayName = formData.get('display_name') as string;
-  const slug = generateSlug(displayName || 'business');
+  const fields = extractBusinessFields(formData);
+  const slug = generateSlug(fields.display_name || 'business');
+  const categoryIds = parseCategoryIds(formData);
 
   const { data, error } = await supabase
     .from('businesses')
     .insert({
-      display_name: displayName,
-      display_name_zh: formData.get('display_name_zh') as string,
-      short_desc_zh: formData.get('short_desc_zh') as string || null,
-      phone: formData.get('phone') as string || null,
-      email: formData.get('email') as string || null,
-      website_url: formData.get('website_url') as string || null,
-      wechat_id: formData.get('wechat_id') as string || null,
-      status: (formData.get('status') as string) || 'active',
-      verification_status: (formData.get('verification_status') as string) || 'unverified',
-      current_plan: (formData.get('current_plan') as string) || 'free',
-      category_id: formData.get('category_id') as string || null,
+      ...fields,
       slug,
     })
     .select('id')
     .single();
 
-  revalidatePath('/admin/businesses');
-
   if (error) {
+    revalidatePath('/admin/businesses');
     return { id: null, error: error.message };
   }
+
+  // Sync categories
+  if (data?.id) {
+    await syncBusinessCategories(supabase, data.id, categoryIds);
+  }
+
+  revalidatePath('/admin/businesses');
   return { id: data?.id, error: null };
 }
 
 export async function updateBusiness(bizId: string, formData: FormData) {
   const supabase = db();
+  const fields = extractBusinessFields(formData);
+  const categoryIds = parseCategoryIds(formData);
 
   const { error } = await supabase
     .from('businesses')
-    .update({
-      display_name: formData.get('display_name') as string,
-      display_name_zh: formData.get('display_name_zh') as string,
-      short_desc_zh: formData.get('short_desc_zh') as string || null,
-      phone: formData.get('phone') as string || null,
-      email: formData.get('email') as string || null,
-      website_url: formData.get('website_url') as string || null,
-      wechat_id: formData.get('wechat_id') as string || null,
-      status: formData.get('status') as string,
-      verification_status: formData.get('verification_status') as string,
-      current_plan: formData.get('current_plan') as string,
-      category_id: formData.get('category_id') as string || null,
-    })
+    .update(fields)
     .eq('id', bizId);
 
-  revalidatePath('/admin/businesses');
-
   if (error) {
+    revalidatePath('/admin/businesses');
     return { error: error.message };
   }
+
+  // Sync categories
+  await syncBusinessCategories(supabase, bizId, categoryIds);
+
+  revalidatePath('/admin/businesses');
   return { error: null };
 }
 

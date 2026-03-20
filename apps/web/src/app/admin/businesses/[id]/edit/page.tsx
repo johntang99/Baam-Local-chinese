@@ -10,6 +10,24 @@ interface Props {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
+function buildCategoryTree(categories: AnyRow[]) {
+  const parents = categories.filter((c) => !c.parent_id);
+  const childrenMap = new Map<string, AnyRow[]>();
+
+  for (const cat of categories) {
+    if (cat.parent_id) {
+      const list = childrenMap.get(cat.parent_id) || [];
+      list.push(cat);
+      childrenMap.set(cat.parent_id, list);
+    }
+  }
+
+  return parents.map((parent) => ({
+    parent,
+    children: childrenMap.get(parent.id) || [],
+  }));
+}
+
 export default async function EditBusinessPage({ params, searchParams }: Props) {
   const { id } = await params;
   const sp = await searchParams;
@@ -41,18 +59,28 @@ export default async function EditBusinessPage({ params, searchParams }: Props) 
     );
   }
 
-  // Fetch categories for business type
+  // Fetch categories for business type (including parent_id for tree)
   const { data: rawCategories } = await supabase
     .from('categories')
-    .select('id, name_zh, name, slug, type')
+    .select('id, name_zh, name, slug, type, parent_id')
     .eq('type', 'business')
     .order('sort_order', { ascending: true });
   const categories = (rawCategories || []) as AnyRow[];
+  const categoryTree = buildCategoryTree(categories);
+
+  // Fetch existing business_categories for this business
+  const { data: rawBizCats } = await supabase
+    .from('business_categories')
+    .select('category_id')
+    .eq('business_id', id);
+  const selectedCategoryIds = ((rawBizCats || []) as AnyRow[]).map((r: AnyRow) => r.category_id as string);
 
   return (
     <BusinessForm
       business={business}
       categories={categories}
+      categoryTree={categoryTree}
+      selectedCategoryIds={selectedCategoryIds}
       isNew={false}
       siteParams={siteParamsObj.toString()}
     />
