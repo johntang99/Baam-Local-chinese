@@ -7,20 +7,55 @@ type CookieToSet = { name: string; value: string; options?: Record<string, unkno
 
 const intlMiddleware = createMiddleware(routing);
 
+// ─── Static domain → site slug map (fast, no DB) ─────────────────────
+
+const DOMAIN_SITE_MAP: Record<string, { slug: string; locale: string }> = {
+  // Production
+  'chinese-newyork.com': { slug: 'ny-zh', locale: 'zh' },
+  'www.chinese-newyork.com': { slug: 'ny-zh', locale: 'zh' },
+  // Vercel preview
+  'baam-local-life-web.vercel.app': { slug: 'ny-zh', locale: 'zh' },
+  // Development
+  'localhost': { slug: 'ny-zh', locale: 'zh' },
+  // Future sites — uncomment when ready
+  // 'middletown-local.com': { slug: 'oc-en', locale: 'en' },
+  // 'www.middletown-local.com': { slug: 'oc-en', locale: 'en' },
+  // 'oc.baam.us': { slug: 'oc-en', locale: 'en' },
+};
+
+function normalizeHost(host: string): string {
+  return host.split(':')[0].toLowerCase().replace(/^www\./, '').trim();
+}
+
+function resolveSite(host: string | null): { slug: string; locale: string } {
+  if (!host) return { slug: 'ny-zh', locale: 'zh' };
+  const hostname = normalizeHost(host);
+  return DOMAIN_SITE_MAP[hostname] || { slug: 'ny-zh', locale: 'zh' };
+}
+
 export default async function middleware(request: NextRequest) {
-  // Skip locale handling for admin routes and API routes
   const { pathname } = request.nextUrl;
+  const host = request.headers.get('host');
+  const site = resolveSite(host);
+
+  // ─── Admin & API routes ──────────────────────────────────────────
   if (pathname.startsWith('/admin') || pathname.startsWith('/api')) {
-    // Refresh Supabase session for admin routes
-    const response = NextResponse.next();
+    const response = NextResponse.next({
+      request: {
+        headers: new Headers(request.headers),
+      },
+    });
+
+    // Set site context header
+    response.headers.set('x-baam-site', site.slug);
+
+    // Refresh Supabase session
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
-          getAll() {
-            return request.cookies.getAll();
-          },
+          getAll() { return request.cookies.getAll(); },
           setAll(cookiesToSet: CookieToSet[]) {
             cookiesToSet.forEach(({ name, value, options }) => {
               response.cookies.set(name, value, options);
@@ -33,8 +68,13 @@ export default async function middleware(request: NextRequest) {
     return response;
   }
 
-  // Apply i18n middleware for public routes
+  // ─── Public routes (with i18n) ───────────────────────────────────
+
+  // Apply i18n middleware
   const response = intlMiddleware(request);
+
+  // Set site context header for downstream use
+  response.headers.set('x-baam-site', site.slug);
 
   // Refresh Supabase session
   const supabase = createServerClient(
@@ -42,9 +82,7 @@ export default async function middleware(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
+        getAll() { return request.cookies.getAll(); },
         setAll(cookiesToSet: CookieToSet[]) {
           cookiesToSet.forEach(({ name, value, options }) => {
             response.cookies.set(name, value, options);

@@ -16,7 +16,8 @@
       "mcp__playwright__browser_console_messages",
       "WebSearch",
       "WebFetch(domain:supabase.com)",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Read(//Users/johntang/Desktop/clients/medical-clinic/**)"
     ],
     "additionalDirectories": []
   }
