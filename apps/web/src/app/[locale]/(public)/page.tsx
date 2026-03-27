@@ -130,15 +130,15 @@ export default async function HomePage() {
         <div className="max-w-3xl mx-auto px-4 text-center">
           <h1 className="text-3xl sm:text-4xl font-bold mb-3">{t('home.heroTitle')}</h1>
           <p className="text-orange-100 mb-8 text-lg">{t('home.heroSubtitle')}</p>
-          <div className="relative max-w-2xl mx-auto">
-            <input type="text" placeholder={t('home.searchPlaceholder')} className="w-full h-14 pl-5 pr-14 rounded-xl text-gray-900 text-base shadow-lg border-0 focus:ring-2 focus:ring-orange-300 placeholder:text-gray-400" />
-            <button className="absolute right-2 top-2 w-10 h-10 bg-primary text-white rounded-lg flex items-center justify-center hover:bg-primary-dark">
+          <form action="/zh/ask" className="relative max-w-2xl mx-auto">
+            <input type="text" name="q" placeholder="问我任何本地问题... 例如「法拉盛中文牙医推荐」" className="w-full h-14 pl-5 pr-14 rounded-xl text-gray-900 text-base shadow-lg border-0 focus:ring-2 focus:ring-orange-300 placeholder:text-gray-400" />
+            <button type="submit" className="absolute right-2 top-2 w-10 h-10 bg-primary text-white rounded-lg flex items-center justify-center hover:bg-primary-dark">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
             </button>
-          </div>
+          </form>
           <div className="flex flex-wrap justify-center gap-2 mt-5">
             {['中文家庭医生', '报税服务', '驾照路考', '周末活动', '租房'].map(tag => (
-              <span key={tag} className="px-3 py-1 bg-white/20 text-white/90 text-sm rounded-full cursor-pointer hover:bg-white/30">{tag}</span>
+              <Link key={tag} href={`/ask?q=${encodeURIComponent(tag)}`} className="px-3 py-1 bg-white/20 text-white/90 text-sm rounded-full cursor-pointer hover:bg-white/30">{tag}</Link>
             ))}
           </div>
         </div>

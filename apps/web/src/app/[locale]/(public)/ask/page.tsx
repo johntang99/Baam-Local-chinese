@@ -6,7 +6,14 @@ export const metadata: Metadata = {
   description: '问我任何本地生活问题 — 找医生、租房、报税、美食、活动，AI 帮你快速找到答案',
 };
 
-export default function AskPage() {
+interface Props {
+  searchParams: Promise<{ q?: string }>;
+}
+
+export default async function AskPage({ searchParams }: Props) {
+  const sp = await searchParams;
+  const initialQuery = sp.q?.trim() || '';
+
   return (
     <main>
       <div className="max-w-3xl mx-auto px-4 py-8">
@@ -21,8 +28,8 @@ export default function AskPage() {
           </p>
         </div>
 
-        {/* Chat Interface (includes suggested questions) */}
-        <AskChat />
+        {/* Chat Interface */}
+        <AskChat initialQuery={initialQuery} />
       </div>
     </main>
   );

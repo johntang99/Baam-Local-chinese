@@ -20,16 +20,29 @@ const SUGGESTED_QUESTIONS = [
   '怎么申请驾照？',
 ];
 
-export function AskChat() {
+interface AskChatProps {
+  initialQuery?: string;
+}
+
+export function AskChat({ initialQuery }: AskChatProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [hasAutoAsked, setHasAutoAsked] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Auto-ask if initial query is provided (from homepage search)
+  useEffect(() => {
+    if (initialQuery && !hasAutoAsked) {
+      setHasAutoAsked(true);
+      handleAsk(initialQuery);
+    }
+  }, [initialQuery, hasAutoAsked]);
 
   const handleAsk = useCallback(async (query: string) => {
     const q = query.trim();
