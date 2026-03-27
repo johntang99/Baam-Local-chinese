@@ -31,6 +31,7 @@ export async function askXiaoLin(query: string): Promise<{ error?: string; data?
       .from('businesses')
       .select('slug, display_name, display_name_zh, short_desc_zh, ai_tags, avg_rating, review_count, phone')
       .eq('status', 'active')
+      .eq('is_active', true)
       .or(`display_name.ilike.${searchPattern},display_name_zh.ilike.${searchPattern},short_desc_zh.ilike.${searchPattern},ai_summary_zh.ilike.${searchPattern}`)
       .limit(5),
 
@@ -56,7 +57,7 @@ export async function askXiaoLin(query: string): Promise<{ error?: string; data?
     // Forum threads
     (supabase as any)
       .from('forum_threads')
-      .select('slug, title, ai_summary_zh, reply_count, board_slug')
+      .select('slug, title, ai_summary_zh, reply_count, board_id, categories:board_id(slug)')
       .eq('status', 'published')
       .or(`title.ilike.${searchPattern},body.ilike.${searchPattern},ai_summary_zh.ilike.${searchPattern}`)
       .order('reply_count', { ascending: false })
@@ -191,7 +192,7 @@ export async function askXiaoLin(query: string): Promise<{ error?: string; data?
     threads.forEach(t => sources.push({
       type: '论坛',
       title: t.title,
-      url: `/forum/${t.board_slug || 'general'}/${t.slug}`,
+      url: `/forum/${t.categories?.slug || 'general'}/${t.slug}`,
     }));
 
     events.forEach(e => sources.push({

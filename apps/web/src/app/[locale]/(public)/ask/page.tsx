@@ -21,31 +21,8 @@ export default function AskPage() {
           </p>
         </div>
 
-        {/* Chat Interface */}
+        {/* Chat Interface (includes suggested questions) */}
         <AskChat />
-
-        {/* Suggested Questions */}
-        <div className="mt-8 text-center">
-          <p className="text-xs text-text-muted mb-3">试试问这些问题：</p>
-          <div className="flex flex-wrap justify-center gap-2">
-            {[
-              '法拉盛有哪些中文家庭医生？',
-              '新移民第一个月要做什么？',
-              '报税季有什么需要注意的？',
-              '周末带孩子去哪玩？',
-              '法拉盛有什么好吃的川菜？',
-              '怎么申请驾照？',
-            ].map((q) => (
-              <button
-                key={q}
-                className="text-xs bg-border-light text-text-secondary px-3 py-1.5 rounded-full hover:bg-primary/10 hover:text-primary transition cursor-pointer"
-                data-question={q}
-              >
-                {q}
-              </button>
-            ))}
-          </div>
-        </div>
       </div>
     </main>
   );

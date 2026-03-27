@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { askXiaoLin } from './actions';
 import Link from 'next/link';
 
@@ -9,6 +9,15 @@ interface Message {
   content: string;
   sources?: { type: string; title: string; url: string; snippet?: string }[];
 }
+
+const SUGGESTED_QUESTIONS = [
+  '法拉盛有哪些中文家庭医生？',
+  '新移民第一个月要做什么？',
+  '报税季有什么需要注意的？',
+  '周末带孩子去哪玩？',
+  '法拉盛有什么好吃的川菜？',
+  '怎么申请驾照？',
+];
 
 export function AskChat() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -21,23 +30,9 @@ export function AskChat() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Handle suggested question clicks
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      const question = target.getAttribute('data-question');
-      if (question) {
-        setInput(question);
-        handleAsk(question);
-      }
-    };
-    document.addEventListener('click', handler);
-    return () => document.removeEventListener('click', handler);
-  }, []);
-
-  const handleAsk = async (query?: string) => {
-    const q = (query || input).trim();
-    if (!q || loading) return;
+  const handleAsk = useCallback(async (query: string) => {
+    const q = query.trim();
+    if (!q) return;
 
     setInput('');
     setMessages(prev => [...prev, { role: 'user', content: q }]);
@@ -57,11 +52,13 @@ export function AskChat() {
 
     setLoading(false);
     inputRef.current?.focus();
-  };
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    handleAsk();
+    if (input.trim() && !loading) {
+      handleAsk(input);
+    }
   };
 
   const sourceTypeColors: Record<string, string> = {
@@ -78,8 +75,24 @@ export function AskChat() {
       {/* Messages */}
       <div className="space-y-4 mb-6 min-h-[200px]">
         {messages.length === 0 && !loading && (
-          <div className="text-center py-12 text-text-muted text-sm">
-            问我任何问题，我会从社区的新闻、指南、商家、论坛、达人和活动中找到答案
+          <div className="text-center py-8">
+            <p className="text-text-muted text-sm mb-6">
+              问我任何问题，我会从社区的新闻、指南、商家、论坛、达人和活动中找到答案
+            </p>
+            {/* Suggested questions inside chat component */}
+            <div className="flex flex-wrap justify-center gap-2">
+              {SUGGESTED_QUESTIONS.map((q) => (
+                <button
+                  key={q}
+                  type="button"
+                  onClick={() => handleAsk(q)}
+                  disabled={loading}
+                  className="text-xs bg-border-light text-text-secondary px-3 py-1.5 rounded-full hover:bg-primary/10 hover:text-primary transition cursor-pointer disabled:opacity-50"
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
