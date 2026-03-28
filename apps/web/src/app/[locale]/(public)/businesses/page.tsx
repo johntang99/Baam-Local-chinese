@@ -101,7 +101,7 @@ export default async function BusinessListPage({ searchParams }: Props) {
   const from = (currentPage - 1) * PAGE_SIZE;
   let dataQuery = supabase
     .from('businesses')
-    .select('*')
+    .select('*, business_locations(address_line1, city, state, zip_code), business_categories(categories(name_zh, slug))')
     .eq('is_active', true)
     .eq('status', 'active');
 
@@ -268,12 +268,66 @@ export default async function BusinessListPage({ searchParams }: Props) {
 }
 
 function BusinessCard({ biz, featured = false }: { biz: AnyRow; featured?: boolean }) {
-  const catName = biz.category_name || biz.category || '';
-  const badgeClass = categoryColors[catName] || 'badge-gray';
-  const emoji = categoryEmojis[catName] || '🏢';
-  const gradient = categoryGradients[catName] || 'from-gray-200 to-gray-300';
-  const aiTags = (biz.ai_tags || []) as string[];
+  const aiTags = (biz.ai_tags || []).filter((t: string) => t !== 'GBP已认领') as string[];
   const name = biz.display_name_zh || biz.name_zh || biz.display_name || biz.name || '';
+
+  // Get address from joined location
+  const loc = Array.isArray(biz.business_locations) ? biz.business_locations[0] : null;
+  const address = loc ? `${loc.address_line1 || ''}${loc.city ? ', ' + loc.city : ''}` : '';
+
+  // Get categories from joined data
+  const cats = Array.isArray(biz.business_categories)
+    ? biz.business_categories.map((bc: AnyRow) => bc.categories?.name_zh).filter(Boolean)
+    : [];
+  const primaryCat = cats[0] || '商家';
+
+  const cardContent = (
+    <>
+      {/* Name + verified */}
+      <div className="flex items-center gap-2 mb-1">
+        <h3 className={`${featured ? 'font-bold text-base' : 'font-semibold text-sm'} truncate`}>{name}</h3>
+        {biz.is_verified && (
+          <svg className="w-4 h-4 text-blue-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+          </svg>
+        )}
+      </div>
+
+      {/* Category + Rating */}
+      <div className="flex items-center gap-2 text-sm mb-2">
+        <span className="badge badge-gray text-xs">{primaryCat}</span>
+        {cats[1] && <span className="badge badge-gray text-xs">{cats[1]}</span>}
+        <div className="flex items-center gap-1">
+          <span className="text-yellow-500 text-xs">{renderStars(biz.avg_rating || 0)}</span>
+          <span className="text-xs text-text-secondary font-medium">{biz.avg_rating?.toFixed(1) || '—'}</span>
+          <span className="text-xs text-text-muted">({biz.review_count || 0})</span>
+        </div>
+      </div>
+
+      {/* Tags */}
+      {aiTags.length > 0 && (
+        <div className="flex flex-wrap gap-1 mb-2">
+          {aiTags.slice(0, 3).map((tag) => (
+            <span key={tag} className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">{tag}</span>
+          ))}
+        </div>
+      )}
+
+      {/* Address + Phone */}
+      <div className="space-y-1 text-xs text-text-muted">
+        {address && (
+          <p className="flex items-center gap-1 truncate">
+            <span>📍</span> {address}
+          </p>
+        )}
+        {biz.phone && (
+          <p className="flex items-center gap-1">
+            <span>📞</span> {biz.phone}
+          </p>
+        )}
+      </div>
+    </>
+  );
 
   if (featured) {
     return (
@@ -281,36 +335,10 @@ function BusinessCard({ biz, featured = false }: { biz: AnyRow; featured?: boole
         <div className="absolute top-0 left-0 bg-primary text-text-inverse text-xs font-bold px-3 py-1 rounded-br-lg">推荐</div>
         <div className="p-5 sm:p-6">
           <div className="flex items-start gap-4">
-            <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-gradient-to-br ${gradient} flex-shrink-0 flex items-center justify-center text-2xl sm:text-3xl`}>{emoji}</div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <h3 className="font-bold text-base sm:text-lg truncate">{name}</h3>
-                {biz.is_verified && (
-                  <svg className="w-5 h-5 text-blue-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
-                )}
-              </div>
-              <div className="flex items-center gap-2 text-sm mb-2">
-                <span className={`badge ${badgeClass}`}>{catName || '商家'}</span>
-                <div className="flex items-center gap-1">
-                  <span className="text-yellow-500 text-xs">{renderStars(biz.avg_rating || 0)}</span>
-                  <span className="text-xs text-text-secondary font-medium">{biz.avg_rating?.toFixed(1) || '—'}</span>
-                  <span className="text-xs text-text-muted">({biz.review_count || 0}评价)</span>
-                </div>
-              </div>
-              {aiTags.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mb-3">
-                  {aiTags.slice(0, 3).map((tag) => (
-                    <span key={tag} className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">{tag}</span>
-                  ))}
-                </div>
-              )}
-              <div className="flex items-center justify-between">
-                <p className="text-xs text-text-muted">{biz.region || biz.city || ''}{biz.address_short ? ` · ${biz.address_short}` : ''}</p>
-                <span className="text-xs font-medium text-text-inverse bg-primary px-4 py-1.5 rounded-lg">联系</span>
-              </div>
+            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex-shrink-0 flex items-center justify-center text-2xl">
+              {name[0] || '🏢'}
             </div>
+            <div className="flex-1 min-w-0">{cardContent}</div>
           </div>
         </div>
       </Link>
@@ -318,39 +346,13 @@ function BusinessCard({ biz, featured = false }: { biz: AnyRow; featured?: boole
   }
 
   return (
-    <Link href={`/businesses/${biz.slug}`} className="card block">
-      <div className="p-5">
-        <div className="flex items-start gap-4">
-          <div className={`w-14 h-14 rounded-lg bg-gradient-to-br ${gradient} flex-shrink-0 flex items-center justify-center text-xl`}>{emoji}</div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <h3 className="font-semibold text-sm truncate">{name}</h3>
-              {biz.is_verified && (
-                <svg className="w-4 h-4 text-blue-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-              )}
-            </div>
-            <div className="flex items-center gap-2 text-sm mb-2">
-              <span className={`badge ${badgeClass}`}>{catName || '商家'}</span>
-              <div className="flex items-center gap-1">
-                <span className="text-yellow-500 text-xs">{renderStars(biz.avg_rating || 0)}</span>
-                <span className="text-xs text-text-secondary font-medium">{biz.avg_rating?.toFixed(1) || '—'}</span>
-                <span className="text-xs text-text-muted">({biz.review_count || 0}评价)</span>
-              </div>
-            </div>
-            {aiTags.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mb-3">
-                {aiTags.slice(0, 3).map((tag) => (
-                  <span key={tag} className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">{tag}</span>
-                ))}
-              </div>
-            )}
-            <div className="flex items-center justify-between">
-              <p className="text-xs text-text-muted">{biz.region || biz.city || ''}{biz.address_short ? ` · ${biz.address_short}` : ''}</p>
-              <span className="text-xs font-medium text-text-inverse bg-primary px-4 py-1.5 rounded-lg">联系</span>
-            </div>
+    <Link href={`/businesses/${biz.slug}`} className="card block hover:border-primary/30 transition-colors">
+      <div className="p-4">
+        <div className="flex items-start gap-3">
+          <div className="w-11 h-11 rounded-lg bg-gradient-to-br from-primary/15 to-primary/5 flex-shrink-0 flex items-center justify-center text-lg">
+            {name[0] || '🏢'}
           </div>
+          <div className="flex-1 min-w-0">{cardContent}</div>
         </div>
       </div>
     </Link>

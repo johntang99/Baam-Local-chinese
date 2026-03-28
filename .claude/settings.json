@@ -17,7 +17,9 @@
       "WebSearch",
       "WebFetch(domain:supabase.com)",
       "WebFetch(domain:github.com)",
-      "Read(//Users/johntang/Desktop/clients/medical-clinic/**)"
+      "Read(//Users/johntang/Desktop/clients/medical-clinic/**)",
+      "Read(//Users/johntang/Desktop/baam-platform/src/app/api/proposals/discover/**)",
+      "Read(//Users/johntang/Desktop/baam-platform/src/app/api/proposals/diagnostic-report/**)"
     ],
     "additionalDirectories": []
   }
