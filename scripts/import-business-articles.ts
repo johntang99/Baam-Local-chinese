@@ -99,9 +99,21 @@ function extractArticleContent(html: string): { title: string; body: string; ima
   const rawTitle = ogTitle?.[1] || h1Match?.[1] || titleTag?.[1] || '';
   const title = rawTitle.trim().replace(/\s*[|]\s*.*$/, '').trim();
 
-  // Extract OG image
-  const ogImage = html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i);
-  const image = ogImage ? ogImage[1] : null;
+  // Extract cover image — prefer in-content images over OG default
+  const contentImages = html.matchAll(/(?:src|srcSet)=["']([^"']*(?:supabase|unsplash|cloudinary|amazonaws)[^"']*\.(?:jpg|jpeg|png|webp))[^"']*/gi);
+  let image: string | null = null;
+  for (const m of contentImages) {
+    const url = m[1].split(/[&?]w=/)[0]; // strip Next.js image params
+    if (!url.includes('logo') && !url.includes('icon') && !url.includes('svg')) {
+      image = url;
+      break;
+    }
+  }
+  // Fallback to OG image (but skip generic defaults)
+  if (!image) {
+    const ogImage = html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i);
+    if (ogImage && !ogImage[1].includes('og-default')) image = ogImage[1];
+  }
 
   // Extract article body — collect all meaningful paragraphs
   let body = '';
