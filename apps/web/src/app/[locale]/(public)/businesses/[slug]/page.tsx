@@ -409,6 +409,50 @@ export default async function BusinessDetailPage({ params }: Props) {
               </div>
             )}
 
+            {/* Business Articles (from business website) */}
+            {businessArticles.length > 0 && (
+              <div className="mb-6">
+                <h3 className="font-semibold text-base mb-3 flex items-center gap-2">
+                  <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                  </svg>
+                  商家文章
+                </h3>
+                <div className="space-y-3">
+                  {businessArticles.map((article) => {
+                    const domain = (article.source_url || '').replace(/^https?:\/\/(www\.)?/, '').replace(/\/.*$/, '');
+                    return (
+                      <Link
+                        key={article.id}
+                        href={`/guides/${article.slug}`}
+                        className="card overflow-hidden block hover:border-primary/30 transition-colors group"
+                      >
+                        <div className="flex">
+                          {article.cover_image_url && (
+                            <div className="w-28 sm:w-36 flex-shrink-0">
+                              <img src={article.cover_image_url} alt="" className="w-full h-full object-cover" />
+                            </div>
+                          )}
+                          <div className="p-3 sm:p-4 flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 font-medium">商家供稿</span>
+                              {domain && <span className="text-xs text-text-muted">{domain}</span>}
+                            </div>
+                            <h4 className="font-semibold text-sm line-clamp-2 group-hover:text-primary transition-colors">
+                              {article.title_zh || article.title_en}
+                            </h4>
+                            <p className="text-xs text-text-secondary mt-1 line-clamp-2">
+                              {article.ai_summary_zh || article.summary_zh || ''}
+                            </p>
+                          </div>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Video Section */}
             {videoUrl && (
               <div className="mb-6">
@@ -703,55 +747,6 @@ export default async function BusinessDetailPage({ params }: Props) {
                 )}
               </div>
             </div>
-
-            {/* Business Articles (from business website) */}
-            {businessArticles.length > 0 && (
-              <section className="mt-8">
-                <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
-                  <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
-                  </svg>
-                  商家文章
-                </h2>
-                <div className="space-y-4">
-                  {businessArticles.map((article) => {
-                    const domain = (article.source_url || '').replace(/^https?:\/\/(www\.)?/, '').replace(/\/.*$/, '');
-                    return (
-                      <Link
-                        key={article.id}
-                        href={`/guides/${article.slug}`}
-                        className="card overflow-hidden block hover:border-primary/30 transition-colors group"
-                      >
-                        <div className="flex">
-                          {article.cover_image_url && (
-                            <div className="w-32 sm:w-40 flex-shrink-0">
-                              <img src={article.cover_image_url} alt="" className="w-full h-full object-cover" />
-                            </div>
-                          )}
-                          <div className="p-4 flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 font-medium">商家供稿</span>
-                              {domain && <span className="text-xs text-text-muted">{domain}</span>}
-                            </div>
-                            <h3 className="font-semibold text-sm line-clamp-2 group-hover:text-primary transition-colors">
-                              {article.title_zh || article.title_en}
-                            </h3>
-                            <p className="text-xs text-text-secondary mt-1 line-clamp-2">
-                              {article.ai_summary_zh || article.summary_zh || ''}
-                            </p>
-                            {article.published_at && (
-                              <p className="text-xs text-text-muted mt-2">
-                                {new Date(article.published_at).toLocaleDateString('zh-CN')}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </Link>
-                    );
-                  })}
-                </div>
-              </section>
-            )}
 
             {/* Related Guides (editorial) */}
             {relatedGuides.length > 0 && (
