@@ -19,7 +19,9 @@
       "WebFetch(domain:github.com)",
       "Read(//Users/johntang/Desktop/clients/medical-clinic/**)",
       "Read(//Users/johntang/Desktop/baam-platform/src/app/api/proposals/discover/**)",
-      "Read(//Users/johntang/Desktop/baam-platform/src/app/api/proposals/diagnostic-report/**)"
+      "Read(//Users/johntang/Desktop/baam-platform/src/app/api/proposals/diagnostic-report/**)",
+      "WebFetch(domain:www.nychinaren.com)",
+      "WebFetch(domain:acupunctureflushing.com)"
     ],
     "additionalDirectories": []
   }
