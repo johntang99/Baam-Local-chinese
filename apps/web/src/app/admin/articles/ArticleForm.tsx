@@ -33,6 +33,8 @@ const sourceTypes = [
   { value: 'community_org', label: '社区组织' },
   { value: 'original', label: '原创' },
   { value: 'ai_assisted', label: 'AI辅助' },
+  { value: 'business_website', label: '商家网站' },
+  { value: 'business_post', label: '商家动态' },
 ];
 
 const audienceOptions = [
@@ -50,11 +52,13 @@ interface ArticleFormProps {
   article?: AnyRow | null;
   categories: AnyRow[];
   regions: AnyRow[];
+  businesses?: AnyRow[];
+  linkedBusinessIds?: string[];
   isNew: boolean;
   siteParams?: string;
 }
 
-export default function ArticleForm({ article, categories, regions, isNew, siteParams = '' }: ArticleFormProps) {
+export default function ArticleForm({ article, categories, regions, businesses = [], linkedBusinessIds = [], isNew, siteParams = '' }: ArticleFormProps) {
   const siteQuery = siteParams ? `?${siteParams}` : '';
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -75,6 +79,8 @@ export default function ArticleForm({ article, categories, regions, isNew, siteP
   const [seoTitleZh, setSeoTitleZh] = useState(article?.seo_title_zh || '');
   const [seoDescZh, setSeoDescZh] = useState(article?.seo_desc_zh || '');
   const [selectedAudiences, setSelectedAudiences] = useState<string[]>(article?.audience_types || []);
+  const [selectedBusinessIds, setSelectedBusinessIds] = useState<string[]>(linkedBusinessIds);
+  const [bizSearchTerm, setBizSearchTerm] = useState('');
   const [aiSummaryZh, setAiSummaryZh] = useState(article?.ai_summary_zh || '');
   const [aiSummaryEn, setAiSummaryEn] = useState(article?.ai_summary_en || '');
   const [aiLoading, setAiLoading] = useState(false);
@@ -100,6 +106,7 @@ export default function ArticleForm({ article, categories, regions, isNew, siteP
     fd.set('seo_title_zh', seoTitleZh);
     fd.set('seo_desc_zh', seoDescZh);
     fd.set('audience_types', JSON.stringify(selectedAudiences));
+    fd.set('linked_business_ids', JSON.stringify(selectedBusinessIds));
     return fd;
   };
 
@@ -551,6 +558,68 @@ export default function ArticleForm({ article, categories, regions, isNew, siteP
               ))}
             </div>
           </div>
+
+          {/* Linked Businesses */}
+          {businesses.length > 0 && (
+            <div className="bg-bg-card border border-border rounded-xl p-5 space-y-3">
+              <label className="block text-sm font-medium">关联商家</label>
+              <p className="text-xs text-text-muted">选择与此文章相关的商家，文章将显示在商家详情页</p>
+              <input
+                type="text"
+                value={bizSearchTerm}
+                onChange={(e) => setBizSearchTerm(e.target.value)}
+                placeholder="搜索商家名称..."
+                className="w-full h-9 px-3 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              />
+              {/* Selected businesses */}
+              {selectedBusinessIds.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {selectedBusinessIds.map((bizId) => {
+                    const biz = businesses.find((b) => b.id === bizId);
+                    return (
+                      <span key={bizId} className="inline-flex items-center gap-1 text-xs bg-primary/10 text-primary pl-2 pr-1 py-1 rounded-md">
+                        {biz?.display_name_zh || biz?.display_name || bizId.slice(0, 8)}
+                        <button
+                          type="button"
+                          onClick={() => setSelectedBusinessIds(prev => prev.filter(id => id !== bizId))}
+                          className="hover:bg-primary/20 rounded p-0.5"
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
+              {/* Business search results */}
+              <div className="max-h-40 overflow-y-auto space-y-0.5">
+                {businesses
+                  .filter((b) => !selectedBusinessIds.includes(b.id))
+                  .filter((b) => {
+                    if (!bizSearchTerm) return false; // only show when searching
+                    const term = bizSearchTerm.toLowerCase();
+                    return (b.display_name || '').toLowerCase().includes(term)
+                      || (b.display_name_zh || '').toLowerCase().includes(term);
+                  })
+                  .slice(0, 10)
+                  .map((b) => (
+                    <button
+                      key={b.id}
+                      type="button"
+                      onClick={() => { setSelectedBusinessIds(prev => [...prev, b.id]); setBizSearchTerm(''); }}
+                      className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-bg-page truncate"
+                    >
+                      {b.display_name_zh || b.display_name}
+                      {b.display_name_zh && b.display_name && (
+                        <span className="text-text-muted ml-1">{b.display_name}</span>
+                      )}
+                    </button>
+                  ))}
+              </div>
+            </div>
+          )}
 
           {/* SEO */}
           <div className="bg-bg-card border border-border rounded-xl p-5 space-y-4">

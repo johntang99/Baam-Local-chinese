@@ -49,7 +49,31 @@ export async function createArticle(formData: FormData) {
   if (error) {
     return { id: null, error: error.message };
   }
+
+  // Sync guide_business_links
+  if (data?.id) {
+    await syncBusinessLinks(supabase, data.id, formData);
+  }
+
   return { id: data?.id, error: null };
+}
+
+async function syncBusinessLinks(supabase: ReturnType<typeof db>, articleId: string, formData: FormData) {
+  const linkedIdsRaw = formData.get('linked_business_ids') as string;
+  const linkedIds: string[] = linkedIdsRaw ? JSON.parse(linkedIdsRaw) : [];
+
+  // Delete existing links
+  await supabase.from('guide_business_links').delete().eq('article_id', articleId);
+
+  // Insert new links
+  if (linkedIds.length > 0) {
+    const rows = linkedIds.map((bizId: string) => ({
+      article_id: articleId,
+      business_id: bizId,
+      relation_type: 'editorial',
+    }));
+    await supabase.from('guide_business_links').insert(rows);
+  }
 }
 
 export async function updateArticle(articleId: string, formData: FormData) {
@@ -80,6 +104,10 @@ export async function updateArticle(articleId: string, formData: FormData) {
   if (error) {
     return { error: error.message };
   }
+
+  // Sync guide_business_links
+  await syncBusinessLinks(supabase, articleId, formData);
+
   return { error: null };
 }
 

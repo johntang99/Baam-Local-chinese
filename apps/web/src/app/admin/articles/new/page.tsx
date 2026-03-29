@@ -35,11 +35,20 @@ export default async function NewArticlePage({ searchParams }: Props) {
   if (params.region) siteParamsObj.set('region', String(params.region));
   if (params.locale) siteParamsObj.set('locale', String(params.locale));
 
+  // Fetch businesses for linking
+  const { data: rawBusinesses } = await supabase
+    .from('businesses')
+    .select('id, display_name, display_name_zh, slug')
+    .eq('is_active', true)
+    .order('display_name', { ascending: true });
+  const businesses = (rawBusinesses || []) as AnyRow[];
+
   return (
     <ArticleForm
       article={null}
       categories={categories}
       regions={regions}
+      businesses={businesses}
       isNew={true}
       siteParams={siteParamsObj.toString()}
     />

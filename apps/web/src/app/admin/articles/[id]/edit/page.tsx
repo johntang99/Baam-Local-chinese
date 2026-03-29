@@ -56,11 +56,28 @@ export default async function EditArticlePage({ params, searchParams }: Props) {
     .in('id', ctx.regionIds);
   const regions = (rawRegions || []) as AnyRow[];
 
+  // Fetch businesses for linking
+  const { data: rawBusinesses } = await supabase
+    .from('businesses')
+    .select('id, display_name, display_name_zh, slug')
+    .eq('is_active', true)
+    .order('display_name', { ascending: true });
+  const businesses = (rawBusinesses || []) as AnyRow[];
+
+  // Fetch existing linked businesses
+  const { data: rawLinks } = await supabase
+    .from('guide_business_links')
+    .select('business_id')
+    .eq('article_id', id);
+  const linkedBusinessIds = ((rawLinks || []) as AnyRow[]).map((r: AnyRow) => r.business_id as string);
+
   return (
     <ArticleForm
       article={article}
       categories={categories}
       regions={regions}
+      businesses={businesses}
+      linkedBusinessIds={linkedBusinessIds}
       isNew={false}
       siteParams={siteParamsObj.toString()}
     />

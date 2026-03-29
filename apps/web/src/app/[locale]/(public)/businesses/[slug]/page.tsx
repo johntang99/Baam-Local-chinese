@@ -150,15 +150,25 @@ export default async function BusinessDetailPage({ params }: Props) {
 
   const reviews = (rawReviews || []) as AnyRow[];
 
-  // Fetch related guides (by category match or guide_business_links)
-  const { data: rawGuides } = await supabase
-    .from('articles')
-    .select('*')
-    .in('content_vertical', ['guide_howto', 'guide_checklist', 'guide_bestof', 'guide_comparison'])
-    .eq('editorial_status', 'published')
-    .limit(3);
+  // Fetch articles linked to this business via guide_business_links
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: rawArticleLinks } = await (supabase as any)
+    .from('guide_business_links')
+    .select('relation_type, priority, articles(id, slug, title_zh, title_en, ai_summary_zh, summary_zh, cover_image_url, content_vertical, source_type, source_url, source_name, editorial_status, published_at)')
+    .eq('business_id', biz.id)
+    .order('priority', { ascending: false });
 
-  const relatedGuides = (rawGuides || []) as AnyRow[];
+  const allLinkedArticles = ((rawArticleLinks || []) as AnyRow[])
+    .filter((link) => link.articles?.editorial_status === 'published')
+    .map((link) => ({ ...link.articles, relation_type: link.relation_type }));
+
+  // Split into business articles vs editorial guides
+  const businessArticles = allLinkedArticles.filter((a) =>
+    a.source_type === 'business_website' || a.source_type === 'business_post'
+  );
+  const relatedGuides = allLinkedArticles.filter((a) =>
+    a.source_type !== 'business_website' && a.source_type !== 'business_post'
+  );
 
   // Video embed
   const videoUrl = biz.video_url as string | null;
@@ -694,14 +704,67 @@ export default async function BusinessDetailPage({ params }: Props) {
               </div>
             </div>
 
-            {/* Related Guides */}
+            {/* Business Articles (from business website) */}
+            {businessArticles.length > 0 && (
+              <section className="mt-8">
+                <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+                  <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                  </svg>
+                  商家文章
+                </h2>
+                <div className="space-y-4">
+                  {businessArticles.map((article) => {
+                    const domain = (article.source_url || '').replace(/^https?:\/\/(www\.)?/, '').replace(/\/.*$/, '');
+                    return (
+                      <Link
+                        key={article.id}
+                        href={`/guides/${article.slug}`}
+                        className="card overflow-hidden block hover:border-primary/30 transition-colors group"
+                      >
+                        <div className="flex">
+                          {article.cover_image_url && (
+                            <div className="w-32 sm:w-40 flex-shrink-0">
+                              <img src={article.cover_image_url} alt="" className="w-full h-full object-cover" />
+                            </div>
+                          )}
+                          <div className="p-4 flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 font-medium">商家供稿</span>
+                              {domain && <span className="text-xs text-text-muted">{domain}</span>}
+                            </div>
+                            <h3 className="font-semibold text-sm line-clamp-2 group-hover:text-primary transition-colors">
+                              {article.title_zh || article.title_en}
+                            </h3>
+                            <p className="text-xs text-text-secondary mt-1 line-clamp-2">
+                              {article.ai_summary_zh || article.summary_zh || ''}
+                            </p>
+                            {article.published_at && (
+                              <p className="text-xs text-text-muted mt-2">
+                                {new Date(article.published_at).toLocaleDateString('zh-CN')}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+
+            {/* Related Guides (editorial) */}
             {relatedGuides.length > 0 && (
               <section className="mt-8">
                 <h2 className="text-lg font-bold mb-4">📚 相关生活指南</h2>
-                <div className="grid sm:grid-cols-3 gap-4">
+                <div className="grid sm:grid-cols-2 gap-4">
                   {relatedGuides.map((guide) => (
-                    <Link key={guide.id} href={`/guides/${guide.slug}`} className="card p-4 block">
-                      <h3 className="font-medium text-sm line-clamp-2">{guide.title_zh}</h3>
+                    <Link key={guide.id} href={`/guides/${guide.slug}`} className="card p-4 block hover:border-primary/30 transition-colors group">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-50 text-green-600 font-medium">生活指南</span>
+                      <h3 className="font-medium text-sm line-clamp-2 mt-1 group-hover:text-primary transition-colors">{guide.title_zh || guide.title_en}</h3>
+                      {(guide.ai_summary_zh || guide.summary_zh) && (
+                        <p className="text-xs text-text-secondary mt-1 line-clamp-2">{guide.ai_summary_zh || guide.summary_zh}</p>
+                      )}
                     </Link>
                   ))}
                 </div>
