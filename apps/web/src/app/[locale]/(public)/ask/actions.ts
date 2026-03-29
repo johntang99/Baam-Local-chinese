@@ -40,7 +40,7 @@ const CATEGORY_KEYWORDS: Record<string, string[]> = {
   '汽车': ['汽车', '修车', 'auto', 'car repair'],
   '驾校': ['驾校', '学车', 'driving school'],
   '补习': ['补习', '辅导', '培训', 'tutoring'],
-  '超市': ['超市', '杂货', 'supermarket', 'grocery'],
+  '超市': ['超市', '杂货', 'supermarket', 'grocery', '买菜', '菜市场'],
   '药房': ['药房', '药店', 'pharmacy'],
   '快递': ['快递', '物流', 'shipping'],
   '旅行': ['旅行社', '旅游', 'travel'],
@@ -77,11 +77,14 @@ function extractKeywords(query: string): string[] {
   const segments = remaining.split(/[\s,，、.。!！?？·]+/).filter(w => w.length >= 2);
 
   // Also match known category keywords from the query
+  // Push BOTH the matched term AND the category key (for DB category name matching)
   const matchedCategoryTerms: string[] = [];
-  for (const [, terms] of Object.entries(CATEGORY_KEYWORDS)) {
+  for (const [catKey, terms] of Object.entries(CATEGORY_KEYWORDS)) {
     for (const term of terms) {
       if (q.includes(term)) {
         matchedCategoryTerms.push(term);
+        matchedCategoryTerms.push(catKey); // e.g., "牙医" → also add "牙科"
+        break; // one match per category is enough
       }
     }
   }
