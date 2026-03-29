@@ -111,7 +111,7 @@ export default async function BusinessDetailPage({ params }: Props) {
   // Get photos from Supabase Storage (images uploaded via admin)
   const adminClient = createAdminClient();
   const storageFolder = `businesses/${slug}`;
-  const { data: storageFiles } = await adminClient.storage.from('media').list(storageFolder, { limit: 20, sortBy: { column: 'created_at', order: 'asc' } });
+  const { data: storageFiles } = await adminClient.storage.from('media').list(storageFolder, { limit: 20, sortBy: { column: 'name', order: 'asc' } });
   const photos = (storageFiles || [])
     .filter((f) => f.name && /\.(jpg|jpeg|png|webp|gif)$/i.test(f.name))
     .map((f) => {
