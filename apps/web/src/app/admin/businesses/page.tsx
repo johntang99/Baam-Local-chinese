@@ -51,6 +51,19 @@ export default async function AdminBusinessesPage({ searchParams }: Props) {
   const statusFilter = typeof params.status === 'string' ? params.status : '';
   const verificationFilter = typeof params.verification === 'string' ? params.verification : '';
   const planFilter = typeof params.plan === 'string' ? params.plan : '';
+  const catFilter = typeof params.cat === 'string' ? params.cat : '';
+  const subFilter = typeof params.sub === 'string' ? params.sub : '';
+
+  // Fetch business categories for filter
+  const { data: rawCats } = await supabase
+    .from('categories')
+    .select('id, name_zh, slug, parent_id, icon')
+    .eq('type', 'business')
+    .order('sort_order', { ascending: true });
+  const allCats = (rawCats || []) as AnyRow[];
+  const parentCats = allCats.filter((c: AnyRow) => !c.parent_id);
+  const activeParentCat = parentCats.find((c: AnyRow) => c.slug === catFilter);
+  const childCats = activeParentCat ? allCats.filter((c: AnyRow) => c.parent_id === activeParentCat.id) : [];
 
   // Page
   const page = Math.max(1, parseInt(typeof params.page === 'string' ? params.page : '1', 10));
@@ -78,6 +91,8 @@ export default async function AdminBusinessesPage({ searchParams }: Props) {
     if (!('status' in overrides) && statusFilter) p.set('status', statusFilter);
     if (!('verification' in overrides) && verificationFilter) p.set('verification', verificationFilter);
     if (!('plan' in overrides) && planFilter) p.set('plan', planFilter);
+    if (!('cat' in overrides) && catFilter) p.set('cat', catFilter);
+    if (!('sub' in overrides) && subFilter) p.set('sub', subFilter);
     return `/admin/businesses?${p.toString()}`;
   }
 
@@ -118,6 +133,28 @@ export default async function AdminBusinessesPage({ searchParams }: Props) {
       query = query.eq('current_plan', planFilter);
     }
 
+    // Category filter: get business IDs from business_categories
+    const filterCatSlug = subFilter || catFilter;
+    if (filterCatSlug) {
+      const matchedCat = allCats.find((c: AnyRow) => c.slug === filterCatSlug);
+      if (matchedCat) {
+        const filterCatIds = [matchedCat.id];
+        if (!matchedCat.parent_id) {
+          filterCatIds.push(...allCats.filter((c: AnyRow) => c.parent_id === matchedCat.id).map((c: AnyRow) => c.id));
+        }
+        const { data: bizCatRows } = await supabase
+          .from('business_categories')
+          .select('business_id')
+          .in('category_id', filterCatIds);
+        const bizIds = (bizCatRows || []).map((r: AnyRow) => r.business_id);
+        if (bizIds.length > 0) {
+          query = query.in('id', bizIds);
+        } else {
+          query = query.in('id', ['00000000-0000-0000-0000-000000000000']);
+        }
+      }
+    }
+
     const from = (page - 1) * pageSize;
     query = query.range(from, from + pageSize - 1);
 
@@ -150,7 +187,7 @@ export default async function AdminBusinessesPage({ searchParams }: Props) {
               className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
                 tab === t.key
                   ? 'bg-bg-card text-text shadow-sm'
-                  : 'text-text-muted hover:text-text'
+                  : 'text-text-secondary hover:text-text'
               }`}
             >
               {t.label}
@@ -214,6 +251,56 @@ export default async function AdminBusinessesPage({ searchParams }: Props) {
                 </Link>
               ))}
             </div>
+
+            {/* Category filter */}
+            <div className="w-full flex flex-wrap items-center gap-1 pt-2 border-t border-border">
+              <span className="text-sm text-text-secondary mr-1">分类:</span>
+              <Link
+                href={filterUrl({ cat: '', sub: '', page: '' })}
+                className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
+                  !catFilter ? 'bg-primary text-white' : 'text-text-secondary hover:text-text hover:bg-bg-page'
+                }`}
+              >
+                全部
+              </Link>
+              {parentCats.map((cat) => (
+                <Link
+                  key={cat.id}
+                  href={filterUrl({ cat: cat.slug, sub: '', page: '' })}
+                  className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
+                    catFilter === cat.slug ? 'bg-primary text-white' : 'text-text-secondary hover:text-text hover:bg-bg-page'
+                  }`}
+                >
+                  {cat.icon} {cat.name_zh}
+                </Link>
+              ))}
+            </div>
+
+            {/* Subcategory filter */}
+            {childCats.length > 0 && (
+              <div className="w-full flex flex-wrap items-center gap-1">
+                <span className="text-sm text-text-secondary mr-1">子分类:</span>
+                <Link
+                  href={filterUrl({ sub: '', page: '' })}
+                  className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
+                    !subFilter ? 'bg-primary/15 text-primary' : 'text-text-secondary hover:text-text hover:bg-bg-page'
+                  }`}
+                >
+                  全部
+                </Link>
+                {childCats.map((sub) => (
+                  <Link
+                    key={sub.id}
+                    href={filterUrl({ sub: sub.slug, page: '' })}
+                    className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
+                      subFilter === sub.slug ? 'bg-primary/15 text-primary' : 'text-text-secondary hover:text-text hover:bg-bg-page'
+                    }`}
+                  >
+                    {sub.icon} {sub.name_zh}
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

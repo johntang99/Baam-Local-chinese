@@ -75,17 +75,36 @@ export default async function EditBusinessPage({ params, searchParams }: Props) 
     .eq('business_id', id);
   const selectedCategoryIds = ((rawBizCats || []) as AnyRow[]).map((r: AnyRow) => r.category_id as string);
 
-  // Fetch existing images for this business
-  const { data: rawMedia } = await supabase
-    .from('business_media')
-    .select('media_url')
+  // Fetch existing images from Supabase Storage (admin uploads to storage, not business_media table)
+  const storageFolder = `businesses/${business.slug}`;
+  const { data: storageFiles } = await supabase.storage.from('media').list(storageFolder, { limit: 20, sortBy: { column: 'created_at', order: 'asc' } });
+  const existingImages = (storageFiles || [])
+    .filter((f: AnyRow) => f.name && /\.(jpg|jpeg|png|webp|gif)$/i.test(f.name))
+    .map((f: AnyRow) => {
+      const { data: urlData } = supabase.storage.from('media').getPublicUrl(`${storageFolder}/${f.name}`);
+      return urlData.publicUrl;
+    });
+
+  // Fetch location data to populate NAP fields
+  const { data: rawLocations } = await supabase
+    .from('business_locations')
+    .select('address_line1, address_line2, city, state, zip_code')
     .eq('business_id', id)
-    .order('sort_order', { ascending: true });
-  const existingImages = ((rawMedia || []) as AnyRow[]).map((r: AnyRow) => r.media_url as string);
+    .limit(1);
+  const loc = ((rawLocations || []) as AnyRow[])[0] || null;
+
+  // Merge location data into business object for the form
+  const bizWithLocation = {
+    ...business,
+    address_full: business.address_full || loc?.address_line1 || '',
+    city: business.city || loc?.city || '',
+    state: business.state || loc?.state || 'NY',
+    zip_code: business.zip_code || loc?.zip_code || '',
+  };
 
   return (
     <BusinessForm
-      business={business}
+      business={bizWithLocation}
       categories={categories}
       categoryTree={categoryTree}
       selectedCategoryIds={selectedCategoryIds}

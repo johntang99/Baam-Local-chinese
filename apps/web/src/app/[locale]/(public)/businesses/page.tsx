@@ -44,36 +44,49 @@ function renderStars(rating: number): string {
 }
 
 interface Props {
-  searchParams: Promise<{ page?: string; cat?: string; sort?: string }>;
+  searchParams: Promise<{ page?: string; cat?: string; sub?: string; sort?: string }>;
 }
 
 export default async function BusinessListPage({ searchParams }: Props) {
   const sp = await searchParams;
   const currentPage = Math.max(1, parseInt(sp.page || '1', 10));
   const activeCat = sp.cat || '';
+  const activeSub = sp.sub || '';
   const sortBy = sp.sort || 'recommended';
 
   const supabase = await createClient();
   const t = await getTranslations();
 
-  // Fetch business categories
+  // Fetch business categories (parents + children)
   const { data: rawCategories } = await supabase
     .from('categories')
     .select('*')
     .eq('type', 'business')
     .order('sort_order', { ascending: true });
 
-  const categories = (rawCategories || []) as AnyRow[];
+  const allCategories = (rawCategories || []) as AnyRow[];
+  const parentCategories = allCategories.filter(c => !c.parent_id);
+  const activeParent = parentCategories.find(c => c.slug === activeCat);
+  const subcategories = activeParent
+    ? allCategories.filter(c => c.parent_id === activeParent.id)
+    : [];
 
-  // If category filter active, get business IDs from join table first
+  // If category/subcategory filter active, get business IDs from join table
   let filteredBizIds: string[] | null = null;
-  if (activeCat) {
-    const matchedCat = categories.find(c => c.slug === activeCat);
+  const filterSlug = activeSub || activeCat;
+  if (filterSlug) {
+    const matchedCat = allCategories.find(c => c.slug === filterSlug);
     if (matchedCat) {
+      // If filtering by parent, include all its subcategory IDs too
+      const catIds = [matchedCat.id];
+      if (!matchedCat.parent_id) {
+        const childIds = allCategories.filter(c => c.parent_id === matchedCat.id).map(c => c.id);
+        catIds.push(...childIds);
+      }
       const { data: bizCats } = await supabase
         .from('business_categories')
         .select('business_id')
-        .eq('category_id', matchedCat.id);
+        .in('category_id', catIds);
       filteredBizIds = (bizCats || []).map((bc: AnyRow) => bc.business_id);
     }
   }
@@ -133,6 +146,7 @@ export default async function BusinessListPage({ searchParams }: Props) {
   // Preserved params for pagination
   const preservedParams: Record<string, string> = {};
   if (activeCat) preservedParams.cat = activeCat;
+  if (activeSub) preservedParams.sub = activeSub;
   if (sortBy !== 'recommended') preservedParams.sort = sortBy;
 
   const sortOptions = [
@@ -157,10 +171,10 @@ export default async function BusinessListPage({ searchParams }: Props) {
         </div>
       </section>
 
-      {/* Category Filter Pills + Sort */}
+      {/* Category Filter — Tier 1: Parent Categories */}
       <section className="bg-bg-card border-b border-border sticky top-16 z-40">
-        <div className="max-w-7xl mx-auto px-4 py-4 space-y-3">
-          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide -mx-4 px-4">
+        <div className="max-w-7xl mx-auto px-4 pt-4 pb-0">
+          <div className="flex gap-2 overflow-x-auto pb-3 scrollbar-hide -mx-4 px-4">
             <Link
               href="/businesses"
               className={`flex-shrink-0 px-4 py-2 text-sm font-medium rounded-full transition-colors ${
@@ -169,32 +183,79 @@ export default async function BusinessListPage({ searchParams }: Props) {
             >
               全部
             </Link>
-            {categories.map((cat) => (
+            {parentCategories.map((cat) => (
               <Link
                 key={cat.id}
                 href={`/businesses?cat=${cat.slug}`}
-                className={`flex-shrink-0 px-4 py-2 text-sm font-medium rounded-full transition-colors ${
+                className={`flex-shrink-0 px-4 py-2 text-sm font-medium rounded-full transition-colors whitespace-nowrap ${
                   activeCat === cat.slug ? 'bg-primary text-text-inverse' : 'bg-border-light text-text-secondary hover:bg-primary/10 hover:text-primary'
                 }`}
               >
-                {cat.name_zh || cat.name}
+                {cat.icon && <span className="mr-1">{cat.icon}</span>}
+                {cat.name_zh}
               </Link>
             ))}
           </div>
+        </div>
 
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-            <div className="sm:ml-auto flex gap-1">
-              {sortOptions.map((opt) => (
+        {/* Tier 2: Subcategories (shown when a parent is selected) */}
+        {subcategories.length > 0 && (
+          <div className="border-t border-border bg-bg-page/50">
+            <div className="max-w-7xl mx-auto px-4 py-2.5">
+              <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-4 px-4">
                 <Link
-                  key={opt.key}
-                  href={(() => { const p = new URLSearchParams({ ...(activeCat ? { cat: activeCat } : {}), ...(opt.key !== 'recommended' ? { sort: opt.key } : {}) }); const s = p.toString(); return s ? `/businesses?${s}` : '/businesses'; })()}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${
-                    sortBy === opt.key ? 'bg-primary/10 text-primary' : 'text-text-muted hover:text-primary'
+                  href={`/businesses?cat=${activeCat}`}
+                  className={`flex-shrink-0 px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${
+                    !activeSub ? 'bg-primary/15 text-primary border border-primary/30' : 'text-text-secondary hover:text-primary hover:bg-primary/5'
                   }`}
                 >
-                  {opt.label}
+                  全部{activeParent?.name_zh}
                 </Link>
-              ))}
+                {subcategories.map((sub) => (
+                  <Link
+                    key={sub.id}
+                    href={`/businesses?cat=${activeCat}&sub=${sub.slug}`}
+                    className={`flex-shrink-0 px-3 py-1.5 text-xs font-medium rounded-full transition-colors whitespace-nowrap ${
+                      activeSub === sub.slug ? 'bg-primary/15 text-primary border border-primary/30' : 'text-text-secondary hover:text-primary hover:bg-primary/5'
+                    }`}
+                  >
+                    {sub.icon && <span className="mr-0.5">{sub.icon}</span>}
+                    {sub.name_zh}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Sort Options */}
+        <div className="max-w-7xl mx-auto px-4 py-2 border-t border-border/50">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-text-muted">
+              {count || 0} 家商家
+              {activeParent ? ` · ${activeParent.icon || ''} ${activeParent.name_zh}` : ''}
+              {activeSub ? ` > ${allCategories.find(c => c.slug === activeSub)?.name_zh || ''}` : ''}
+            </span>
+            <div className="flex gap-1">
+              {sortOptions.map((opt) => {
+                const params = new URLSearchParams({
+                  ...(activeCat ? { cat: activeCat } : {}),
+                  ...(activeSub ? { sub: activeSub } : {}),
+                  ...(opt.key !== 'recommended' ? { sort: opt.key } : {}),
+                });
+                const qs = params.toString();
+                return (
+                  <Link
+                    key={opt.key}
+                    href={qs ? `/businesses?${qs}` : '/businesses'}
+                    className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+                      sortBy === opt.key ? 'bg-primary/10 text-primary' : 'text-text-secondary hover:text-primary'
+                    }`}
+                  >
+                    {opt.label}
+                  </Link>
+                );
+              })}
             </div>
           </div>
         </div>

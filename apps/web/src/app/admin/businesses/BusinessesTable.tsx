@@ -77,7 +77,10 @@ export default function BusinessesTable({ businesses, siteParams = '' }: Busines
             return (
               <tr key={biz.id}>
                 <td className="max-w-xs">
-                  <p className="font-medium truncate">{biz.display_name_zh || biz.display_name || '未命名'}</p>
+                  <p className="font-medium truncate">{biz.display_name || biz.display_name_zh || '未命名'}</p>
+                  {biz.display_name_zh && biz.display_name && (
+                    <p className="text-xs text-text-secondary truncate">{biz.display_name_zh}</p>
+                  )}
                 </td>
                 <td>
                   <span className={`${sb.cls} text-xs`}>{sb.label}</span>

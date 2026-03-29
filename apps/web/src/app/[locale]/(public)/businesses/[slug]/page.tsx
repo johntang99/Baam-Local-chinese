@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { notFound } from 'next/navigation';
 import { Link } from '@/lib/i18n/routing';
 import { LeadForm } from '@/components/shared/lead-form';
@@ -51,13 +52,6 @@ function renderStars(rating: number): string {
   return '\u2605'.repeat(full) + (half ? '\u2606' : '') + '\u2606'.repeat(empty);
 }
 
-/** Build a full address string from parts */
-function buildFullAddress(biz: AnyRow): string {
-  const parts = [biz.address_full, biz.city, biz.state, biz.zip_code].filter(Boolean);
-  if (parts.length > 0) return parts.join(', ');
-  return biz.address || '';
-}
-
 /** Extract YouTube video ID for embedding */
 function getYouTubeId(url: string): string | null {
   const match = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
@@ -68,10 +62,11 @@ export default async function BusinessDetailPage({ params }: Props) {
   const { slug } = await params;
   const supabase = await createClient();
 
-  // Fetch business
-  const { data, error } = await supabase
+  // Fetch business with location and categories
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
     .from('businesses')
-    .select('*')
+    .select('*, business_locations(address_line1, address_line2, city, state, zip_code, latitude, longitude, hours_json), business_categories(categories(name_zh, slug))')
     .eq('slug', slug)
     .eq('is_active', true)
     .single();
@@ -80,12 +75,47 @@ export default async function BusinessDetailPage({ params }: Props) {
   if (error || !biz) notFound();
 
   const name = biz.display_name_zh || biz.name_zh || biz.display_name || biz.name;
-  const body = biz.full_desc_zh || biz.body_zh || biz.description_zh || biz.body_en || '';
-  const aiTags = (biz.ai_tags || []) as string[];
+  const description = biz.short_desc_zh || biz.ai_summary_zh || biz.full_desc_zh || biz.short_desc_en || '';
+  const aiTags = ((biz.ai_tags || []) as string[]).filter(t => t !== 'GBP已认领');
   const faq = biz.ai_faq as Array<{ q: string; a: string }> | null;
-  const catName = biz.category_name || biz.category || '';
-  const fullAddress = buildFullAddress(biz);
+
+  // Get location from joined data
+  const loc = Array.isArray(biz.business_locations) ? biz.business_locations[0] : null;
+  const fullAddress = loc
+    ? [loc.address_line1, loc.address_line2, loc.city, loc.state, loc.zip_code].filter(Boolean).join(', ')
+    : '';
   const encodedAddress = encodeURIComponent(fullAddress);
+  const lat = loc?.latitude;
+  const lng = loc?.longitude;
+  const mapUrl = lat && lng
+    ? `https://www.google.com/maps?q=${lat},${lng}`
+    : fullAddress ? `https://www.google.com/maps/search/?api=1&query=${encodedAddress}` : '';
+
+  // Get categories from joined data
+  const categories = Array.isArray(biz.business_categories)
+    ? biz.business_categories.map((bc: AnyRow) => bc.categories?.name_zh).filter(Boolean)
+    : [];
+
+  // Get business hours from location
+  const hoursJson = loc?.hours_json as Record<string, { open: string; close: string }> | null;
+  const dayLabels: Record<string, string> = {
+    mon: '周一', tue: '周二', wed: '周三', thu: '周四',
+    fri: '周五', sat: '周六', sun: '周日',
+  };
+  const dayOrder = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+
+  // Get photos from Supabase Storage (images uploaded via admin)
+  const adminClient = createAdminClient();
+  const storageFolder = `businesses/${slug}`;
+  const { data: storageFiles } = await adminClient.storage.from('media').list(storageFolder, { limit: 20, sortBy: { column: 'created_at', order: 'asc' } });
+  const photos = (storageFiles || [])
+    .filter((f) => f.name && /\.(jpg|jpeg|png|webp|gif)$/i.test(f.name))
+    .map((f) => {
+      const { data: urlData } = adminClient.storage.from('media').getPublicUrl(`${storageFolder}/${f.name}`);
+      return { name: f.name, url: urlData.publicUrl };
+    });
+  const coverPhoto = photos[0] || null;
+  const galleryPhotos = photos.slice(1);
 
   // Social media links
   const socialLinks = [
@@ -138,10 +168,10 @@ export default async function BusinessDetailPage({ params }: Props) {
           <Link href="/" className="hover:text-primary">首页</Link>
           <span>/</span>
           <Link href="/businesses" className="hover:text-primary">商家</Link>
-          {catName && (
+          {categories.length > 0 && (
             <>
               <span>/</span>
-              <span className="hover:text-primary">{catName}</span>
+              <span className="hover:text-primary">{categories[0]}</span>
             </>
           )}
           <span>/</span>
@@ -152,16 +182,26 @@ export default async function BusinessDetailPage({ params }: Props) {
       {/* Hero / Cover Image */}
       <section className="max-w-7xl mx-auto px-4">
         <div className="relative rounded-xl overflow-hidden">
-          <div className="h-48 sm:h-64 lg:h-80 bg-gradient-to-br from-blue-200 via-blue-100 to-teal-100 relative">
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-center text-blue-300">
-                <svg className="w-16 h-16 mx-auto mb-2 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                <p className="text-sm opacity-40">商家图片</p>
+          {coverPhoto ? (
+            <div className="h-48 sm:h-64 lg:h-80 relative">
+              <img
+                src={coverPhoto.url}
+                alt={name}
+                className="w-full h-full object-cover"
+              />
+            </div>
+          ) : (
+            <div className="h-48 sm:h-64 lg:h-80 bg-gradient-to-br from-blue-200 via-blue-100 to-teal-100 relative">
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-center text-blue-300">
+                  <svg className="w-16 h-16 mx-auto mb-2 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <p className="text-sm opacity-40">商家图片</p>
+                </div>
               </div>
             </div>
-          </div>
+          )}
           {/* Logo overlay */}
           <div className="absolute -bottom-10 left-6 w-20 h-20 sm:w-24 sm:h-24 rounded-xl border-4 border-white bg-gradient-to-br from-blue-400 to-blue-600 shadow-lg flex items-center justify-center">
             <span className="text-3xl sm:text-4xl text-white font-bold">
@@ -186,7 +226,9 @@ export default async function BusinessDetailPage({ params }: Props) {
             </div>
             {/* Core info row */}
             <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-sm">
-              {catName && <span className="badge badge-blue">{catName}</span>}
+              {categories.map((cat: string) => (
+                <span key={cat} className="badge badge-blue">{cat}</span>
+              ))}
               <div className="flex items-center gap-1">
                 <span className="text-yellow-500">{renderStars(biz.avg_rating || 0)}</span>
                 <span className="font-semibold">{biz.avg_rating?.toFixed(1) || '—'}</span>
@@ -239,9 +281,9 @@ export default async function BusinessDetailPage({ params }: Props) {
               <span>📞</span> {biz.phone}
             </a>
           )}
-          {fullAddress && (
+          {mapUrl && (
             <a
-              href={`https://www.google.com/maps/search/?api=1&query=${encodedAddress}`}
+              href={mapUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-center gap-2 h-11 bg-bg-card border border-border text-sm font-medium rounded-lg hover:bg-border-light transition"
@@ -331,27 +373,35 @@ export default async function BusinessDetailPage({ params }: Props) {
             </h2>
 
             {/* AI Description */}
-            {body && (
+            {description && (
               <div className="ai-summary-card mb-6">
                 <h3 className="font-semibold text-sm mb-2">关于{name}</h3>
                 <div className="text-sm leading-relaxed prose prose-sm max-w-none [&_p]:mb-3 [&_h2]:text-base [&_h2]:font-semibold [&_h2]:mt-4 [&_h2]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_li]:mb-1 [&_a]:text-primary [&_a]:underline">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{body}</ReactMarkdown>
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{description}</ReactMarkdown>
                 </div>
               </div>
             )}
 
-            {/* Services Placeholder */}
-            <div className="card p-5 mb-6">
-              <h3 className="font-semibold text-base mb-4 flex items-center gap-2">
-                <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-                服务项目
-              </h3>
-              <p className="text-sm text-text-muted">商家服务信息即将更新</p>
-            </div>
+            {/* Services / Categories */}
+            {categories.length > 0 && (
+              <div className="card p-5 mb-6">
+                <h3 className="font-semibold text-base mb-4 flex items-center gap-2">
+                  <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  </svg>
+                  服务类别
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {categories.map((cat: string) => (
+                    <span key={cat} className="inline-flex items-center text-sm bg-primary/10 text-primary px-3 py-1.5 rounded-lg">
+                      {cat}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
 
-            {/* Business Hours Placeholder */}
+            {/* Business Hours */}
             <div className="card p-5 mb-6">
               <h3 className="font-semibold text-base mb-4 flex items-center gap-2">
                 <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -359,16 +409,49 @@ export default async function BusinessDetailPage({ params }: Props) {
                 </svg>
                 营业时间
               </h3>
-              {biz.business_hours ? (
-                <pre className="text-sm text-text-secondary whitespace-pre-wrap">
-                  {typeof biz.business_hours === 'string'
-                    ? biz.business_hours
-                    : JSON.stringify(biz.business_hours, null, 2)}
-                </pre>
+              {hoursJson && Object.keys(hoursJson).length > 0 ? (
+                <div className="space-y-2">
+                  {dayOrder.map((day) => {
+                    const hours = hoursJson[day];
+                    return (
+                      <div key={day} className="flex items-center justify-between text-sm">
+                        <span className="font-medium text-text-secondary w-10">{dayLabels[day]}</span>
+                        {hours ? (
+                          <span className="text-text-primary">{hours.open} - {hours.close}</span>
+                        ) : (
+                          <span className="text-text-muted">休息</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               ) : (
                 <p className="text-sm text-text-muted">营业时间信息即将更新</p>
               )}
             </div>
+
+            {/* Photo Gallery */}
+            {galleryPhotos.length > 0 && (
+              <div className="mb-6">
+                <h3 className="font-semibold text-base mb-4 flex items-center gap-2">
+                  <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  商家图片 ({photos.length})
+                </h3>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {galleryPhotos.map((photo) => (
+                    <div key={photo.name} className="relative aspect-[4/3] rounded-lg overflow-hidden group">
+                      <img
+                        src={photo.url}
+                        alt={name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* ===== Reviews Section ===== */}
             <h2 className="text-lg font-bold mb-4 mt-8 flex items-center gap-2" id="reviews">
@@ -468,19 +551,22 @@ export default async function BusinessDetailPage({ params }: Props) {
               联系方式
             </h2>
 
-            {/* Map Placeholder */}
-            <div className="bg-border-light rounded-xl h-64 mb-6 flex items-center justify-center relative overflow-hidden">
-              <div className="relative text-center">
-                <svg className="w-12 h-12 text-text-muted mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                <p className="text-sm text-text-muted">地图加载中...</p>
-                {fullAddress && (
-                  <p className="text-xs text-text-muted mt-1">{fullAddress}</p>
-                )}
+            {/* Google Map Embed */}
+            {(lat && lng || fullAddress) && (
+              <div className="rounded-xl overflow-hidden mb-6 border border-border">
+                <iframe
+                  className="w-full h-64"
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  src={lat && lng
+                    ? `https://www.google.com/maps/embed/v1/place?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY || ''}&q=${lat},${lng}&zoom=15`
+                    : `https://www.google.com/maps/embed/v1/place?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY || ''}&q=${encodedAddress}&zoom=15`
+                  }
+                  allowFullScreen
+                  title={`${name} 地图位置`}
+                />
               </div>
-            </div>
+            )}
 
             {/* Contact Details */}
             <div className="card p-5 mb-6">
@@ -495,7 +581,7 @@ export default async function BusinessDetailPage({ params }: Props) {
                     <div>
                       <p className="text-sm font-medium">地址</p>
                       <a
-                        href={`https://www.google.com/maps/search/?api=1&query=${encodedAddress}`}
+                        href={mapUrl || `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-sm text-primary hover:underline"
