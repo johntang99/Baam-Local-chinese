@@ -7,22 +7,36 @@ interface MasonryGridProps {
   columns?: number;
 }
 
-export function MasonryGrid({ children, columns = 3 }: MasonryGridProps) {
-  // Distribute children across columns in left-to-right order
+export function MasonryGrid({ children }: MasonryGridProps) {
   const items = Children.toArray(children);
-  const cols: ReactNode[][] = Array.from({ length: columns }, () => []);
+
+  // 2 columns on mobile, 3 on sm+
+  const cols2: ReactNode[][] = [[], []];
+  const cols3: ReactNode[][] = [[], [], []];
 
   items.forEach((child, i) => {
-    cols[i % columns].push(child);
+    cols2[i % 2].push(child);
+    cols3[i % 3].push(child);
   });
 
   return (
-    <div className="flex gap-3 sm:gap-4">
-      {cols.map((colItems, colIndex) => (
-        <div key={colIndex} className="flex-1 min-w-0 space-y-3 sm:space-y-4">
-          {colItems}
-        </div>
-      ))}
-    </div>
+    <>
+      {/* Mobile: 2 columns */}
+      <div className="flex gap-3 sm:hidden">
+        {cols2.map((colItems, colIndex) => (
+          <div key={colIndex} className="flex-1 min-w-0 space-y-3">
+            {colItems}
+          </div>
+        ))}
+      </div>
+      {/* Desktop: 3 columns */}
+      <div className="hidden sm:flex gap-4">
+        {cols3.map((colItems, colIndex) => (
+          <div key={colIndex} className="flex-1 min-w-0 space-y-4">
+            {colItems}
+          </div>
+        ))}
+      </div>
+    </>
   );
 }
