@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>发现 — Baam 本地生活发现</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            baam: { 50:'#FFF7ED', 100:'#FFEDD5', 200:'#FED7AA', 300:'#FDBA74', 400:'#FB923C', 500:'#F97316', 600:'#EA580C', 700:'#C2410C' }
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="../assets/css/prototype.css">
+  <style>
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .masonry { columns: 2; column-gap: 12px; }
+    .masonry-item { break-inside: avoid; margin-bottom: 12px; }
+    @media (min-width: 640px) { .masonry { column-gap: 16px; } .masonry-item { margin-bottom: 16px; } }
+    .discover-card { border-radius: 14px; overflow: hidden; background: white; transition: transform 0.2s, box-shadow 0.2s; }
+    .discover-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
+    .discover-card img { width: 100%; display: block; }
+    .video-badge { position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.7); color: white; font-size: 11px; padding: 2px 6px; border-radius: 4px; display: flex; align-items: center; gap: 3px; }
+    .play-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 40px; height: 40px; background: rgba(0,0,0,0.45); border-radius: 50%; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+    .tab-pill { padding: 8px 18px; font-size: 14px; font-weight: 500; color: #6B7280; border-radius: 999px; white-space: nowrap; cursor: pointer; transition: all 0.2s; }
+    .tab-pill:hover { color: #111827; background: #F3F4F6; }
+    .tab-pill.active { background: #111827; color: white; }
+    .topic-chip { display: inline-flex; align-items: center; gap: 4px; padding: 6px 14px; background: #F3F4F6; border-radius: 999px; font-size: 13px; color: #374151; white-space: nowrap; cursor: pointer; transition: all 0.2s; }
+    .topic-chip:hover { background: #FFEDD5; color: #EA580C; }
+    .topic-chip.hot { background: #FFF7ED; color: #EA580C; border: 1px solid #FED7AA; }
+    .sidebar-card { background: white; border: 1px solid #E5E7EB; border-radius: 14px; padding: 20px; }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-900">
+
+<!-- ==================== NAVBAR ==================== -->
+<nav class="bg-white border-b border-gray-200 sticky top-0 z-50">
+  <div class="max-w-7xl mx-auto px-4">
+    <div class="flex items-center justify-between h-16">
+      <div class="flex items-center gap-8">
+        <a href="index.html" class="flex items-center gap-2">
+          <div class="w-8 h-8 bg-baam-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">B</div>
+          <span class="text-xl font-bold text-gray-900">Baam</span>
+          <span class="text-xs text-gray-400 hidden sm:inline">纽约</span>
+        </a>
+        <div class="hidden lg:flex items-center gap-1">
+          <a href="news-list.html" class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-baam-500 rounded-md hover:bg-orange-50">新闻</a>
+          <a href="guides-list.html" class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-baam-500 rounded-md hover:bg-orange-50">生活资讯</a>
+          <a href="business-list.html" class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-baam-500 rounded-md hover:bg-orange-50">商家</a>
+          <a href="events-list.html" class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-baam-500 rounded-md hover:bg-orange-50">活动</a>
+          <a href="forum-home.html" class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-baam-500 rounded-md hover:bg-orange-50">论坛</a>
+          <a href="voices-discover.html" class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-baam-500 rounded-md hover:bg-orange-50">达人</a>
+          <a href="discover-home.html" class="px-3 py-2 text-sm font-medium text-baam-500 rounded-md bg-orange-50">发现</a>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <button class="p-2 text-gray-500 hover:text-baam-500 hover:bg-orange-50 rounded-full">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        </button>
+        <button id="lang-toggle" class="px-2 py-1 text-xs font-medium text-gray-500 border border-gray-300 rounded hover:bg-gray-100">繁</button>
+        <button class="hidden sm:flex items-center gap-1 text-sm text-gray-600 hover:text-baam-500">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          <span>法拉盛</span>
+          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <button class="bg-baam-500 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-baam-600 transition">登录 / 注册</button>
+        <button id="mobile-menu-btn" class="lg:hidden p-2 text-gray-500">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+  <div id="mobile-menu" class="hidden lg:hidden bg-white border-t border-gray-200 pb-4">
+    <div class="px-4 pt-2 space-y-1">
+      <a href="news-list.html" class="block px-3 py-2 text-base font-medium text-gray-600 rounded-md hover:bg-orange-50">新闻</a>
+      <a href="guides-list.html" class="block px-3 py-2 text-base font-medium text-gray-600 rounded-md hover:bg-orange-50">生活资讯</a>
+      <a href="business-list.html" class="block px-3 py-2 text-base font-medium text-gray-600 rounded-md hover:bg-orange-50">商家</a>
+      <a href="events-list.html" class="block px-3 py-2 text-base font-medium text-gray-600 rounded-md hover:bg-orange-50">活动</a>
+      <a href="forum-home.html" class="block px-3 py-2 text-base font-medium text-gray-600 rounded-md hover:bg-orange-50">论坛</a>
+      <a href="voices-discover.html" class="block px-3 py-2 text-base font-medium text-gray-600 rounded-md hover:bg-orange-50">达人</a>
+      <a href="discover-home.html" class="block px-3 py-2 text-base font-medium text-baam-500 bg-orange-50 rounded-md">发现</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ==================== SEARCH BAR + TRENDING CHIPS ==================== -->
+<div class="bg-white border-b border-gray-100 sticky top-16 z-40">
+  <div class="max-w-7xl mx-auto px-4 py-3">
+    <!-- Search -->
+    <div class="relative max-w-xl mb-3">
+      <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+      <input type="text" placeholder="搜索笔记、视频、话题..." class="w-full h-11 pl-11 pr-4 bg-gray-50 border border-gray-200 rounded-full text-sm focus:ring-2 focus:ring-baam-500 focus:border-baam-500 outline-none focus:bg-white transition">
+    </div>
+    <!-- Trending chips -->
+    <div class="flex gap-2 overflow-x-auto scrollbar-hide -mx-4 px-4 pb-1">
+      <span class="topic-chip hot">
+        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 017 13s.879.5 2.5.5c0-1 .5-4 1.25-4.5.5 1 .786 1.293 1.371 1.879A2.99 2.99 0 0113 13a2.99 2.99 0 01-.879 2.121z" clip-rule="evenodd"/></svg>
+        法拉盛美食
+      </span>
+      <span class="topic-chip">新移民攻略</span>
+      <span class="topic-chip">纽约周末好去处</span>
+      <span class="topic-chip hot">
+        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 017 13s.879.5 2.5.5c0-1 .5-4 1.25-4.5.5 1 .786 1.293 1.371 1.879A2.99 2.99 0 0113 13a2.99 2.99 0 01-.879 2.121z" clip-rule="evenodd"/></svg>
+        报税季
+      </span>
+      <span class="topic-chip">租房避坑</span>
+      <span class="topic-chip">中文牙医</span>
+      <span class="topic-chip">亲子活动</span>
+      <span class="topic-chip">二手交易</span>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== TABS ==================== -->
+<div class="bg-white border-b border-gray-100">
+  <div class="max-w-7xl mx-auto px-4">
+    <div class="flex gap-1 overflow-x-auto scrollbar-hide py-2">
+      <div class="tab-pill active">推荐</div>
+      <div class="tab-pill">关注</div>
+      <div class="tab-pill">笔记</div>
+      <div class="tab-pill">视频</div>
+      <div class="tab-pill">话题</div>
+    </div>
+  </div>
+</div>
+
+<div class="max-w-7xl mx-auto px-4 py-6">
+  <div class="lg:flex lg:gap-8">
+
+    <!-- ==================== MAIN CONTENT ==================== -->
+    <div class="flex-1 min-w-0">
+
+      <!-- Featured Section -->
+      <div class="mb-8">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+          <!-- Large featured card -->
+          <a href="discover-post-detail.html" class="col-span-2 row-span-2 discover-card relative group">
+            <div class="relative">
+              <div class="aspect-[4/5] bg-gradient-to-br from-rose-200 via-pink-100 to-orange-100 flex items-end">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent"></div>
+                <div class="relative p-4 sm:p-5 text-white w-full">
+                  <div class="mb-2">
+                    <span class="inline-block px-2 py-0.5 bg-baam-500 text-white text-xs font-medium rounded-full">编辑精选</span>
+                  </div>
+                  <h3 class="text-lg sm:text-xl font-bold leading-tight mb-2">法拉盛隐藏美食地图：10家本地人才知道的宝藏小店</h3>
+                  <div class="flex items-center gap-2">
+                    <div class="w-6 h-6 rounded-full bg-white/30 flex items-center justify-center text-xs">L</div>
+                    <span class="text-sm text-white/90">小林探店</span>
+                    <span class="text-xs text-white/60">2.3k 赞</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </a>
+          <!-- Medium card 1 -->
+          <a href="discover-video-detail.html" class="col-span-1 discover-card relative group">
+            <div class="relative">
+              <div class="aspect-[3/4] bg-gradient-to-br from-blue-200 via-cyan-100 to-teal-100"></div>
+              <div class="play-overlay">
+                <svg class="w-5 h-5 text-white ml-0.5" fill="currentColor" viewBox="0 0 20 20"><path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/></svg>
+              </div>
+              <div class="video-badge">
+                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/></svg>
+                2:35
+              </div>
+            </div>
+            <div class="p-3">
+              <h3 class="text-sm font-semibold line-clamp-2 mb-2">纽约地铁通勤技巧｜新移民必看的出行省钱攻略</h3>
+              <div class="flex items-center gap-2">
+                <div class="w-5 h-5 rounded-full bg-purple-100 flex items-center justify-center text-xs text-purple-600">M</div>
+                <span class="text-xs text-gray-500">纽约小美</span>
+                <span class="text-xs text-gray-400 ml-auto">1.8k</span>
+                <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+              </div>
+            </div>
+          </a>
+          <!-- Medium card 2 -->
+          <a href="discover-post-detail.html" class="col-span-1 discover-card relative group">
+            <div class="relative">
+              <div class="aspect-[3/4] bg-gradient-to-br from-amber-200 via-yellow-100 to-orange-100"></div>
+            </div>
+            <div class="p-3">
+              <h3 class="text-sm font-semibold line-clamp-2 mb-2">2026报税季：华人家庭常见的5个退税误区</h3>
+              <div class="flex items-center gap-2">
+                <div class="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center text-xs text-green-600">C</div>
+                <span class="text-xs text-gray-500">陈会计事务所</span>
+                <span class="text-xs text-gray-400 ml-auto">956</span>
+                <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+              </div>
+            </div>
+          </a>
+        </div>
+      </div>
+
+      <!-- ==================== MASONRY GRID ==================== -->
+      <div class="masonry">
+
+        <!-- Card 1: Photo note -->
+        <a href="discover-post-detail.html" class="masonry-item discover-card block">
+          <div class="relative">
+            <div class="bg-gradient-to-br from-emerald-200 via-teal-100 to-cyan-50" style="aspect-ratio: 3/4;"></div>
+          </div>
+          <div class="p-3">
+            <h3 class="text-sm font-semibold line-clamp-2 mb-2">刚来纽约第一周必办的8件事！手把手教你开银行卡、办地铁卡</h3>
+            <div class="flex items-center gap-2">
+              <div class="w-5 h-5 rounded-full bg-orange-100 flex items-center justify-center text-xs text-orange-600">A</div>
+              <span class="text-xs text-gray-500">纽约小安</span>
+              <span class="text-xs text-gray-400 ml-auto">3.2k</span>
+              <svg class="w-3.5 h-3.5 text-red-400" fill="currentColor" viewBox="0 0 24 24"><path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0112 5.052 5.5 5.5 0 0116.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 01-4.244 3.17 15.247 15.247 0 01-.383.219l-.022.012-.007.004-.003.001a.752.752 0 01-.704 0l-.003-.001z"/></svg>
+            </div>
+          </div>
+        </a>
+
+        <!-- Card 2: Video note -->
+        <a href="discover-video-detail.html" class="masonry-item discover-card block">
+          <div class="relative">
+            <div class="bg-gradient-to-br from-violet-200 via-purple-100 to-pink-50" style="aspect-ratio: 1/1;"></div>
+            <div class="play-overlay">
+              <svg class="w-5 h-5 text-white ml-0.5" fill="currentColor" viewBox="0 0 20 20"><path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/></svg>
+            </div>
+            <div class="video-badge">
+              <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/></svg>
+              1:48
+            </div>
+          </div>
+          <div class="p-3">
+            <h3 class="text-sm font-semibold line-clamp-2 mb-2">法拉盛夜市vlog｜这条街藏着最正宗的东北烧烤</h3>
+            <div class="flex items-center gap-2">
+              <div class="w-5 h-5 rounded-full bg-pink-100 flex items-center justify-center text-xs text-pink-600">K</div>
+              <span class="text-xs text-gray-500">吃货凯文</span>
+              <span class="text-xs text-gray-400 ml-auto">5.1k</span>
+              <svg class="w-3.5 h-3.5 text-red-400" fill="currentColor" viewBox="0 0 24 24"><path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0112 5.052 5.5 5.5 0 0116.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 01-4.244 3.17 15.247 15.247 0 01-.383.219l-.022.012-.007.004-.003.001a.752.752 0 01-.704 0l-.003-.001z"/></svg>
+            </div>
+          </div>
+        </a>
+
+        <!-- Card 3: Photo note tall -->
+        <a href="discover-post-detail.html" class="masonry-item discover-card block">
+          <div class="relative">
+            <div class="bg-gradient-to-br from-sky-200 via-blue-100 to-indigo-50" style="aspect-ratio: 3/5;"></div>
+          </div>
+          <div class="p-3">
+            <h3 class="text-sm font-semibold line-clamp-2 mb-2">皇后区最美樱花打卡点合集，第3个99%的人没去过</h3>
+            <div class="flex items-center gap-2">
+              <div class="w-5 h-5 rounded-full bg-sky-100 flex items-center justify-center text-xs text-sky-600">Y</div>
+              <span class="text-xs text-gray-500">Yuki摄影</span>
+              <span class="text-xs text-gray-400 ml-auto">4.7k</span>
+              <svg class="w-3.5 h-3.5 text-red-400" fill="currentColor" viewBox="0 0 24 24"><path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0112 5.052 5.5 5.5 0 0116.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 01-4.244 3.17 15.247 15.247 0 01-.383.219l-.022.012-.007.004-.003.001a.752.752 0 01-.704 0l-.003-.001z"/></svg>
+            </div>
+          </div>
+        </a>
+
+        <!-- Card 4: Photo note -->
+        <a href="discover-post-detail.html" class="masonry-item discover-card block">
+          <div class="relative">
+            <div class="bg-gradient-to-br from-rose-100 via-pink-50 to-red-50" style="aspect-ratio: 4/3;"></div>
+          </div>
+          <div class="p-3">
+            <h3 class="text-sm font-semibold line-clamp-2 mb-2">租房避坑指南！纽约华人租房最全checklist</h3>
+            <div class="flex items-center gap-2">
+              <div class="w-5 h-5 rounded-full bg-red-100 flex items-center justify-center text-xs text-red-600">Z</div>
+              <span class="text-xs text-gray-500">租房达人小张</span>
+              <span class="text-xs text-gray-400 ml-auto">2.8k</span>
+              <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+            </div>
+          </div>
+        </a>
+
+        <!-- Card 5: Video note -->
+        <a href="discover-video-detail.html" class="masonry-item discover-card block">
+          <div class="relative">
+            <div class="bg-gradient-to-br from-amber-200 via-orange-100 to-yellow-50" style="aspect-ratio: 4/5;"></div>
+            <div class="play-overlay">
+              <svg class="w-5 h-5 text-white ml-0.5" fill="currentColor" viewBox="0 0 20 20"><path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/></svg>
+            </div>
+            <div class="video-badge">
+              <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/></svg>
+              3:22
+            </div>
+          </div>
+          <div class="p-3">
+            <h3 class="text-sm font-semibold line-clamp-2 mb-2">带你逛法拉盛新开的韩式咖啡厅，环境太绝了</h3>
+            <div class="flex items-center gap-2">
+              <div class="w-5 h-5 rounded-full bg-amber-100 flex items-center justify-center text-xs text-amber-600">D</div>
+              <span class="text-xs text-gray-500">大卫的纽约</span>
+              <span class="text-xs text-gray-400 ml-auto">1.5k</span>
+              <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+            </div>
+          </div>
+        </a>
+
+        <!-- Card 6: Photo note -->
+        <a href="discover-post-detail.html" class="masonry-item discover-card block">
+          <div class="relative">
+            <div class="bg-gradient-to-br from-lime-200 via-green-100 to-emerald-50" style="aspect-ratio: 3/4;"></div>
+          </div>
+          <div class="p-3">
+            <h3 class="text-sm font-semibold line-clamp-2 mb-2">自己在家做广式早茶！虾饺+肠粉超详细教程</h3>
+            <div class="flex items-center gap-2">
+              <div class="w-5 h-5 rounded-full bg-lime-100 flex items-center justify-center text-xs text-lime-600">W</div>
+              <span class="text-xs text-gray-500">阿Wang厨房</span>
+              <span class="text-xs text-gray-400 ml-auto">6.3k</span>
+              <svg class="w-3.5 h-3.5 text-red-400" fill="currentColor" viewBox="0 0 24 24"><path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0112 5.052 5.5 5.5 0 0116.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 01-4.244 3.17 15.247 15.247 0 01-.383.219l-.022.012-.007.004-.003.001a.752.752 0 01-.704 0l-.003-.001z"/></svg>
+            </div>
+          </div>
+        </a>
+
+        <!-- Card 7: Photo note -->
+        <a href="discover-post-detail.html" class="masonry-item discover-card block">
+          <div class="relative">
+            <div class="bg-gradient-to-br from-indigo-200 via-blue-100 to-violet-50" style="aspect-ratio: 1/1;"></div>
+          </div>
+          <div class="p-3">
+            <h3 class="text-sm font-semibold line-clamp-2 mb-2">纽约华人家庭医生推荐｜这几位中文医生超耐心</h3>
+            <div class="flex items-center gap-2">
+              <div class="w-5 h-5 rounded-full bg-indigo-100 flex items-center justify-center text-xs text-indigo-600">H</div>
+              <span class="text-xs text-gray-500">健康小助手</span>
+              <span class="text-xs text-gray-400 ml-auto">1.9k</span>
+              <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+            </div>
+          </div>
+        </a>
+
+        <!-- Card 8: Photo note -->
+        <a href="discover-post-detail.html" class="masonry-item discover-card block">
+          <div class="relative">
+            <div class="bg-gradient-to-br from-fuchsia-200 via-pink-100 to-rose-50" style="aspect-ratio: 4/5;"></div>
+          </div>
+          <div class="p-3">
+            <h3 class="text-sm font-semibold line-clamp-2 mb-2">周末带娃去哪玩？纽约10个免费亲子好去处</h3>
+            <div class="flex items-center gap-2">
+              <div class="w-5 h-5 rounded-full bg-fuchsia-100 flex items-center justify-center text-xs text-fuchsia-600">J</div>
+              <span class="text-xs text-gray-500">Judy妈妈</span>
+              <span class="text-xs text-gray-400 ml-auto">3.5k</span>
+              <svg class="w-3.5 h-3.5 text-red-400" fill="currentColor" viewBox="0 0 24 24"><path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0112 5.052 5.5 5.5 0 0116.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 01-4.244 3.17 15.247 15.247 0 01-.383.219l-.022.012-.007.004-.003.001a.752.752 0 01-.704 0l-.003-.001z"/></svg>
+            </div>
+          </div>
+        </a>
+
+        <!-- Card 9: Video note -->
+        <a href="discover-video-detail.html" class="masonry-item discover-card block">
+          <div class="relative">
+            <div class="bg-gradient-to-br from-teal-200 via-emerald-100 to-green-50" style="aspect-ratio: 3/4;"></div>
+            <div class="play-overlay">
+              <svg class="w-5 h-5 text-white ml-0.5" fill="currentColor" viewBox="0 0 20 20"><path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/></svg>
+            </div>
+            <div class="video-badge">
+              <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/></svg>
+              4:15
+            </div>
+          </div>
+          <div class="p-3">
+            <h3 class="text-sm font-semibold line-clamp-2 mb-2">跟着我逛99大华超市｜每周必买清单分享</h3>
+            <div class="flex items-center gap-2">
+              <div class="w-5 h-5 rounded-full bg-teal-100 flex items-center justify-center text-xs text-teal-600">S</div>
+              <span class="text-xs text-gray-500">省钱达人Sue</span>
+              <span class="text-xs text-gray-400 ml-auto">2.1k</span>
+              <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+            </div>
+          </div>
+        </a>
+
+        <!-- Card 10: Photo note -->
+        <a href="discover-post-detail.html" class="masonry-item discover-card block">
+          <div class="relative">
+            <div class="bg-gradient-to-br from-orange-200 via-amber-100 to-yellow-50" style="aspect-ratio: 5/4;"></div>
+          </div>
+          <div class="p-3">
+            <h3 class="text-sm font-semibold line-clamp-2 mb-2">纽约考驾照全流程！从笔试到路考一篇搞定</h3>
+            <div class="flex items-center gap-2">
+              <div class="w-5 h-5 rounded-full bg-orange-100 flex items-center justify-center text-xs text-orange-600">R</div>
+              <span class="text-xs text-gray-500">老王说纽约</span>
+              <span class="text-xs text-gray-400 ml-auto">7.8k</span>
+              <svg class="w-3.5 h-3.5 text-red-400" fill="currentColor" viewBox="0 0 24 24"><path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0112 5.052 5.5 5.5 0 0116.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 01-4.244 3.17 15.247 15.247 0 01-.383.219l-.022.012-.007.004-.003.001a.752.752 0 01-.704 0l-.003-.001z"/></svg>
+            </div>
+          </div>
+        </a>
+
+      </div>
+
+      <!-- Load more -->
+      <div class="text-center mt-8">
+        <button class="px-8 py-3 bg-white border border-gray-200 rounded-full text-sm font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition shadow-sm">
+          加载更多
+          <svg class="w-4 h-4 inline-block ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- ==================== SIDEBAR (Desktop) ==================== -->
+    <div class="hidden lg:block w-80 flex-shrink-0 space-y-6">
+
+      <!-- Trending Topics -->
+      <div class="sidebar-card">
+        <h3 class="font-bold text-base mb-4 flex items-center gap-2">
+          <svg class="w-5 h-5 text-baam-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 017 13s.879.5 2.5.5c0-1 .5-4 1.25-4.5.5 1 .786 1.293 1.371 1.879A2.99 2.99 0 0113 13a2.99 2.99 0 01-.879 2.121z" clip-rule="evenodd"/></svg>
+          热门话题
+        </h3>
+        <div class="space-y-3">
+          <a href="#" class="flex items-center gap-3 group">
+            <span class="w-6 h-6 bg-baam-500 text-white text-xs font-bold rounded-md flex items-center justify-center">1</span>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-gray-900 group-hover:text-baam-500 transition truncate">#法拉盛美食探店</p>
+              <p class="text-xs text-gray-400">2.3万 浏览</p>
+            </div>
+          </a>
+          <a href="#" class="flex items-center gap-3 group">
+            <span class="w-6 h-6 bg-baam-500 text-white text-xs font-bold rounded-md flex items-center justify-center">2</span>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-gray-900 group-hover:text-baam-500 transition truncate">#新移民纽约生存指南</p>
+              <p class="text-xs text-gray-400">1.8万 浏览</p>
+            </div>
+          </a>
+          <a href="#" class="flex items-center gap-3 group">
+            <span class="w-6 h-6 bg-baam-500 text-white text-xs font-bold rounded-md flex items-center justify-center">3</span>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-gray-900 group-hover:text-baam-500 transition truncate">#2026报税攻略</p>
+              <p class="text-xs text-gray-400">1.5万 浏览</p>
+            </div>
+          </a>
+          <a href="#" class="flex items-center gap-3 group">
+            <span class="w-6 h-6 bg-gray-200 text-gray-500 text-xs font-bold rounded-md flex items-center justify-center">4</span>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-gray-900 group-hover:text-baam-500 transition truncate">#纽约租房经验</p>
+              <p class="text-xs text-gray-400">9,200 浏览</p>
+            </div>
+          </a>
+          <a href="#" class="flex items-center gap-3 group">
+            <span class="w-6 h-6 bg-gray-200 text-gray-500 text-xs font-bold rounded-md flex items-center justify-center">5</span>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-gray-900 group-hover:text-baam-500 transition truncate">#周末亲子活动</p>
+              <p class="text-xs text-gray-400">7,800 浏览</p>
+            </div>
+          </a>
+        </div>
+      </div>
+
+      <!-- Recommended Voices -->
+      <div class="sidebar-card">
+        <h3 class="font-bold text-base mb-4 flex items-center gap-2">
+          <svg class="w-5 h-5 text-baam-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          推荐创作者
+        </h3>
+        <div class="space-y-4">
+          <a href="discover-voice-profile.html" class="flex items-center gap-3 group">
+            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-pink-200 to-rose-300 flex items-center justify-center text-sm font-bold text-rose-600 flex-shrink-0">L</div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-semibold text-gray-900 group-hover:text-baam-500 transition">小林探店</p>
+              <p class="text-xs text-gray-400">法拉盛美食博主 · 2.3万粉丝</p>
+            </div>
+            <button class="px-3 py-1 text-xs font-medium text-baam-500 border border-baam-500 rounded-full hover:bg-baam-500 hover:text-white transition flex-shrink-0">关注</button>
+          </a>
+          <a href="discover-voice-profile.html" class="flex items-center gap-3 group">
+            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-200 to-indigo-300 flex items-center justify-center text-sm font-bold text-indigo-600 flex-shrink-0">W</div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-semibold text-gray-900 group-hover:text-baam-500 transition">老王说纽约</p>
+              <p class="text-xs text-gray-400">新移民生活指南 · 1.5万粉丝</p>
+            </div>
+            <button class="px-3 py-1 text-xs font-medium text-baam-500 border border-baam-500 rounded-full hover:bg-baam-500 hover:text-white transition flex-shrink-0">关注</button>
+          </a>
+          <a href="discover-voice-profile.html" class="flex items-center gap-3 group">
+            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-amber-200 to-orange-300 flex items-center justify-center text-sm font-bold text-orange-600 flex-shrink-0">J</div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-semibold text-gray-900 group-hover:text-baam-500 transition">Judy妈妈</p>
+              <p class="text-xs text-gray-400">亲子生活 · 8,900粉丝</p>
+            </div>
+            <button class="px-3 py-1 text-xs font-medium text-baam-500 border border-baam-500 rounded-full hover:bg-baam-500 hover:text-white transition flex-shrink-0">关注</button>
+          </a>
+        </div>
+        <a href="voices-discover.html" class="block text-center text-sm text-baam-500 font-medium mt-4 hover:underline">查看更多创作者 &rarr;</a>
+      </div>
+
+      <!-- Hot Picks -->
+      <div class="sidebar-card">
+        <h3 class="font-bold text-base mb-4 flex items-center gap-2">
+          <svg class="w-5 h-5 text-baam-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
+          本周精选
+        </h3>
+        <div class="space-y-3">
+          <a href="discover-post-detail.html" class="flex gap-3 group">
+            <div class="w-16 h-16 rounded-xl bg-gradient-to-br from-emerald-200 to-teal-100 flex-shrink-0"></div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-gray-900 line-clamp-2 group-hover:text-baam-500 transition">法拉盛最好吃的兰州拉面测评</p>
+              <p class="text-xs text-gray-400 mt-1">1.2k 赞 · 328 收藏</p>
+            </div>
+          </a>
+          <a href="discover-post-detail.html" class="flex gap-3 group">
+            <div class="w-16 h-16 rounded-xl bg-gradient-to-br from-sky-200 to-blue-100 flex-shrink-0"></div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-gray-900 line-clamp-2 group-hover:text-baam-500 transition">纽约公立学校申请全攻略2026</p>
+              <p class="text-xs text-gray-400 mt-1">2.5k 赞 · 892 收藏</p>
+            </div>
+          </a>
+          <a href="discover-post-detail.html" class="flex gap-3 group">
+            <div class="w-16 h-16 rounded-xl bg-gradient-to-br from-violet-200 to-purple-100 flex-shrink-0"></div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-gray-900 line-clamp-2 group-hover:text-baam-500 transition">H1B抽签后该做什么？律师详解</p>
+              <p class="text-xs text-gray-400 mt-1">3.8k 赞 · 1.2k 收藏</p>
+            </div>
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ==================== FAB: Create Post ==================== -->
+<a href="discover-create-post.html" class="fab" title="发布笔记" style="background: linear-gradient(135deg, #F97316, #EA580C);">
+  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+</a>
+
+<!-- ==================== FOOTER ==================== -->
+<footer class="bg-gray-900 text-gray-400 mt-12">
+  <div class="max-w-7xl mx-auto px-4 py-12">
+    <div class="grid sm:grid-cols-2 lg:grid-cols-5 gap-8">
+      <div class="lg:col-span-2">
+        <div class="flex items-center gap-2 mb-4">
+          <div class="w-8 h-8 bg-baam-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">B</div>
+          <span class="text-xl font-bold text-white">Baam</span>
+        </div>
+        <p class="text-sm leading-relaxed">AI驱动的纽约华人本地生活与商家增长平台。新闻、资讯、论坛、商家、达人，一站式解决本地生活问题。</p>
+      </div>
+      <div>
+        <h3 class="text-white font-semibold text-sm mb-4">快速导航</h3>
+        <ul class="space-y-2 text-sm">
+          <li><a href="news-list.html" class="hover:text-white transition">本地新闻</a></li>
+          <li><a href="guides-list.html" class="hover:text-white transition">生活资讯</a></li>
+          <li><a href="forum-home.html" class="hover:text-white transition">社区论坛</a></li>
+          <li><a href="business-list.html" class="hover:text-white transition">商家目录</a></li>
+          <li><a href="discover-home.html" class="hover:text-white transition">发现</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3 class="text-white font-semibold text-sm mb-4">商家服务</h3>
+        <ul class="space-y-2 text-sm">
+          <li><a href="#" class="hover:text-white transition">商家入驻</a></li>
+          <li><a href="#" class="hover:text-white transition">广告合作</a></li>
+          <li><a href="#" class="hover:text-white transition">达人申请</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3 class="text-white font-semibold text-sm mb-4">关于我们</h3>
+        <ul class="space-y-2 text-sm">
+          <li><a href="#" class="hover:text-white transition">关于 Baam</a></li>
+          <li><a href="#" class="hover:text-white transition">联系我们</a></li>
+          <li><a href="#" class="hover:text-white transition">使用条款</a></li>
+          <li><a href="#" class="hover:text-white transition">隐私政策</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="border-t border-gray-800 mt-8 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <p class="text-xs">&copy; 2025 Baam. All rights reserved.</p>
+      <div class="flex items-center gap-4">
+        <span class="text-xs">微信公众号</span>
+        <span class="text-xs">Facebook</span>
+        <span class="text-xs">Instagram</span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="../assets/js/prototype.js"></script>
+</body>
+</html>

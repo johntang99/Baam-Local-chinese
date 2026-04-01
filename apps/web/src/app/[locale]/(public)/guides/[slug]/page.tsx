@@ -90,6 +90,19 @@ export default async function GuideDetailPage({ params }: Props) {
 
   const relatedNews = (rawRelated || []) as AnyRow[];
 
+  // Fetch related discover posts (matching audience_tags or topic_tags)
+  let discoverPosts: AnyRow[] = [];
+  if (audienceTags.length > 0) {
+    const { data: rawDiscover } = await supabase
+      .from('voice_posts')
+      .select('id, slug, title, cover_images, cover_image_url, like_count, profiles!voice_posts_author_id_fkey(display_name)')
+      .eq('status', 'published')
+      .overlaps('topic_tags', audienceTags)
+      .order('like_count', { ascending: false })
+      .limit(6);
+    discoverPosts = (rawDiscover || []) as AnyRow[];
+  }
+
   // Check if this is medical/legal content that needs update timestamp
   const isSensitiveContent = article.content_vertical === 'guide_howto' && (
     (article.title_zh && (article.title_zh.includes('医') || article.title_zh.includes('法律') || article.title_zh.includes('保险') || article.title_zh.includes('白卡'))) ||
@@ -321,6 +334,41 @@ export default async function GuideDetailPage({ params }: Props) {
                       <h3 className="font-medium text-sm line-clamp-2">{news.title_zh || news.title_en}</h3>
                     </Link>
                   ))}
+                </div>
+              </section>
+            )}
+
+            {/* Related Discover Posts (相关笔记) */}
+            {discoverPosts.length > 0 && (
+              <section className="mt-8">
+                <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+                  <span>📝</span> 相关笔记
+                </h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {discoverPosts.map((post, i) => {
+                    const coverImage = post.cover_images?.[0] || post.cover_image_url;
+                    const authorName = post.profiles?.display_name || '匿名';
+                    const gradients = ['from-rose-200 to-pink-100', 'from-emerald-200 to-teal-100', 'from-violet-200 to-purple-100', 'from-sky-200 to-blue-100'];
+                    return (
+                      <Link key={post.id} href={`/discover/${post.slug || post.id}`} className="group">
+                        <div className="rounded-xl overflow-hidden bg-white border border-gray-200 hover:shadow-md transition-shadow">
+                          <div className="aspect-[4/3] overflow-hidden">
+                            {coverImage ? (
+                              <img src={coverImage} alt={post.title || ''} className="w-full h-full object-cover group-hover:scale-105 transition-transform" loading="lazy" />
+                            ) : (
+                              <div className={`w-full h-full bg-gradient-to-br ${gradients[i % gradients.length]} flex items-center justify-center`}>
+                                <span className="text-white/50 text-xl font-bold">{post.title?.[0] || '📝'}</span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="p-2.5">
+                            <h3 className="text-xs font-semibold text-gray-900 line-clamp-2 mb-1 leading-snug">{post.title}</h3>
+                            <span className="text-[10px] text-gray-400">{authorName}</span>
+                          </div>
+                        </div>
+                      </Link>
+                    );
+                  })}
                 </div>
               </section>
             )}

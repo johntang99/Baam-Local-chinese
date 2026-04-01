@@ -163,12 +163,18 @@ export type Database = {
         Row: {
           id: string;
           author_id: string;
-          post_type: 'short_post' | 'blog' | 'guide_post' | 'recommendation' | 'question' | 'event_post' | 'opinion';
+          post_type: 'short_post' | 'blog' | 'guide_post' | 'recommendation' | 'question' | 'event_post' | 'opinion' | 'note' | 'video';
           title: string | null;
           slug: string | null;
           excerpt: string | null;
           content: string;
           cover_image_url: string | null;
+          video_url: string | null;
+          video_thumbnail_url: string | null;
+          video_duration_seconds: number | null;
+          aspect_ratio: string;
+          cover_images: string[] | null;
+          location_text: string | null;
           visibility: 'public' | 'followers_only' | 'private';
           status: string;
           region_id: string | null;
@@ -188,6 +194,58 @@ export type Database = {
           content: string;
         };
         Update: Partial<Database['public']['Tables']['voice_posts']['Insert']>;
+      };
+      discover_topics: {
+        Row: {
+          id: string;
+          slug: string;
+          name_zh: string;
+          name_en: string | null;
+          description: string | null;
+          icon_emoji: string | null;
+          cover_image_url: string | null;
+          post_count: number;
+          follower_count: number;
+          is_trending: boolean;
+          is_featured: boolean;
+          sort_order: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database['public']['Tables']['discover_topics']['Row']> & {
+          slug: string;
+          name_zh: string;
+        };
+        Update: Partial<Database['public']['Tables']['discover_topics']['Insert']>;
+      };
+      discover_post_topics: {
+        Row: {
+          id: string;
+          post_id: string;
+          topic_id: string;
+        };
+        Insert: {
+          post_id: string;
+          topic_id: string;
+        };
+        Update: Partial<Database['public']['Tables']['discover_post_topics']['Insert']>;
+      };
+      discover_post_businesses: {
+        Row: {
+          id: string;
+          post_id: string;
+          business_id: string;
+          relation_note: string | null;
+          sort_order: number;
+          created_at: string;
+        };
+        Insert: {
+          post_id: string;
+          business_id: string;
+          relation_note?: string;
+          sort_order?: number;
+        };
+        Update: Partial<Database['public']['Tables']['discover_post_businesses']['Insert']>;
       };
       leads: {
         Row: {

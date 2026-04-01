@@ -206,6 +206,174 @@ export async function createVoicePost(formData: FormData) {
   return { success: true, redirect: `/voices/${user.username}/posts/${post?.slug}` };
 }
 
+// ─── Discover: Create Post (extended with images, businesses, topics, location) ──
+
+export async function createDiscoverPost(formData: FormData) {
+  const user = await getCurrentUser();
+  if (!user) {
+    return { error: 'UNAUTHORIZED' };
+  }
+
+  const title = (formData.get('title') as string)?.trim();
+  const content = (formData.get('content') as string)?.trim();
+  const postType = (formData.get('post_type') as string) || 'note';
+  const tagsRaw = (formData.get('tags') as string)?.trim();
+  const coverImagesRaw = (formData.get('cover_images') as string)?.trim();
+  const videoUrl = (formData.get('video_url') as string)?.trim() || null;
+  const videoThumbnailUrl = (formData.get('video_thumbnail_url') as string)?.trim() || null;
+  const videoDurationRaw = (formData.get('video_duration') as string)?.trim();
+  const videoDuration = videoDurationRaw ? parseInt(videoDurationRaw, 10) : null;
+  const locationText = (formData.get('location_text') as string)?.trim() || null;
+  const businessIdsRaw = (formData.get('business_ids') as string)?.trim();
+
+  if (!content && !title) {
+    return { error: '请输入标题或内容' };
+  }
+
+  const slug = (title || content?.slice(0, 30) || '')
+    .toLowerCase()
+    .replace(/[^\w\u4e00-\u9fff]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80) + '-' + Date.now().toString(36);
+
+  const tags = tagsRaw
+    ? tagsRaw.split(/[,，]/).map(t => t.trim()).filter(Boolean).slice(0, 5)
+    : [];
+
+  const coverImages = coverImagesRaw
+    ? JSON.parse(coverImagesRaw) as string[]
+    : [];
+
+  const businessIds = businessIdsRaw
+    ? JSON.parse(businessIdsRaw) as string[]
+    : [];
+
+  const supabase = createAdminClient();
+
+  // Insert post
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: post, error } = await (supabase as any)
+    .from('voice_posts')
+    .insert({
+      author_id: user.id,
+      post_type: postType,
+      title: title || null,
+      slug,
+      content: content || '',
+      visibility: 'public',
+      status: 'published',
+      published_at: new Date().toISOString(),
+      region_id: user.regionId,
+      language: 'zh',
+      topic_tags: tags,
+      cover_images: coverImages.length > 0 ? coverImages : null,
+      cover_image_url: coverImages[0] || videoThumbnailUrl || null,
+      video_url: videoUrl,
+      video_thumbnail_url: videoThumbnailUrl,
+      video_duration_seconds: videoDuration,
+      location_text: locationText,
+      aspect_ratio: postType === 'video' ? '16:9' : '4:3',
+    })
+    .select('id, slug')
+    .single();
+
+  if (error) {
+    return { error: '发布失败：' + error.message };
+  }
+
+  // Link businesses
+  if (businessIds.length > 0 && post?.id) {
+    const bizLinks = businessIds.slice(0, 5).map((bizId: string, i: number) => ({
+      post_id: post.id,
+      business_id: bizId,
+      sort_order: i,
+    }));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any).from('discover_post_businesses').insert(bizLinks);
+  }
+
+  // Link topics (match tags to discover_topics)
+  if (tags.length > 0 && post?.id) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: matchedTopics } = await (supabase as any)
+      .from('discover_topics')
+      .select('id, name_zh')
+      .in('name_zh', tags);
+
+    if (matchedTopics && matchedTopics.length > 0) {
+      const topicLinks = matchedTopics.map((t: { id: string }) => ({
+        post_id: post.id,
+        topic_id: t.id,
+      }));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).from('discover_post_topics').insert(topicLinks);
+    }
+  }
+
+  revalidatePath('/discover');
+  return { success: true, redirect: `/discover/${post?.slug}` };
+}
+
+// ─── Discover: Search Businesses (for business linker) ──
+
+export async function searchBusinesses(query: string) {
+  if (!query || query.length < 1) return { businesses: [] };
+
+  const supabase = createAdminClient();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (supabase as any)
+    .from('businesses')
+    .select('id, slug, display_name, display_name_zh, short_desc_zh, address_line1')
+    .or(`display_name.ilike.%${query}%,display_name_zh.ilike.%${query}%`)
+    .eq('status', 'active')
+    .limit(8);
+
+  return { businesses: data || [] };
+}
+
+// ─── Discover: Delete Post ──
+
+export async function deleteDiscoverPost(formData: FormData) {
+  const user = await getCurrentUser();
+  if (!user) return { error: 'UNAUTHORIZED' };
+
+  const postId = formData.get('post_id') as string;
+  if (!postId) return { error: '缺少帖子ID' };
+
+  const supabase = createAdminClient();
+
+  // Verify ownership
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: post } = await (supabase as any)
+    .from('voice_posts')
+    .select('id, author_id')
+    .eq('id', postId)
+    .single();
+
+  if (!post || post.author_id !== user.id) {
+    return { error: '无权删除此帖子' };
+  }
+
+  // Delete linked topics and businesses first
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase as any).from('discover_post_topics').delete().eq('post_id', postId);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase as any).from('discover_post_businesses').delete().eq('post_id', postId);
+
+  // Delete the post
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
+    .from('voice_posts')
+    .delete()
+    .eq('id', postId);
+
+  if (error) return { error: '删除失败：' + error.message };
+
+  revalidatePath('/discover');
+  return { success: true };
+}
+
 // ─── Follow / Unfollow ────────────────────────────────────────────────
 
 export async function toggleFollow(formData: FormData) {

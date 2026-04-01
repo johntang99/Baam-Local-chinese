@@ -86,6 +86,7 @@ export default async function HomePage() {
     { data: rNews }, { data: rGuides }, { data: rBiz },
     { data: rThreads }, { data: rEvents }, { data: rVoices },
     { data: rAlerts }, { data: rCategories }, { data: rBoards },
+    { data: rDiscoverPosts },
   ] = await Promise.all([
     supabase.from('articles').select('*').in('content_vertical', ['news_alert','news_brief','news_explainer','news_roundup','news_community']).eq('editorial_status', 'published').order('published_at', { ascending: false }).limit(3),
     supabase.from('articles').select('*').in('content_vertical', ['guide_howto','guide_checklist','guide_bestof','guide_comparison','guide_scenario']).eq('editorial_status', 'published').order('view_count', { ascending: false }).limit(4),
@@ -96,6 +97,7 @@ export default async function HomePage() {
     supabase.from('articles').select('*').eq('content_vertical', 'news_alert').eq('editorial_status', 'published').order('published_at', { ascending: false }).limit(1),
     supabase.from('categories').select('id, slug, name_zh').eq('type', 'article'),
     supabase.from('categories').select('id, slug, name_zh').eq('type', 'forum'),
+    supabase.from('voice_posts').select('*, profiles!voice_posts_author_id_fkey(display_name, username)').eq('status', 'published').eq('visibility', 'public').order('published_at', { ascending: false }).limit(6),
   ]);
 
   const news = (rNews || []) as AnyRow[];
@@ -107,6 +109,7 @@ export default async function HomePage() {
   const alerts = (rAlerts || []) as AnyRow[];
   const cats = (rCategories || []) as AnyRow[];
   const boards = (rBoards || []) as AnyRow[];
+  const discoverPosts = (rDiscoverPosts || []) as AnyRow[];
 
   // Maps
   const catNameMap: Record<string, string> = {};
@@ -208,32 +211,36 @@ export default async function HomePage() {
           </section>
         )}
 
-        {/* ===== LOCAL VOICES ===== */}
-        {voices.length > 0 && (
+        {/* ===== DISCOVER (replaces Local Voices) ===== */}
+        {discoverPosts.length > 0 && (
           <section>
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-xl font-bold flex items-center gap-2">🎙️ {t('home.localVoices')}</h2>
-              <Link href="/voices" className="text-sm text-primary font-medium hover:underline">{t('home.viewMore')} →</Link>
+              <h2 className="text-xl font-bold flex items-center gap-2">📝 社区发现</h2>
+              <Link href="/discover" className="text-sm text-primary font-medium hover:underline">{t('home.viewMore')} →</Link>
             </div>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-              {voices.map((v, i) => {
-                const gradient = voiceGradients[i % voiceGradients.length];
-                const emoji = voiceEmojis[v.profile_type] || '👤';
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+              {discoverPosts.map((post, i) => {
+                const coverImage = post.cover_images?.[0] || post.cover_image_url;
+                const authorName = post.profiles?.display_name || '匿名';
+                const gradients = ['from-rose-200 to-pink-100', 'from-emerald-200 to-teal-100', 'from-violet-200 to-purple-100', 'from-sky-200 to-blue-100', 'from-amber-200 to-orange-100', 'from-fuchsia-200 to-pink-100'];
                 return (
-                  <div key={v.id} className="card p-5 text-center">
-                    <div className={`w-16 h-16 rounded-full bg-gradient-to-br ${gradient} mx-auto mb-3 flex items-center justify-center text-2xl`}>{emoji}</div>
-                    <h3 className="font-semibold text-sm">{v.display_name}</h3>
-                    {v.is_verified && (
-                      <div className="flex items-center justify-center gap-1 mt-1">
-                        <svg className="w-3.5 h-3.5 text-blue-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>
-                        <span className="text-xs text-blue-600">认证{v.profile_type === 'expert' ? '专家' : v.profile_type === 'professional' ? '专业人士' : '达人'}</span>
+                  <Link key={post.id} href={`/discover/${post.slug || post.id}`} className="group">
+                    <div className="rounded-xl overflow-hidden bg-white border border-gray-200 hover:shadow-md transition-shadow">
+                      <div className="aspect-[3/4] overflow-hidden">
+                        {coverImage ? (
+                          <img src={coverImage} alt={post.title || ''} className="w-full h-full object-cover group-hover:scale-105 transition-transform" loading="lazy" />
+                        ) : (
+                          <div className={`w-full h-full bg-gradient-to-br ${gradients[i % gradients.length]} flex items-center justify-center`}>
+                            <span className="text-white/50 text-2xl font-bold">{post.title?.[0] || '📝'}</span>
+                          </div>
+                        )}
                       </div>
-                    )}
-                    <p className="text-xs text-text-muted mt-1">{v.headline || v.profile_type}</p>
-                    <p className="text-xs text-text-muted">{v.follower_count || 0} 粉丝</p>
-                    <p className="text-xs text-text-secondary mt-2 line-clamp-2">{v.bio_zh || v.bio}</p>
-                    <button className="mt-3 w-full py-1.5 bg-primary text-white text-sm rounded-lg hover:bg-primary-dark transition">+ 关注</button>
-                  </div>
+                      <div className="p-2.5">
+                        <h3 className="text-xs font-semibold text-gray-900 line-clamp-2 leading-snug">{post.title}</h3>
+                        <p className="text-[10px] text-gray-400 mt-1">{authorName}</p>
+                      </div>
+                    </div>
+                  </Link>
                 );
               })}
             </div>

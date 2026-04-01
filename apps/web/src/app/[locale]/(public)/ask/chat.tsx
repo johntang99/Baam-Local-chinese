@@ -2,14 +2,63 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { askXiaoLin } from './actions';
-import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+
+interface DebugPrompt {
+  keywords: string[];
+  systemPrompt: string;
+  userPrompt: string;
+  model: string;
+  totalResults: number;
+}
 
 interface Message {
   role: 'user' | 'assistant';
   content: string;
   sources?: { type: string; title: string; url: string; snippet?: string }[];
+  debugPrompt?: DebugPrompt;
+}
+
+// ─── Voice input hook ────────────────────────────────────────
+function useVoiceInput(onResult: (text: string) => void) {
+  const [isListening, setIsListening] = useState(false);
+  const [isSupported, setIsSupported] = useState(false);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+
+  useEffect(() => {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SR) {
+      setIsSupported(true);
+      const recognition = new SR();
+      recognition.lang = 'zh-CN';
+      recognition.interimResults = false;
+      recognition.continuous = false;
+      recognition.maxAlternatives = 1;
+
+      recognition.onresult = (event: SpeechRecognitionEvent) => {
+        const transcript = event.results[0][0].transcript;
+        if (transcript) onResult(transcript);
+      };
+      recognition.onend = () => setIsListening(false);
+      recognition.onerror = () => setIsListening(false);
+
+      recognitionRef.current = recognition;
+    }
+  }, [onResult]);
+
+  const toggle = useCallback(() => {
+    const rec = recognitionRef.current;
+    if (!rec) return;
+    if (isListening) {
+      rec.stop();
+    } else {
+      rec.start();
+      setIsListening(true);
+    }
+  }, [isListening]);
+
+  return { isListening, isSupported, toggle };
 }
 
 const SUGGESTED_QUESTIONS = [
@@ -33,6 +82,12 @@ export function AskChat({ initialQuery }: AskChatProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const handleVoiceResult = useCallback((text: string) => {
+    setInput(text);
+    inputRef.current?.focus();
+  }, []);
+  const voice = useVoiceInput(handleVoiceResult);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -50,10 +105,14 @@ export function AskChat({ initialQuery }: AskChatProps) {
     if (!q) return;
 
     setInput('');
+    // Capture current messages BEFORE adding the new user message
+    const currentMessages = [...messages];
     setMessages(prev => [...prev, { role: 'user', content: q }]);
     setLoading(true);
 
-    const result = await askXiaoLin(q);
+    // Pass conversation history so AI can handle follow-ups like "需要", "再推荐几个"
+    const history = currentMessages.map(m => ({ role: m.role, content: m.content }));
+    const result = await askXiaoLin(q, history);
 
     if (result.error) {
       setMessages(prev => [...prev, { role: 'assistant', content: result.error! }]);
@@ -62,12 +121,13 @@ export function AskChat({ initialQuery }: AskChatProps) {
         role: 'assistant',
         content: result.data!.answer,
         sources: result.data!.sources,
+        debugPrompt: result.data!.debugPrompt,
       }]);
     }
 
     setLoading(false);
     inputRef.current?.focus();
-  }, []);
+  }, [messages]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,6 +135,8 @@ export function AskChat({ initialQuery }: AskChatProps) {
       handleAsk(input);
     }
   };
+
+  const [showPrompt, setShowPrompt] = useState<DebugPrompt | null>(null);
 
   const sourceTypeColors: Record<string, string> = {
     '商家': 'bg-blue-100 text-blue-700',
@@ -85,8 +147,83 @@ export function AskChat({ initialQuery }: AskChatProps) {
     '达人': 'bg-pink-100 text-pink-700',
   };
 
+  // Helper: find phone numbers in React children and wrap them in <a href="tel:">
+  function linkifyPhones(children: React.ReactNode): React.ReactNode {
+    if (!children) return children;
+    const phoneRegex = /(\(?\d{3}\)?[\s\-.]?\d{3}[\s\-.]?\d{4})/g;
+    return Array.isArray(children) ? children.map((child, idx) => {
+      if (typeof child !== 'string') return child;
+      const parts = child.split(phoneRegex);
+      if (parts.length === 1) return child;
+      return parts.map((part, j) => {
+        if (phoneRegex.test(part)) {
+          phoneRegex.lastIndex = 0; // reset regex
+          const digits = part.replace(/\D/g, '');
+          return <a key={`${idx}-${j}`} href={`tel:+1${digits}`} className="text-primary underline">{part}</a>;
+        }
+        return part;
+      });
+    }) : typeof children === 'string' ? (() => {
+      const parts = children.split(phoneRegex);
+      if (parts.length === 1) return children;
+      return parts.map((part, j) => {
+        if (phoneRegex.test(part)) {
+          phoneRegex.lastIndex = 0;
+          const digits = part.replace(/\D/g, '');
+          return <a key={j} href={`tel:+1${digits}`} className="text-primary underline">{part}</a>;
+        }
+        return part;
+      });
+    })() : children;
+  }
+
   return (
     <div>
+      {/* Prompt Debug Modal */}
+      {showPrompt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowPrompt(null)}>
+          <div className="bg-bg-card rounded-xl shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b border-border">
+              <h3 className="font-semibold">AI Prompt 调试</h3>
+              <button onClick={() => setShowPrompt(null)} className="text-text-muted hover:text-text-primary text-lg">&times;</button>
+            </div>
+            <div className="p-4 space-y-4 text-sm">
+              <div>
+                <p className="font-medium text-text-muted mb-1">模型</p>
+                <p className="bg-bg-page rounded px-3 py-1.5 font-mono text-xs">{showPrompt.model}</p>
+              </div>
+              <div>
+                <p className="font-medium text-text-muted mb-1">提取关键词</p>
+                <div className="flex flex-wrap gap-1">
+                  {showPrompt.keywords.map((kw, i) => (
+                    <span key={i} className="bg-primary/10 text-primary px-2 py-0.5 rounded text-xs">{kw}</span>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="font-medium text-text-muted mb-1">搜索到 {showPrompt.totalResults} 条结果</p>
+              </div>
+              <div>
+                <p className="font-medium text-text-muted mb-1">System Prompt</p>
+                <pre className="bg-bg-page rounded px-3 py-2 text-xs whitespace-pre-wrap overflow-x-auto max-h-40 overflow-y-auto">{showPrompt.systemPrompt}</pre>
+              </div>
+              <div>
+                <p className="font-medium text-text-muted mb-1">User Prompt</p>
+                <pre className="bg-bg-page rounded px-3 py-2 text-xs whitespace-pre-wrap overflow-x-auto max-h-60 overflow-y-auto">{showPrompt.userPrompt}</pre>
+              </div>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(`System:\n${showPrompt.systemPrompt}\n\nUser:\n${showPrompt.userPrompt}`);
+                }}
+                className="text-xs text-primary hover:underline"
+              >
+                复制全部 Prompt
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Messages */}
       <div className="space-y-4 mb-6 min-h-[200px]">
         {messages.length === 0 && !loading && (
@@ -125,25 +262,68 @@ export function AskChat({ initialQuery }: AskChatProps) {
                 </div>
               )}
               <div className="text-sm leading-relaxed prose prose-sm max-w-none [&_h2]:text-base [&_h2]:font-bold [&_h2]:mt-3 [&_h2]:mb-2 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:mt-2 [&_h3]:mb-1 [&_p]:mb-2 [&_ul]:list-disc [&_ul]:pl-4 [&_ul]:mb-2 [&_ol]:list-decimal [&_ol]:pl-4 [&_ol]:mb-2 [&_li]:mb-0.5 [&_strong]:font-semibold [&_hr]:my-3 [&_hr]:border-border [&_table]:w-full [&_table]:text-xs [&_table]:border-collapse [&_table]:my-3 [&_th]:bg-bg-page [&_th]:px-2 [&_th]:py-1.5 [&_th]:text-left [&_th]:font-semibold [&_th]:border [&_th]:border-border [&_td]:px-2 [&_td]:py-1.5 [&_td]:border [&_td]:border-border [&_tr:hover]:bg-bg-page/50">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    // Make phone numbers click-to-call
+                    td: ({ children, ...props }) => {
+                      const text = String(children);
+                      // Match phone patterns like (718) 275-2688, 917-900-7777, etc.
+                      const phoneMatch = text.match(/\(?\d{3}\)?[\s\-.]?\d{3}[\s\-.]?\d{4}/);
+                      if (phoneMatch) {
+                        const phone = phoneMatch[0];
+                        const digits = phone.replace(/\D/g, '');
+                        return (
+                          <td {...props}>
+                            <a href={`tel:+1${digits}`} className="text-primary underline whitespace-nowrap">
+                              {text}
+                            </a>
+                          </td>
+                        );
+                      }
+                      return <td {...props}>{children}</td>;
+                    },
+                    // Also make inline phone numbers clickable in paragraphs/list items
+                    p: ({ children, ...props }) => {
+                      return <p {...props}>{linkifyPhones(children)}</p>;
+                    },
+                    li: ({ children, ...props }) => {
+                      return <li {...props}>{linkifyPhones(children)}</li>;
+                    },
+                  }}
+                >{msg.content}</ReactMarkdown>
               </div>
 
-              {/* Sources */}
+              {/* Sources + Debug prompt link */}
               {msg.sources && msg.sources.length > 0 && (
                 <div className="mt-3 pt-3 border-t border-border">
-                  <p className="text-xs text-text-muted mb-2">参考来源：</p>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs text-text-muted">参考来源：</p>
+                    {msg.debugPrompt && (
+                      <button
+                        type="button"
+                        onClick={() => setShowPrompt(msg.debugPrompt!)}
+                        className="text-[10px] text-text-muted hover:text-primary transition-colors"
+                      >
+                        查看Prompt
+                      </button>
+                    )}
+                  </div>
                   <div className="space-y-1.5">
                     {msg.sources.slice(0, 6).map((source, j) => (
-                      <Link
+                      <a
                         key={j}
                         href={`/zh${source.url}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="flex items-center gap-2 text-xs hover:bg-bg-page rounded px-2 py-1 -mx-2 transition-colors"
                       >
-                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${sourceTypeColors[source.type] || 'bg-gray-100 text-gray-700'}`}>
+                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium flex-shrink-0 ${sourceTypeColors[source.type] || 'bg-gray-100 text-gray-700'}`}>
                           {source.type}
                         </span>
                         <span className="text-text-primary hover:text-primary truncate">{source.title}</span>
-                      </Link>
+                        <svg className="w-3 h-3 text-text-muted flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                      </a>
                     ))}
                   </div>
                 </div>
@@ -179,10 +359,31 @@ export function AskChat({ initialQuery }: AskChatProps) {
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="问我任何本地生活问题..."
+            placeholder={voice.isListening ? '正在听你说...' : '问我任何本地生活问题...'}
             disabled={loading}
             className="flex-1 h-10 px-3 text-sm outline-none bg-transparent"
           />
+          {voice.isSupported && (
+            <button
+              type="button"
+              onClick={voice.toggle}
+              disabled={loading}
+              className={`h-10 w-10 flex items-center justify-center rounded-lg transition-colors flex-shrink-0 ${
+                voice.isListening
+                  ? 'bg-red-500 text-white animate-pulse'
+                  : 'bg-bg-page text-text-secondary hover:bg-primary/10 hover:text-primary'
+              } disabled:opacity-50`}
+              title={voice.isListening ? '停止语音' : '语音输入'}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                {voice.isListening ? (
+                  <path d="M6 6h12v12H6z" />
+                ) : (
+                  <path d="M12 14a3 3 0 003-3V5a3 3 0 10-6 0v6a3 3 0 003 3zm5-3a5 5 0 01-10 0H5a7 7 0 0014 0h-2zm-4 7.93A7.001 7.001 0 0112 19a7.001 7.001 0 01-1 0V22h2v-3.07z" />
+                )}
+              </svg>
+            </button>
+          )}
           <button
             type="submit"
             disabled={loading || !input.trim()}

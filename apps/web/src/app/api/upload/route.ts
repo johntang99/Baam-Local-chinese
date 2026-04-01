@@ -15,9 +15,19 @@ export async function POST(request: Request) {
   const file = formData.get('file') as File;
   const folder = formData.get('folder') as string; // e.g. 'businesses/wang-family-medical'
 
-  // Validate
-  if (!file || !file.type.startsWith('image/')) {
-    return NextResponse.json({ error: 'Invalid file' }, { status: 400 });
+  // Validate — accept images and videos
+  const isImage = file?.type.startsWith('image/');
+  const isVideo = file?.type.startsWith('video/');
+  if (!file || (!isImage && !isVideo)) {
+    return NextResponse.json({ error: 'Invalid file type. Accepts images and videos.' }, { status: 400 });
+  }
+
+  // Supabase Pro plan: bucket set to 200MB
+  if (isVideo && file.size > 200 * 1024 * 1024) {
+    return NextResponse.json({ error: '视频不能超过 200MB' }, { status: 400 });
+  }
+  if (isImage && file.size > 10 * 1024 * 1024) {
+    return NextResponse.json({ error: '图片不能超过 10MB' }, { status: 400 });
   }
 
   if (!folder) {

@@ -140,15 +140,19 @@ export default async function BusinessDetailPage({ params }: Props) {
     )},
   ].filter((s) => s.url);
 
-  // Fetch reviews for this business
-  const { data: rawReviews } = await supabase
+  // Fetch reviews for this business (Google + user reviews)
+  const { data: rawReviews } = await (supabase as any)
     .from('reviews')
-    .select('*')
+    .select('*, profiles:author_id(display_name)')
     .eq('business_id', biz.id)
-    .order('created_at', { ascending: false })
-    .limit(10);
+    .eq('status', 'approved')
+    .order('source', { ascending: true })  // user reviews first
+    .order('rating', { ascending: false })
+    .limit(15);
 
   const reviews = (rawReviews || []) as AnyRow[];
+  const googleReviews = reviews.filter(r => r.source === 'google');
+  const userReviews = reviews.filter(r => r.source !== 'google');
 
   // Fetch articles linked to this business via guide_business_links
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -173,6 +177,18 @@ export default async function BusinessDetailPage({ params }: Props) {
   // Video embed
   const videoUrl = biz.video_url as string | null;
   const youtubeId = videoUrl ? getYouTubeId(videoUrl) : null;
+
+  // Fetch discover posts mentioning this business
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: rawDiscoverLinks } = await (supabase as any)
+    .from('discover_post_businesses')
+    .select('post_id, voice_posts(id, slug, title, cover_images, cover_image_url, like_count, profiles:author_id(display_name))')
+    .eq('business_id', biz.id)
+    .limit(6);
+
+  const discoverPosts = ((rawDiscoverLinks || []) as AnyRow[])
+    .map((link) => link.voice_posts)
+    .filter(Boolean);
 
   return (
     <main>
@@ -514,44 +530,135 @@ export default async function BusinessDetailPage({ params }: Props) {
               </div>
             </div>
 
-            {/* Individual Review Cards */}
-            {reviews.length > 0 ? (
-              <div className="space-y-4 mb-6">
-                {reviews.map((review) => (
-                  <div key={review.id} className="card p-5">
-                    <div className="flex items-start gap-3 mb-3">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-200 to-blue-300 flex items-center justify-center text-sm font-bold text-blue-700 flex-shrink-0">
-                        {(review.author_name || '匿').charAt(0)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <span className="font-semibold text-sm">{review.author_name || '匿名用户'}</span>
-                          <span className="text-xs text-text-muted">
-                            {review.created_at
-                              ? new Date(review.created_at).toLocaleDateString('zh-CN', {
-                                  year: 'numeric',
-                                  month: 'long',
-                                  day: 'numeric',
-                                })
-                              : ''}
-                          </span>
-                        </div>
-                        <div className="text-yellow-500 text-xs mt-0.5">
-                          {renderStars(review.rating || 0)}
-                        </div>
-                      </div>
-                    </div>
-                    <p className="text-sm text-text-secondary leading-relaxed">
-                      {review.body_zh || review.body || review.content || ''}
-                    </p>
-                  </div>
-                ))}
+            {/* Write Review CTA */}
+            <div className="card p-5 mb-6 bg-gradient-to-r from-primary/5 to-orange-50 border-primary/20">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-semibold text-sm">去过这家店？</p>
+                  <p className="text-xs text-text-muted mt-0.5">分享你的真实体验，帮助更多华人邻居</p>
+                </div>
+                <a
+                  href="#write-review"
+                  className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary-dark transition-colors flex-shrink-0"
+                >
+                  写评价
+                </a>
               </div>
-            ) : (
-              <div className="card p-8 text-center mb-6">
-                <p className="text-text-muted text-sm">暂无评价</p>
+            </div>
+
+            {/* User Reviews (our platform) */}
+            {userReviews.length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-sm font-semibold text-text-muted mb-3 flex items-center gap-2">
+                  <span className="w-5 h-5 rounded bg-primary/10 flex items-center justify-center text-[10px] text-primary font-bold">B</span>
+                  Baam 社区评价 ({userReviews.length})
+                </h3>
+                <div className="space-y-4">
+                  {userReviews.map((review) => {
+                    const authorName = review.profiles?.display_name || review.title || '匿名用户';
+                    return (
+                      <div key={review.id} className="card p-5">
+                        <div className="flex items-start gap-3 mb-3">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/20 to-orange-200 flex items-center justify-center text-sm font-bold text-primary flex-shrink-0">
+                            {authorName.charAt(0)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <span className="font-semibold text-sm">{authorName}</span>
+                              <span className="text-xs text-text-muted">
+                                {review.created_at ? new Date(review.created_at).toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' }) : ''}
+                              </span>
+                            </div>
+                            <div className="text-yellow-500 text-xs mt-0.5">{renderStars(review.rating || 0)}</div>
+                          </div>
+                        </div>
+                        <p className="text-sm text-text-secondary leading-relaxed">{review.body || ''}</p>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
+
+            {/* Google Reviews */}
+            {googleReviews.length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-sm font-semibold text-text-muted mb-3 flex items-center gap-2">
+                  <svg className="w-4 h-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                  Google 评价 ({googleReviews.length})
+                </h3>
+                <div className="space-y-4">
+                  {googleReviews.map((review) => {
+                    const authorName = review.google_author_name || review.title || 'Google User';
+                    const publishDate = review.google_publish_time || review.created_at;
+                    return (
+                      <div key={review.id} className="card p-5">
+                        <div className="flex items-start gap-3 mb-3">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center text-sm font-bold text-blue-600 flex-shrink-0">
+                            {authorName.charAt(0)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-semibold text-sm">{authorName}</span>
+                                <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">Google</span>
+                              </div>
+                              <span className="text-xs text-text-muted">
+                                {publishDate ? new Date(publishDate).toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' }) : ''}
+                              </span>
+                            </div>
+                            <div className="text-yellow-500 text-xs mt-0.5">{renderStars(review.rating || 0)}</div>
+                          </div>
+                        </div>
+                        <p className="text-sm text-text-secondary leading-relaxed">{review.body || ''}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+                <p className="text-[10px] text-text-muted mt-3 text-right">评价来源：Google Maps</p>
+              </div>
+            )}
+
+            {/* No reviews at all */}
+            {reviews.length === 0 && (
+              <div className="card p-8 text-center mb-6">
+                <p className="text-text-muted text-sm">暂无评价，成为第一个评价的人吧！</p>
+              </div>
+            )}
+
+            {/* Write Review Form */}
+            <div id="write-review" className="card p-6 mb-6">
+              <h3 className="font-semibold mb-4">写评价</h3>
+              <form action={`/zh/businesses/${biz.slug}/review`} method="GET">
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm text-text-muted mb-1.5 block">评分</label>
+                    <div className="flex gap-1 text-2xl text-gray-300">
+                      {[1,2,3,4,5].map(star => (
+                        <span key={star} className="cursor-pointer hover:text-yellow-500 transition-colors">&#9733;</span>
+                      ))}
+                    </div>
+                    <p className="text-xs text-text-muted mt-1">请登录后提交评价</p>
+                  </div>
+                  <div>
+                    <label className="text-sm text-text-muted mb-1.5 block">你的评价</label>
+                    <textarea
+                      placeholder="分享你的真实体验，比如：服务态度、等候时间、价格、环境..."
+                      rows={3}
+                      disabled
+                      className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-bg-page resize-none"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    className="px-5 py-2 bg-primary text-white text-sm font-medium rounded-lg opacity-50 cursor-not-allowed"
+                    disabled
+                  >
+                    登录后提交评价
+                  </button>
+                </div>
+              </form>
+            </div>
 
             </div>
             {/* ===== FAQ Section ===== */}
@@ -731,6 +838,39 @@ export default async function BusinessDetailPage({ params }: Props) {
             </div>
 
             </div>
+            {/* Discover Posts (社区笔记) */}
+            {discoverPosts.length > 0 && (
+              <section className="pt-8 border-t border-border mb-8">
+                <h2 className="text-xl font-bold mb-5 flex items-center gap-2">📝 社区笔记</h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {discoverPosts.map((post: AnyRow, i: number) => {
+                    const coverImage = post.cover_images?.[0] || post.cover_image_url;
+                    const authorName = post.profiles?.display_name || '匿名';
+                    const gradients = ['from-rose-200 to-pink-100', 'from-emerald-200 to-teal-100', 'from-violet-200 to-purple-100', 'from-sky-200 to-blue-100', 'from-amber-200 to-orange-100'];
+                    return (
+                      <Link key={post.id} href={`/discover/${post.slug || post.id}`} className="group">
+                        <div className="rounded-xl overflow-hidden bg-white border border-gray-200 hover:shadow-md transition-shadow">
+                          <div className="aspect-[4/3] overflow-hidden">
+                            {coverImage ? (
+                              <img src={coverImage} alt={post.title || ''} className="w-full h-full object-cover group-hover:scale-105 transition-transform" loading="lazy" />
+                            ) : (
+                              <div className={`w-full h-full bg-gradient-to-br ${gradients[i % gradients.length]} flex items-center justify-center`}>
+                                <span className="text-white/50 text-xl font-bold">{post.title?.[0] || '📝'}</span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="p-2.5">
+                            <h3 className="text-xs font-semibold text-gray-900 line-clamp-2 mb-1 leading-snug">{post.title}</h3>
+                            <span className="text-[10px] text-gray-400">{authorName}</span>
+                          </div>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+
             {/* Related Guides (editorial) */}
             {relatedGuides.length > 0 && (
               <section className="pt-8 border-t border-border mb-8">

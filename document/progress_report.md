@@ -1,67 +1,89 @@
 # Baam Local Portal — Progress Report
 
-> **Date:** 2026-03-26 (updated, end of day)
+> **Date:** 2026-03-31 (updated)
 > **Scope:** NY Chinese Site (Phase 1 MVP)
-> **Branch:** main (uncommitted Tier 1 + Tier 2 + AI Content Generation)
+> **Branch:** main
 
 ---
 
 ## Executive Summary
 
-**Overall Phase 1 Completion: ~75%** (up from ~55% at start of day)
+**Overall Phase 1 Completion: ~85%** (up from ~75% on 2026-03-26)
 
 | Area | Status | Completion | Change |
 |------|--------|------------|--------|
 | Foundation & Infrastructure | ✅ Done | 100% | — |
-| Admin Panel | ✅ Done | 95% | +10% (AI generation, preview) |
-| Public Pages — Content Browsing | ✅ Done | 85% | +10% |
-| Public Pages — Interactive Features | 🟡 Partial | 40% | +35% |
-| AI Features | 🟡 Substantial | 60% | +50% |
-| User System (Auth/Profile/Dashboard) | 🟡 Partial | 25% | +20% |
+| Admin Panel | ✅ Done | 95% | — |
+| Public Pages — Content Browsing | ✅ Done | 85% | — |
+| Public Pages — Interactive Features | 🟡 Partial | 40% | — |
+| AI Features | ✅ Substantial | 80% | +20% (AI search assistant) |
+| User System (Auth/Profile/Dashboard) | 🟡 Partial | 25% | — |
+| **Business Data** | ✅ Substantial | 90% | **NEW** |
+| **AI Search Assistant (小邻)** | ✅ Done | 95% | **NEW** |
 
-### What Changed (2026-03-26 Tier 1 Sprint)
+### What Changed (2026-03-31 — AI Search & Business Data Sprint)
 
-| Item | Before | After | Tested |
-|------|--------|-------|--------|
-| Auth (login/register/Google OAuth) | Basic modal | + Forgot password, success messages, Chinese errors, `getCurrentUser()` helper | ✅ |
-| Pagination | None (hard LIMIT) | All 6 list pages paginated with `?page=N` | ✅ |
-| Filter tabs | UI-only buttons | Functional `<Link>` on news/businesses/events/forum/voices | ✅ |
-| Search | 2-field ilike only | All 6 modules queried in parallel, tab filtering with counts | ✅ |
-| Newsletter subscription | Form UI only | Server action → `newsletter_subscribers` table, 3 locations | ✅ |
-| Forum post submission | Form HTML only | Full server action with auth, slug gen, redirect | ✅ |
-| Forum reply submission | Static textarea | `ForumReplyForm` client component with server action | ✅ |
+#### AI Search Assistant (小邻) — Major Feature
 
-### What Changed (2026-03-26 Tier 2 Sprint)
+| Item | Before | After |
+|------|--------|-------|
+| Voice search | None | Mic button with `zh-CN` speech recognition (Web Speech API) |
+| Keyword extraction | Regex-based (fragile) | AI-powered via Claude Haiku (handles any phrasing) |
+| Follow-up detection | None (each message independent) | AI classifies FOLLOWUP/SEARCH/NEW for multi-turn chat |
+| Category matching | Simple `ilike` | Bidirectional substring + name vs terms threshold + 3-tier sort |
+| Search terms | ~1,050 | **6,600+** across 130 categories |
+| Prompt debug modal | None | "查看Prompt" shows keywords, system/user prompts, model info |
+| Phone click-to-call | Plain text | Auto-detected `tel:` links in tables and paragraphs |
+| Source links | Same-page navigation (loses chat) | Opens in new tab (preserves chat history) |
+| Review context | None | Google reviews included in AI context for recommendations |
+| Conversation memory | None | Last 3 turns passed to AI; follow-ups like "需要" work in context |
 
-| Item | Before | After | Tested |
-|------|--------|-------|--------|
-| AI summaries (admin) | Placeholder text only | Real Claude API call → generates zh + en summaries + tags | ✅ |
-| AI FAQ generation (admin) | Disabled button | Generates 5 Q&A pairs from article content via Claude Sonnet | ✅ |
-| Voices new post `/voices/new-post` | Missing page | Full publishing page with 5 post types, auth gate | ✅ |
-| Like/Follow/Comment | UI-only buttons | Server actions + reusable client components | ✅ |
-| Lead capture form | Static HTML form | Server action → `leads` table, wired into business detail | ✅ |
+#### Business Data — Massive Expansion
 
-### What Changed (2026-03-26 AI Content Generation)
+| Metric | Before (3/26) | After (3/31) | Change |
+|--------|--------------|-------------|--------|
+| Active businesses | 335 | **2,139** | **6.4x** |
+| With categories | 335 | **2,139** (100%) | All categorized |
+| Chinese names | 237 | **1,021** (48%) | 4.3x |
+| Descriptions (zh) | 335 | **1,989** (93%) | AI-generated |
+| Descriptions (en) | 329 | **1,989** (93%) | Google + AI |
+| Phone | ~300 | **2,046** (96%) | Google backfill |
+| Address | 1 | **2,138** (100%) | Google backfill |
+| Business hours | 325 | **1,876** (88%) | Google backfill |
+| Avg rating | ~300 | **2,083** (97%) | Google backfill |
+| Google reviews | 0 | **9,277** | 5 per business |
+| Google Place IDs | 0 | **2,139** (100%) | Linked to Google |
 
-| Item | Before | After | Tested |
-|------|--------|-------|--------|
-| AI article generation | Not available | Full "from scratch" + "rewrite" pipeline via Claude Opus | ✅ |
-| One-click output | N/A | Title (zh+en), body (zh+en), summary, tags, FAQ, SEO — all auto-filled | ✅ |
-| Native Chinese writing | N/A | Custom system prompt enforcing native Chinese style (no 翻译腔) | ✅ |
-| Show Prompt modal | N/A | "查看Prompt" link in header → modal with full prompt, model, tokens, copy | ✅ |
-| Article preview modal | N/A | "预览" button → rendered Markdown with summary, FAQ, zh/en toggle | ✅ |
-| AI model for articles | N/A | Claude Opus 4.6 (best writing quality) | ✅ |
+#### Data Sources Used
 
-### Bugs Found & Fixed
+| Source | What | Businesses Affected |
+|--------|------|-------------------|
+| Google Places Text Search | Discover new businesses in Flushing | +1,804 new |
+| Google Places Details (EN) | Address, phone, website, hours, editorial | 2,139 |
+| Google Places Details (ZH-CN) | Chinese names, Chinese editorial | 2,139 |
+| Google Places Reviews | 5 reviews per business | 9,277 reviews |
+| nychinaren.com (phone search) | Chinese business names | +102 names |
+| nychinaren.com (name search) | Chinese business names | +42 names |
+| Claude Haiku AI | Chinese + English descriptions | ~1,800 generated |
+| Claude Haiku AI | Category classification | 339 businesses |
 
-| Bug | Root Cause | Fix |
-|-----|-----------|-----|
-| Business cards empty names | Dynamic Tailwind classes purged | Static classes + `display_name` fallback |
-| AI summary `.catch()` error | Supabase query doesn't return standard Promise | `try/catch` block |
-| FAQ JSON parse error | Claude wraps JSON in markdown fences | Strip fences + fallback regex extraction |
-| FAQ prefill error | Sonnet doesn't support assistant message prefill | Removed prefill, use robust regex parser |
-| AI article JSON parse fail | 8KB JSON response with nested arrays/markdown | Switched to delimiter-based parsing (`===SECTION===`) |
-| "# 摘要" in summary text | Claude adds markdown headers to summaries | `cleanSummary()` strips header prefixes |
+#### Scripts Created
+
+| Script | Purpose |
+|--------|---------|
+| `scripts/backfill-google-reviews.ts` | Fetch 5 Google reviews per business |
+| `scripts/backfill-business-data.ts` | Phase 1 (enrich) + Phase 2 (discover) from Google |
+| `scripts/backfill-business-details.ts` | Fill hours, Chinese names, AI descriptions |
+| `scripts/discover-chinese-businesses.ts` | Chinese-focused discovery using zh-CN Google search |
+| `scripts/assign-categories.ts` | Auto-categorize via Google type + AI classification |
+| `scripts/test-ai-search.ts` | Self-test: 44 queries, validates keywords + categories + results |
+| `scripts/populate-search-terms.ts` | 6,600+ search terms across 130 categories |
+
+#### Database Migrations
+
+| Migration | Changes |
+|-----------|---------|
+| `20260330_google_reviews.sql` | `google_place_id` on businesses; `source`, `google_author_name`, `google_review_id`, `google_publish_time`, `language` on reviews; nullable `author_id` for Google reviews |
 
 ---
 
@@ -79,35 +101,35 @@
 | Database schema (36 tables, SQL in document/) | ✅ |
 | Seed data (users, forum, voices, reviews) | ✅ |
 | `robots.ts` + `sitemap.ts` | ✅ |
-| **Server-side auth helper** (`lib/auth.ts`) | ✅ NEW |
+| Server-side auth helper (`lib/auth.ts`) | ✅ |
 
 ---
 
-## 2. Admin Panel (85% ✅)
+## 2. Admin Panel (95% ✅)
 
 ### Full CRUD (Complete)
 
 | Module | List | Create | Edit | Delete | Notes |
 |--------|------|--------|------|--------|-------|
-| Articles | ✅ | ✅ | ✅ | ✅ | Bulk publish/archive, status workflow, filters |
+| Articles | ✅ | ✅ | ✅ | ✅ | Bulk publish/archive, status workflow, AI generation |
 | Businesses | ✅ | ✅ | ✅ | ✅ | Claim approve/reject, featured toggle, image upload |
 | Events | ✅ | ✅ | ✅ | ✅ | Full form with datetime, pricing |
 | Sites | ✅ | ✅ | ✅ | ✅ | Site + region CRUD, primary region |
-| Settings (Categories) | ✅ | ✅ | ✅ | ✅ | Interactive category tree editor |
+| Settings (Categories) | ✅ | ✅ | ✅ | ✅ | Interactive category tree + search terms editor |
 
 ### Moderation / Management (Partial)
 
 | Module | List | Approve | Status | Delete | Notes |
 |--------|------|---------|--------|--------|-------|
-| Forum | ✅ | ✅ | ✅ | ✅ | Pin, lock, feature. No thread create/edit |
-| Voices | ✅ | ✅ | ✅ | — | Approve/reject/verify. No create/edit |
-| Leads | ✅ | — | ✅ | ✅ | Status workflow, no CSV export |
+| Forum | ✅ | ✅ | ✅ | ✅ | Pin, lock, feature |
+| Voices | ✅ | ✅ | ✅ | — | Approve/reject/verify |
+| Leads | ✅ | — | ✅ | ✅ | Status workflow |
 
 ### View Only
 
 | Module | Notes |
 |--------|-------|
-| Dashboard | Stats cards + recent articles + leads. Real queries |
+| Dashboard | Stats cards + recent articles + leads |
 | Users | Basic table, no edit/delete/role management |
 | Sponsors | Read-only list of sponsor slots |
 | AI Jobs | Monitoring: status counts, token usage, cost |
@@ -118,190 +140,215 @@
 
 ### Pages with Real Supabase Data Fetching
 
-| Page | Route | Data | Pagination | Filters | Status |
-|------|-------|------|------------|---------|--------|
-| **Homepage** | `/[locale]/` | ✅ All 7 sections | N/A | N/A | ✅ |
-| **News List** | `/[locale]/news` | ✅ | ✅ `?page=N` | ✅ `?type=alert\|brief\|...` | ✅ |
-| **News Detail** | `/[locale]/news/[slug]` | ✅ SSR | N/A | N/A | ✅ |
-| **Guides List** | `/[locale]/guides` | ✅ | — (50 limit) | ✅ Category links | ✅ |
-| **Guide Detail** | `/[locale]/guides/[slug]` | ✅ SSR | N/A | N/A | ✅ |
-| **Forum Home** | `/[locale]/forum` | ✅ | N/A | N/A | ✅ |
-| **Forum Board** | `/[locale]/forum/[board]` | ✅ | ✅ `?page=N` | ✅ `?sort=newest\|hot` | ✅ |
-| **Forum Thread** | `/[locale]/forum/[board]/[thread]` | ✅ | N/A | N/A | ✅ |
-| **Businesses List** | `/[locale]/businesses` | ✅ | ✅ `?page=N` | ✅ `?cat=X&sort=Y` | ✅ |
-| **Business Detail** | `/[locale]/businesses/[slug]` | ✅ SSR | N/A | N/A | ✅ |
-| **Events List** | `/[locale]/events` | ✅ | ✅ `?page=N` | ✅ `?period=week&price=free` | ✅ |
-| **Event Detail** | `/[locale]/events/[slug]` | ✅ | N/A | N/A | ✅ |
-| **Voices Discover** | `/[locale]/voices` | ✅ | ✅ `?page=N` | ✅ `?tag=expert\|food\|...` | ✅ |
-| **Voice Profile** | `/[locale]/voices/[username]` | ✅ | N/A | N/A | ✅ |
-| **Voice Post** | `/[locale]/voices/.../posts/[slug]` | ✅ | N/A | N/A | ✅ |
-| **Search** | `/[locale]/search` | ✅ 6 modules | N/A | ✅ `?tab=biz\|news\|...` | ✅ |
+| Page | Route | Status |
+|------|-------|--------|
+| Homepage | `/[locale]/` | ✅ All 7 sections |
+| News List | `/[locale]/news` | ✅ + pagination + filters |
+| News Detail | `/[locale]/news/[slug]` | ✅ SSR |
+| Guides List | `/[locale]/guides` | ✅ + category links |
+| Guide Detail | `/[locale]/guides/[slug]` | ✅ SSR |
+| Forum Home | `/[locale]/forum` | ✅ |
+| Forum Board | `/[locale]/forum/[board]` | ✅ + pagination + sort |
+| Forum Thread | `/[locale]/forum/[board]/[thread]` | ✅ + reply form |
+| Businesses List | `/[locale]/businesses` | ✅ + pagination + filters |
+| Business Detail | `/[locale]/businesses/[slug]` | ✅ SSR + Google reviews + write review CTA |
+| Events List | `/[locale]/events` | ✅ + pagination + filters |
+| Event Detail | `/[locale]/events/[slug]` | ✅ |
+| Voices Discover | `/[locale]/voices` | ✅ + pagination + tags |
+| Voice Profile | `/[locale]/voices/[username]` | ✅ |
+| Voice Post | `/[locale]/voices/.../posts/[slug]` | ✅ |
+| Search | `/[locale]/search` | ✅ 6-module search + tabs |
+| **AI Ask (小邻)** | `/[locale]/ask` | ✅ **NEW** Full chat UI + voice + multi-turn |
 
-### Pages NOT Implemented (Required by Phase 1)
+### Pages NOT Implemented
 
-| Page | PRD Priority | Prototype | Status |
-|------|-------------|-----------|--------|
-| **Guide Category** `/guides/[category]` | P1 | `guide-category.html` | ❌ Missing |
-| **Business Dashboard** `/dashboard/business` | P0 | `business-dashboard.html` | ❌ Missing |
-| **Business Registration/Claim Flow** | P0 | — | ❌ Missing |
-| **Voices New Post** `/voices/new-post` | P0 | `voices-new-post.html` | ❌ Missing |
-| **Following Feed** `/following` | P1 | `following-feed.html` | ❌ Missing |
-| **Classifieds List** `/classifieds` | P1 | `classifieds-list.html` | ❌ Missing |
-| **Classifieds Detail** `/classifieds/[slug]` | P1 | `classifieds-detail.html` | ❌ Missing |
-| **User Profile** `/profile/[username]` | P1 | `user-profile.html` | ❌ Missing |
-| **User Settings** `/settings` | P1 | `user-settings.html` | ❌ Missing |
-
----
-
-## 4. Interactive Features (30% 🟡)
-
-| Feature | PRD Priority | Current State |
-|---------|-------------|---------------|
-| Auth Modal (Login/Register) | P0 | ✅ Full: login, register, forgot password, success messages |
-| Google OAuth | P0 | ✅ Implemented (Supabase OAuth flow + callback route) |
-| Forum post submission | P0 | ✅ Server action with auth check, slug gen, board redirect |
-| Forum reply submission | P0 | ✅ Server action with auth check, auto-refresh |
-| Newsletter email subscription | P0 | ✅ Server action → `newsletter_subscribers`, on 3 pages |
-| Search tab filtering | P0 | ✅ All 6 module tabs with counts, functional links |
-| Pagination (all list pages) | P0 | ✅ 5 list pages with `?page=N` + count queries |
-| Voices post publishing | P0 | ❌ Page missing |
-| Business registration/claim | P0 | ❌ Missing |
-| Business dashboard (merchant self-service) | P0 | ❌ Missing |
-| Like / Save / Share actions | P0 | ❌ UI buttons only |
-| Follow/Unfollow users | P0 | ❌ UI button only |
-| Comment submission (voices posts) | P0 | ❌ Form only, no backend |
-| Lead capture form submission | P0 | ❌ Form only, no backend |
-| RSVP to events | P1 | ❌ Button only |
+| Page | PRD Priority | Status |
+|------|-------------|--------|
+| Guide Category `/guides/[category]` | P1 | ❌ Missing |
+| Business Dashboard `/dashboard/business` | P0 | ❌ Missing |
+| Business Registration/Claim Flow | P0 | ❌ Missing |
+| Following Feed `/following` | P1 | ❌ Missing |
+| Classifieds | P1 | ❌ Missing |
+| User Profile `/profile/[username]` | P1 | ❌ Missing |
+| User Settings `/settings` | P1 | ❌ Missing |
 
 ---
 
-## 5. AI Features (60% 🟡)
+## 4. Interactive Features (40% 🟡)
 
-| AI Feature | PRD Priority | Current State |
-|------------|-------------|---------------|
-| **AI Article Generation** | P0 | ✅ Full pipeline: topic → complete article (zh+en body, summary, FAQ, tags, SEO) via Claude Opus |
-| **AI Article Rewrite** | P0 | ✅ Paste source content → rewritten bilingual article |
-| **News/Guide 3-sentence summary** | P0 | ✅ Claude Haiku generates zh + en summaries, admin button with loading UX |
-| **AI FAQ generation** | P0 | ✅ 5 Q&A pairs via Claude Sonnet, saved to DB |
-| **AI auto-tagging** | P0 | ✅ Generated alongside summaries, saved to `ai_tags` |
-| **Article preview** | — | ✅ Markdown preview modal with zh/en toggle |
-| **Show AI Prompt** | — | ✅ Modal showing exact prompt sent to AI, with copy button |
-| Forum speed-read summary | P0 | ⚠️ UI card shows if data exists, no batch generation yet |
-| Cross-language summary | P0 | ⚠️ `translateContent()` function exists but not wired to UI |
-| Business AI bio generation | P0 | ❌ Not implemented |
-| Spam detection | P0 | ⚠️ ai_spam_score field exists, no actual scoring |
-| Merchant auto-injection in forum | P0 | ⚠️ Placeholder in thread detail, no logic |
-| Search AI summary | P0 | ❌ "Coming soon" placeholder |
-| Floating AI Assistant widget | P1 | ❌ Not implemented |
+| Feature | Status |
+|---------|--------|
+| Auth Modal (Login/Register/Google OAuth) | ✅ Full |
+| Forum post + reply submission | ✅ Server actions |
+| Newsletter subscription | ✅ 3 locations |
+| Search tab filtering | ✅ All 6 modules |
+| Pagination (all list pages) | ✅ |
+| Voices post publishing | ❌ Missing |
+| Business registration/claim | ❌ Missing |
+| Business dashboard | ❌ Missing |
+| Like / Save / Share | ❌ UI only |
+| Follow/Unfollow | ❌ UI only |
+| User reviews (write + submit) | 🟡 UI ready, needs auth integration |
+| RSVP to events | ❌ Button only |
 
 ---
 
-## 6. Prototype vs Implementation Comparison
+## 5. AI Features (80% ✅)
 
-### Prototypes with Matching Implementation ✅
-
-| Prototype | Implementation | Status |
-|-----------|---------------|--------|
-| `zh/index.html` | `[locale]/(public)/page.tsx` | ✅ + newsletter form |
-| `zh/news-list.html` | `[locale]/(public)/news/page.tsx` | ✅ + pagination + filters |
-| `zh/news-detail.html` | `[locale]/(public)/news/[slug]/page.tsx` | ✅ |
-| `zh/guides-list.html` | `[locale]/(public)/guides/page.tsx` | ✅ + category links |
-| `zh/guide-detail.html` | `[locale]/(public)/guides/[slug]/page.tsx` | ✅ |
-| `zh/forum-home.html` | `[locale]/(public)/forum/page.tsx` | ✅ |
-| `zh/forum-board.html` | `[locale]/(public)/forum/[board]/page.tsx` | ✅ + pagination + sort |
-| `zh/forum-thread.html` | `[locale]/(public)/forum/[board]/[thread]/page.tsx` | ✅ + reply form |
-| `zh/forum-new-post.html` | `[locale]/(public)/forum/new/page.tsx` | ✅ NOW FUNCTIONAL |
-| `zh/business-list.html` | `[locale]/(public)/businesses/page.tsx` | ✅ + pagination + filters |
-| `zh/business-detail.html` | `[locale]/(public)/businesses/[slug]/page.tsx` | ✅ |
-| `zh/events-list.html` | `[locale]/(public)/events/page.tsx` | ✅ + pagination + filters |
-| `zh/event-detail.html` | `[locale]/(public)/events/[slug]/page.tsx` | ✅ |
-| `zh/voices-discover.html` | `[locale]/(public)/voices/page.tsx` | ✅ + pagination + tags |
-| `zh/voices-profile.html` | `[locale]/(public)/voices/[username]/page.tsx` | ✅ |
-| `zh/voices-post-detail.html` | `[locale]/(public)/voices/.../posts/[slug]/page.tsx` | ✅ |
-| `zh/search-results.html` | `[locale]/(public)/search/page.tsx` | ✅ FULL 6-MODULE SEARCH |
-| `admin/dashboard.html` | `admin/page.tsx` | ✅ |
-| `admin/articles.html` | `admin/articles/` | ✅ Full CRUD |
-| `admin/businesses.html` | `admin/businesses/` | ✅ Full CRUD |
-| `admin/forum-management.html` | `admin/forum/` | ✅ |
-| `admin/voices-management.html` | `admin/voices/` | ✅ |
-| `admin/leads.html` | `admin/leads/` | ✅ |
-| `admin/users.html` | `admin/users/` | ⚠️ View only |
-| `admin/ai-jobs.html` | `admin/ai-jobs/` | ✅ |
-| `admin/settings.html` | `admin/settings/` | ✅ |
-
-### Prototypes WITHOUT Implementation ❌
-
-| Prototype | Missing Route | PRD Priority |
-|-----------|---------------|-------------|
-| `zh/business-dashboard.html` | `/dashboard/business` | **P0** |
-| `zh/voices-new-post.html` | `/voices/new-post` | **P0** |
-| `zh/guide-category.html` | `/guides/[category]` | P1 |
-| `zh/following-feed.html` | `/following` | P1 |
-| `zh/classifieds-list.html` | `/classifieds` | P1 |
-| `zh/classifieds-detail.html` | `/classifieds/[slug]` | P1 |
-| `zh/user-profile.html` | `/profile/[username]` | P1 |
-| `zh/user-settings.html` | `/settings` | P1 |
+| AI Feature | Status |
+|------------|--------|
+| **AI Search Assistant (小邻)** | ✅ **NEW** Full RAG pipeline: AI keyword extraction → category matching → 6-source search → Claude answer |
+| **Voice search** | ✅ **NEW** Browser SpeechRecognition API, zh-CN |
+| **Multi-turn conversation** | ✅ **NEW** AI classifies FOLLOWUP/SEARCH/NEW, maintains context |
+| **AI keyword extraction** | ✅ **NEW** Claude Haiku extracts search terms from any Chinese phrasing |
+| **Prompt debug modal** | ✅ **NEW** Shows keywords, prompts, model, result count |
+| AI Article Generation | ✅ Full pipeline via Claude Opus |
+| AI Article Rewrite | ✅ Paste source → bilingual article |
+| News/Guide summaries | ✅ Claude Haiku zh + en |
+| AI FAQ generation | ✅ 5 Q&A pairs via Sonnet |
+| AI auto-tagging | ✅ Generated with summaries |
+| **AI business descriptions** | ✅ **NEW** 1,800+ generated via Haiku from Google data + reviews |
+| **AI category classification** | ✅ **NEW** 339 businesses auto-categorized by AI |
+| Article preview modal | ✅ Markdown with zh/en toggle |
+| Forum speed-read summary | ⚠️ UI exists, no batch generation |
+| Cross-language summary | ⚠️ Function exists, not wired |
+| Spam detection | ⚠️ Field exists, no scoring |
+| Floating AI widget | ❌ Not implemented |
 
 ---
 
-## 7. Recommended Next Steps (Tier 2)
+## 6. Business Data (90% ✅) — NEW SECTION
 
-### For Credibility — needed before wider launch
+### Data Completeness (2,139 businesses)
 
-1. **AI summaries** — Wire Claude API for news/guide summaries (cards show empty otherwise)
-2. **Voices new post** — Creator publishing page
-3. **Like/Follow/Comment backends** — Social features are visible but broken
-4. **Lead capture form backend** — Businesses module monetization hook
+| Field | Count | % |
+|-------|-------|---|
+| Google Place ID | 2,139 | 100% ✅ |
+| Address | 2,138 | 100% ✅ |
+| Lat/Lng | 2,138 | 100% ✅ |
+| Avg Rating | 2,083 | 97% ✅ |
+| Phone | 2,046 | 96% ✅ |
+| Categories | 2,139 | 100% ✅ |
+| Descriptions (zh) | 1,989 | 93% ✅ |
+| Descriptions (en) | 1,989 | 93% ✅ |
+| Business Hours | 1,876 | 88% ✅ |
+| Website | 1,343 | 63% ⚠️ |
+| Chinese Name | 1,021 | 48% ⚠️ |
+| Google Reviews | 9,277 | ~4.3/business |
 
-### Can Wait — add within 1-2 weeks of launch
+### Category Distribution
 
-5. Business dashboard + registration/claim (onboard manually via admin first)
-6. Guide category page
-7. Classifieds
-8. User profile + settings
-9. Following feed
+| Category | Businesses | Subcategories |
+|----------|-----------|---------------|
+| 餐饮美食 Food & Dining | ~400+ | 22 |
+| 医疗健康 Medical & Health | ~200+ | 17 |
+| 法律移民 Legal & Immigration | ~100+ | 9 |
+| 财税服务 Finance & Tax | ~150+ | 8 |
+| 教育培训 Education | ~100+ | 11 |
+| 美容保健 Beauty & Wellness | ~100+ | 9 |
+| 装修家居 Home & Renovation | ~100+ | 15 |
+| 汽车服务 Auto Services | ~80+ | 7 |
+| 地产保险 Real Estate | ~80+ | 6 |
+| 其他服务 Other Services | ~100+ | 16 |
+
+### Search Terms Coverage
+
+| Category Group | Subcategories | Avg Terms per Category |
+|---------------|--------------|----------------------|
+| Food & Dining | 23 | ~48 |
+| Medical & Health | 18 | ~56 |
+| Legal & Immigration | 10 | ~54 |
+| Finance & Tax | 9 | ~49 |
+| Real Estate | 7 | ~40 |
+| Education | 12 | ~52 |
+| Home & Renovation | 16 | ~54 |
+| Beauty & Wellness | 10 | ~56 |
+| Auto Services | 8 | ~47 |
+| Other Services | 17 | ~55 |
+| **Total** | **130** | **~6,600 terms** |
 
 ---
 
-## 8. New Files Created (Tier 1 Sprint)
+## 7. AI Search Assistant Architecture
 
 ```
-apps/web/src/lib/auth.ts                                    # getCurrentUser() + requireAuth()
-apps/web/src/components/shared/pagination.tsx                # Reusable pagination component
-apps/web/src/components/shared/newsletter-form.tsx           # Newsletter subscribe form
-apps/web/src/components/shared/forum-reply-form.tsx          # Forum reply form
-apps/web/src/app/[locale]/(public)/actions.ts                # Server actions: newsletter, forum post/reply
-apps/web/src/app/[locale]/(public)/forum/new/form.tsx        # Forum new post client form
+User query (text or voice)
+    │
+    ├─ If conversation history exists:
+    │   └─ Claude Haiku classifies: FOLLOWUP / SEARCH / NEW
+    │       ├─ FOLLOWUP → Continue chat (no RAG search)
+    │       ├─ SEARCH → Fall through to RAG
+    │       └─ NEW → Fall through to RAG
+    │
+    ├─ Claude Haiku extracts 1-5 keywords
+    │   (fallback: regex-based extraction)
+    │
+    ├─ RAG: 6-source parallel search
+    │   ├─ Businesses (category match + ai_tags + text search)
+    │   ├─ News articles (title + summary ilike)
+    │   ├─ Living guides (title + summary + body ilike)
+    │   ├─ Forum threads (title + body ilike)
+    │   ├─ Voice posts (title + content ilike)
+    │   └─ Events (title + summary + venue ilike)
+    │
+    ├─ Google reviews for top businesses
+    │
+    ├─ Build context with all results
+    │
+    └─ Claude Haiku generates answer
+        (with conversation history for continuity)
 ```
 
-## 9. Files Modified (Tier 1 Sprint)
+### Business Search Strategy
 
-```
-apps/web/src/components/shared/auth-modal.tsx                # + forgot password, success messages
-apps/web/src/app/[locale]/(public)/page.tsx                  # + NewsletterForm
-apps/web/src/app/[locale]/(public)/news/page.tsx             # + pagination + filter tabs + newsletter
-apps/web/src/app/[locale]/(public)/businesses/page.tsx       # + pagination + category/sort filters + BusinessCard fix
-apps/web/src/app/[locale]/(public)/events/page.tsx           # + pagination + period/price filters
-apps/web/src/app/[locale]/(public)/forum/[board]/page.tsx    # + pagination + sort filters
-apps/web/src/app/[locale]/(public)/forum/new/page.tsx        # Rewritten with auth check + form component
-apps/web/src/app/[locale]/(public)/forum/[board]/[thread]/page.tsx  # + ForumReplyForm + auth
-apps/web/src/app/[locale]/(public)/voices/page.tsx           # + pagination + tag filters
-apps/web/src/app/[locale]/(public)/guides/page.tsx           # + category links + NewsletterForm
-apps/web/src/app/[locale]/(public)/search/page.tsx           # Full rewrite: 6-module search + tabs
-```
+1. **Category match** (name match = always list all; terms-only ≤ 20 biz)
+2. **AI tags match** (`ai_tags` array contains keyword)
+3. **Text search** (name/description ilike — always runs as supplement)
+4. **3-tier sort**: text match first → category match → other → by rating
 
 ---
 
-## Appendix: Test Results (2026-03-26)
+## 8. Recommended Next Steps
 
-| Page | URL Tested | Result |
-|------|-----------|--------|
-| Homepage | `/zh` | ✅ All sections render, newsletter form present |
-| News list | `/zh/news` | ✅ Articles load, filter tabs work as links |
-| News filter | `/zh/news?type=alert` | ✅ Shows only alert articles |
-| Search | `/zh/search?q=医生` | ✅ Returns 2 guides, tabs show counts |
-| Businesses | `/zh/businesses` | ✅ Names render, category filters work |
-| Events | `/zh/events?period=week` | ✅ Shows filtered (empty for past seed data) |
-| Forum new post | `/zh/forum/new` | ✅ Shows "请先登录" when not authenticated |
-| TypeScript build | `tsc --noEmit` | ✅ Zero errors |
-| Next.js build | `npm run build` | ✅ All pages compile |
+### Immediate (before launch)
+
+1. **Business detail: display Google reviews** — already in DB, show on business pages ✅ DONE
+2. **Run description backfill for remaining 150 businesses** — minor gap
+3. **Test AI search with real users** — self-test shows 29/44 pass rate (failures = empty categories, not code bugs)
+
+### Short-term (1-2 weeks)
+
+4. **Expand to other NYC regions** — Elmhurst, Chinatown Manhattan, Sunset Park (scripts ready)
+5. **User review submission** — form UI ready, needs auth integration
+6. **Business claim/registration flow** — P0 gap
+7. **Like/Follow/Comment backends** — social features visible but non-functional
+
+### Medium-term
+
+8. **English site** — same data, different frontend (monorepo ready)
+9. **Business dashboard** — merchant self-service
+10. **Floating AI widget** — AI assistant accessible from any page
+11. **nychinaren.com data matching** — expand Chinese name coverage
+
+---
+
+## Appendix: Google API Cost Summary
+
+| API | Calls | Cost | Free Tier |
+|-----|-------|------|-----------|
+| Places Text Search | ~1,200 | ~$38 | ✅ Within $200/mo |
+| Places Details (EN) | ~2,500 | ~$42 | ✅ |
+| Places Details (ZH) | ~2,500 | ~$42 | ✅ |
+| **Total** | ~6,200 | ~$122 | ✅ All within free tier |
+
+## Appendix: AI API Cost Summary
+
+| Use | Model | Est. Calls | Est. Cost |
+|-----|-------|-----------|-----------|
+| Keyword extraction | Haiku | Per search query | ~$0.0001/query |
+| Follow-up classification | Haiku | Per follow-up | ~$0.00005/query |
+| Business descriptions | Haiku | ~1,800 | ~$0.18 |
+| Category classification | Haiku | ~340 | ~$0.03 |
+| Search answer generation | Haiku | Per search query | ~$0.001/query |
+| **Total one-time scripts** | | | **~$0.21** |
+| **Per user query** | | | **~$0.002** |
