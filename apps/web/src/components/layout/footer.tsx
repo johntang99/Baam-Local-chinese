@@ -57,6 +57,11 @@ export function Footer() {
                   {convert(nav('voices'))}
                 </Link>
               </li>
+              <li>
+                <Link href="/services" className="hover:text-white transition">
+                  {convert(nav('services'))}
+                </Link>
+              </li>
             </ul>
           </div>
 

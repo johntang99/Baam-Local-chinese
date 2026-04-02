@@ -3,6 +3,11 @@
 ## Project Overview
 AI-powered hyperlocal community platform for Chinese communities in NYC (and later English communities in Orange County). Six core modules: News, Living Guides, Forum, Businesses, Local Voices, AI Assistant.
 
+## Workstream scope (this track — business data)
+Focus here is **business listing data only**: Supabase tables (`businesses`, `business_locations`, `reviews`, `business_categories`, `categories` for businesses), **import/enrichment scripts** under `scripts/` (Google Places, AI descriptions, reviews, categorization), and **admin/public business surfaces** tied to that data.
+
+**Out of scope for this track:** the **Discover** product area (e.g. `discover_*` tables, discover UI/routes) — owned by another team. Do not mix discover changes into business-data PRs unless explicitly coordinated.
+
 ## Tech Stack
 - **Frontend**: Next.js 15 (App Router) + TypeScript + Tailwind CSS v4
 - **Database**: Supabase (PostgreSQL + pgvector + Auth + Storage)

@@ -17,6 +17,7 @@ const navItems = [
   { href: '/forum', key: 'forum' },
   { href: '/discover', key: 'discover' },
   { href: '/ask', key: 'ask' },
+  { href: '/services', key: 'services' },
 ] as const;
 
 export function Navbar() {

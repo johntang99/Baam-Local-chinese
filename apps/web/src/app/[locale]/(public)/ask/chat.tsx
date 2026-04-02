@@ -145,6 +145,7 @@ export function AskChat({ initialQuery }: AskChatProps) {
     '论坛': 'bg-purple-100 text-purple-700',
     '活动': 'bg-orange-100 text-orange-700',
     '达人': 'bg-pink-100 text-pink-700',
+    '笔记': 'bg-rose-100 text-rose-700',
   };
 
   // Helper: find phone numbers in React children and wrap them in <a href="tel:">

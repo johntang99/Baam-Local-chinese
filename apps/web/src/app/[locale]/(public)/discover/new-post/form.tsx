@@ -21,9 +21,11 @@ const locationSuggestions = ['法拉盛', '曼哈顿唐人街', '布鲁克林日
 
 interface CreatePostFormProps {
   isLoggedIn: boolean;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  prelinkedBusiness?: Record<string, any> | null;
 }
 
-export function VoicePostForm({ isLoggedIn }: CreatePostFormProps) {
+export function VoicePostForm({ isLoggedIn, prelinkedBusiness }: CreatePostFormProps) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [postType, setPostType] = useState('note');
@@ -31,12 +33,13 @@ export function VoicePostForm({ isLoggedIn }: CreatePostFormProps) {
   const [content, setContent] = useState('');
   const [images, setImages] = useState<string[]>([]);
   const [tags, setTags] = useState<string[]>([]);
-  const [businesses, setBusinesses] = useState<AnyRow[]>([]);
+  const [businesses, setBusinesses] = useState<AnyRow[]>(prelinkedBusiness ? [prelinkedBusiness] : []);
   const [location, setLocation] = useState('');
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [videoThumbnailUrl, setVideoThumbnailUrl] = useState<string | null>(null);
   const [videoDuration, setVideoDuration] = useState<number | null>(null);
   const [allowComments, setAllowComments] = useState(true);
+  const [moderationNotice, setModerationNotice] = useState(false);
   const [showLocation, setShowLocation] = useState(true);
   const router = useRouter();
 
@@ -83,6 +86,14 @@ export function VoicePostForm({ isLoggedIn }: CreatePostFormProps) {
       return;
     }
 
+    if (result.moderated) {
+      setModerationNotice(true);
+      setTimeout(() => {
+        router.push(result.redirect ? `/zh${result.redirect}` : '/zh/discover');
+      }, 2000);
+      return;
+    }
+
     if (result.redirect) {
       router.push(`/zh${result.redirect}`);
     } else {
@@ -92,6 +103,12 @@ export function VoicePostForm({ isLoggedIn }: CreatePostFormProps) {
 
   return (
     <div className="space-y-6">
+      {moderationNotice && (
+        <div className="p-3 bg-amber-50 border border-amber-200 text-amber-800 text-sm rounded-lg flex items-center gap-2">
+          <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" /></svg>
+          你的笔记已发布，正在审核中。审核通过后将在发现页展示。
+        </div>
+      )}
       {error && (
         <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">{error}</div>
       )}

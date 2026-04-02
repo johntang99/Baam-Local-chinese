@@ -96,6 +96,9 @@ INSERT INTO regions (slug, name_en, name_zh, type, timezone, latitude, longitude
   ('orange-county-ny', 'Orange County, NY', '奥兰治县', 'county', 'America/New_York', 41.3912, -74.3118),
   ('middletown-ny', 'Middletown, NY', '米德尔敦', 'city', 'America/New_York', 41.4459, -74.4229),
   ('flushing-ny', 'Flushing, NY', '法拉盛', 'neighborhood', 'America/New_York', 40.7674, -73.8330),
+  ('sunset-park-ny', 'Sunset Park, Brooklyn', '日落公园', 'neighborhood', 'America/New_York', 40.6410, -73.9950),
+  ('elmhurst-ny', 'Elmhurst, Queens', '艾姆赫斯特', 'neighborhood', 'America/New_York', 40.7370, -73.8800),
+  ('manhattan-chinatown-ny', 'Manhattan Chinatown', '曼哈顿华埠', 'neighborhood', 'America/New_York', 40.7150, -73.9980),
   ('queens-ny', 'Queens, NY', '皇后区', 'borough', 'America/New_York', 40.7282, -73.7949),
   ('new-york-city', 'New York City', '纽约市', 'city', 'America/New_York', 40.7128, -74.0060);
 
@@ -105,7 +108,9 @@ UPDATE regions SET parent_id = (SELECT id FROM regions WHERE slug='new-york-stat
 UPDATE regions SET parent_id = (SELECT id FROM regions WHERE slug='orange-county-ny')
   WHERE slug = 'middletown-ny';
 UPDATE regions SET parent_id = (SELECT id FROM regions WHERE slug='queens-ny')
-  WHERE slug = 'flushing-ny';
+  WHERE slug IN ('flushing-ny', 'elmhurst-ny');
+UPDATE regions SET parent_id = (SELECT id FROM regions WHERE slug='new-york-city')
+  WHERE slug IN ('sunset-park-ny', 'manhattan-chinatown-ny');
 
 
 CREATE TABLE categories (
@@ -1164,14 +1169,38 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER trg_thread_reply_count AFTER INSERT OR DELETE ON forum_replies
   FOR EACH ROW EXECUTE FUNCTION sync_thread_reply_count();
 
--- Sync business review count & avg rating
+-- Sync business review count & avg rating (skip when google_place_id set — Places totals stay authoritative)
 CREATE OR REPLACE FUNCTION sync_business_reviews()
 RETURNS TRIGGER AS $$
+DECLARE
+  bid uuid := COALESCE(NEW.business_id, OLD.business_id);
+  has_google boolean;
 BEGIN
-  UPDATE businesses SET
-    review_count = (SELECT COUNT(*) FROM reviews WHERE business_id = COALESCE(NEW.business_id, OLD.business_id) AND status = 'approved'),
-    avg_rating   = (SELECT AVG(rating) FROM reviews WHERE business_id = COALESCE(NEW.business_id, OLD.business_id) AND status = 'approved')
-  WHERE id = COALESCE(NEW.business_id, OLD.business_id);
+  SELECT (google_place_id IS NOT NULL AND btrim(google_place_id) <> '')
+  INTO has_google
+  FROM businesses
+  WHERE id = bid;
+
+  IF has_google THEN
+    RETURN COALESCE(NEW, OLD);
+  END IF;
+
+  UPDATE businesses
+  SET
+    review_count = (
+      SELECT COUNT(*)::int
+      FROM reviews
+      WHERE business_id = bid
+        AND status = 'approved'
+    ),
+    avg_rating = (
+      SELECT AVG(rating)::numeric(3, 2)
+      FROM reviews
+      WHERE business_id = bid
+        AND status = 'approved'
+    )
+  WHERE id = bid;
+
   RETURN COALESCE(NEW, OLD);
 END;
 $$ LANGUAGE plpgsql;

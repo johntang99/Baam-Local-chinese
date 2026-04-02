@@ -839,9 +839,15 @@ export default async function BusinessDetailPage({ params }: Props) {
 
             </div>
             {/* Discover Posts (社区笔记) */}
-            {discoverPosts.length > 0 && (
               <section className="pt-8 border-t border-border mb-8">
-                <h2 className="text-xl font-bold mb-5 flex items-center gap-2">📝 社区笔记</h2>
+                <div className="flex items-center justify-between mb-5">
+                  <h2 className="text-xl font-bold flex items-center gap-2">📝 社区笔记</h2>
+                  <Link href={`/discover/new-post?business=${biz.slug}`} className="text-sm font-medium text-primary hover:text-primary/80 flex items-center gap-1 transition">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                    写笔记
+                  </Link>
+                </div>
+                {discoverPosts.length > 0 ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {discoverPosts.map((post: AnyRow, i: number) => {
                     const coverImage = post.cover_images?.[0] || post.cover_image_url;
@@ -868,8 +874,12 @@ export default async function BusinessDetailPage({ params }: Props) {
                     );
                   })}
                 </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-400 text-sm bg-gray-50 rounded-xl">
+                    还没有笔记，来写第一篇吧！
+                  </div>
+                )}
               </section>
-            )}
 
             {/* Related Guides (editorial) */}
             {relatedGuides.length > 0 && (

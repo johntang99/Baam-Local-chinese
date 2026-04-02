@@ -1,21 +1,19 @@
 /**
- * Discover Chinese Businesses in Flushing
+ * Discover Chinese Businesses (NYC Chinese corridors)
  *
  * Uses Chinese-language Google Places searches to find Chinese-relevant businesses.
- * Tags them as is_chinese_relevant: true and captures Chinese names directly.
  *
  * Strategy:
- * - Search using Chinese terms (法拉盛川菜, 法拉盛华人牙医, etc.)
+ * - Search using Chinese terms (place prefix + category, e.g. 法拉盛川菜, 八大道火锅)
  * - Use zh-CN language to get Chinese names from Google
- * - Subdivide Flushing into grid zones for broader coverage
+ * - Grid zones per region for coverage
  * - Auto-categorize using Google primaryType
  *
  * Usage:
- *   # Dry run
- *   set -a && source <(grep -v '^#' apps/web/.env.local | grep -v '^$' | grep -v '@') && set +a && npx tsx scripts/discover-chinese-businesses.ts
+ *   npx tsx scripts/discover-chinese-businesses.ts [--region=flushing-ny] [--list-regions]
+ *   npx tsx scripts/discover-chinese-businesses.ts --region=sunset-park-ny --apply
  *
- *   # Apply
- *   set -a && source <(grep -v '^#' apps/web/.env.local | grep -v '^$' | grep -v '@') && set +a && npx tsx scripts/discover-chinese-businesses.ts --apply
+ * Regions require matching `regions.slug` in Supabase (see migration 20260401_business_data_regions_and_review_trigger.sql).
  */
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -24,6 +22,9 @@ const GOOGLE_API_KEY = process.env.GOOGLE_PLACES_API_KEY!;
 
 const args = process.argv.slice(2);
 const applyChanges = args.includes('--apply');
+const listRegions = args.includes('--list-regions');
+const regionArg = args.find((a) => a.startsWith('--region='));
+const regionSlug = regionArg ? regionArg.slice('--region='.length).trim() : 'flushing-ny';
 
 type AnyRow = Record<string, any>;
 const H = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' };
@@ -215,21 +216,94 @@ const CHINESE_QUERIES = [
   '法拉盛老人日托', '法拉盛教会', '法拉盛寺庙',
 ];
 
-// Grid zones: subdivide Flushing for broader coverage
-const GRID_ZONES = [
-  { name: 'Flushing Center', lat: 40.7594, lng: -73.8303, radius: 1500 },
-  { name: 'Flushing North', lat: 40.7680, lng: -73.8280, radius: 1500 },
-  { name: 'Flushing South', lat: 40.7510, lng: -73.8320, radius: 1500 },
-  { name: 'Flushing East', lat: 40.7594, lng: -73.8150, radius: 1500 },
-  { name: 'Flushing West', lat: 40.7594, lng: -73.8450, radius: 1500 },
-];
+/** Suffix only (after 法拉盛) — recombined with each region's Chinese query prefix */
+const CHINESE_QUERY_SUFFIXES = CHINESE_QUERIES.map((q) =>
+  q.startsWith('法拉盛') ? q.slice('法拉盛'.length) : q
+);
+
+type DiscoveryRegion = {
+  regionSlug: string;
+  /** Prepended to each suffix (e.g. 法拉盛, 八大道, 艾姆赫斯特) */
+  queryPrefix: string;
+  /** Default city on business_locations when not parsed from Google address */
+  locationCityEn: string;
+  gridZones: { name: string; lat: number; lng: number; radius: number }[];
+};
+
+const DISCOVERY_REGIONS: Record<string, DiscoveryRegion> = {
+  'flushing-ny': {
+    regionSlug: 'flushing-ny',
+    queryPrefix: '法拉盛',
+    locationCityEn: 'Flushing',
+    gridZones: [
+      { name: 'Flushing Center', lat: 40.7594, lng: -73.8303, radius: 1500 },
+      { name: 'Flushing North', lat: 40.7680, lng: -73.8280, radius: 1500 },
+      { name: 'Flushing South', lat: 40.751, lng: -73.832, radius: 1500 },
+      { name: 'Flushing East', lat: 40.7594, lng: -73.815, radius: 1500 },
+      { name: 'Flushing West', lat: 40.7594, lng: -73.845, radius: 1500 },
+    ],
+  },
+  'sunset-park-ny': {
+    regionSlug: 'sunset-park-ny',
+    queryPrefix: '八大道',
+    locationCityEn: 'Brooklyn',
+    gridZones: [
+      { name: '8th Ave core', lat: 40.641, lng: -73.995, radius: 1500 },
+      { name: '8th Ave north', lat: 40.65, lng: -73.995, radius: 1500 },
+      { name: '8th Ave south', lat: 40.632, lng: -73.995, radius: 1500 },
+      { name: '8th Ave east', lat: 40.641, lng: -73.985, radius: 1500 },
+      { name: '8th Ave west', lat: 40.641, lng: -74.005, radius: 1500 },
+    ],
+  },
+  'elmhurst-ny': {
+    regionSlug: 'elmhurst-ny',
+    queryPrefix: '艾姆赫斯特',
+    locationCityEn: 'Elmhurst',
+    gridZones: [
+      { name: 'Elmhurst core', lat: 40.737, lng: -73.88, radius: 1500 },
+      { name: 'Elmhurst north', lat: 40.745, lng: -73.88, radius: 1500 },
+      { name: 'Elmhurst south', lat: 40.729, lng: -73.88, radius: 1500 },
+      { name: 'Elmhurst east', lat: 40.737, lng: -73.868, radius: 1500 },
+      { name: 'Elmhurst west', lat: 40.737, lng: -73.892, radius: 1500 },
+    ],
+  },
+  'manhattan-chinatown-ny': {
+    regionSlug: 'manhattan-chinatown-ny',
+    queryPrefix: '曼哈顿华埠',
+    locationCityEn: 'New York',
+    gridZones: [
+      { name: 'Chinatown core', lat: 40.715, lng: -73.998, radius: 1200 },
+      { name: 'Chinatown north', lat: 40.722, lng: -73.998, radius: 1200 },
+      { name: 'Chinatown east', lat: 40.715, lng: -73.988, radius: 1200 },
+      { name: 'Two Bridges', lat: 40.708, lng: -73.995, radius: 1200 },
+    ],
+  },
+};
 
 // ─── Main ────────────────────────────────────────────────────────
 
 async function main() {
-  console.log('🇨🇳 Discover Chinese Businesses in Flushing');
+  if (listRegions) {
+    console.log('Regions (--region=slug):\n');
+    for (const k of Object.keys(DISCOVERY_REGIONS)) {
+      const r = DISCOVERY_REGIONS[k];
+      console.log(`  ${r.regionSlug}  (${r.queryPrefix}…)  → ${r.locationCityEn}`);
+    }
+    return;
+  }
+
+  const preset = DISCOVERY_REGIONS[regionSlug];
+  if (!preset) {
+    console.error(`Unknown region "${regionSlug}". Use --list-regions.`);
+    process.exit(1);
+  }
+
+  const queries = CHINESE_QUERY_SUFFIXES.map((s) => `${preset.queryPrefix}${s}`);
+  const gridZones = preset.gridZones;
+
+  console.log(`🇨🇳 Discover Chinese Businesses — ${preset.regionSlug}`);
   console.log(`   Mode: ${applyChanges ? '✅ APPLY' : '👀 DRY RUN'}`);
-  console.log(`   Queries: ${CHINESE_QUERIES.length} × ${GRID_ZONES.length} zones = ${CHINESE_QUERIES.length * GRID_ZONES.length} searches\n`);
+  console.log(`   Queries: ${queries.length} × ${gridZones.length} zones = ${queries.length * gridZones.length} searches\n`);
 
   // Load existing place IDs
   const existing = await supaGet('businesses?select=id,google_place_id&google_place_id=not.is.null');
@@ -241,22 +315,24 @@ async function main() {
   const categories = await supaGet('categories?type=eq.business&select=id,slug');
   const catMap = new Map(categories.map(c => [c.slug, c.id]));
 
-  // Get Flushing region
-  const regions = await supaGet('regions?name_en=like.*Flushing*&select=id');
+  const regions = await supaGet(`regions?slug=eq.${encodeURIComponent(preset.regionSlug)}&select=id`);
   const regionId = regions[0]?.id;
+  if (!regionId && applyChanges) {
+    console.warn(`⚠️ No region row for slug "${preset.regionSlug}". Run migration 20260401… then re-run, or inserts will miss region_id.`);
+  }
 
   let discovered = 0, alreadyExist = 0, taggedExisting = 0, errors = 0;
   const newPlaceIds = new Set<string>();
   let totalSearches = 0;
 
-  for (let zi = 0; zi < GRID_ZONES.length; zi++) {
-    const zone = GRID_ZONES[zi];
+  for (let zi = 0; zi < gridZones.length; zi++) {
+    const zone = gridZones[zi];
     console.log(`\n📍 Zone: ${zone.name} (${zone.lat}, ${zone.lng})`);
 
-    for (let qi = 0; qi < CHINESE_QUERIES.length; qi++) {
-      const query = CHINESE_QUERIES[qi];
+    for (let qi = 0; qi < queries.length; qi++) {
+      const query = queries[qi];
       totalSearches++;
-      const progress = `[${totalSearches}/${CHINESE_QUERIES.length * GRID_ZONES.length}]`;
+      const progress = `[${totalSearches}/${queries.length * gridZones.length}]`;
       process.stdout.write(`  ${progress} ${query.padEnd(20)} `);
 
       try {
@@ -329,9 +405,9 @@ async function main() {
               const hours = convertHours(place.regularOpeningHours);
               await supaInsert('business_locations', {
                 business_id: newBiz.id,
-                region_id: regionId,
+                region_id: regionId ?? null,
                 address_line1: addrParts[0] || '',
-                city: 'Flushing',
+                city: preset.locationCityEn,
                 state: 'NY',
                 zip_code: addrParts.find((p: string) => /\d{5}/.test(p))?.match(/\d{5}/)?.[0] || '',
                 latitude: place.location?.latitude,

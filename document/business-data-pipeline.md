@@ -4,16 +4,22 @@ description: Complete workflow for fetching businesses from Google, enriching wi
 type: reference
 ---
 
+## Scope
+
+This document and the scripts below cover **business listing data** (`businesses`, `business_locations`, `reviews`, categories, Google linkage). It does **not** cover the **Discover** module (`discover_*` tables and related app features); that is maintained separately.
+
 ## Business Data Pipeline
 
 ### Step 1: Discover Businesses
 **Script:** `scripts/discover-chinese-businesses.ts` (for Chinese-focused) or `scripts/backfill-business-data.ts` (general)
 
+**Regions:** Pass `--region=<slug>` (default `flushing-ny`). Run `npx tsx scripts/discover-chinese-businesses.ts --list-regions` for slugs. Presets include Flushing, Sunset Park (八大道), Elmhurst (艾姆赫斯特), and Manhattan Chinatown (曼哈顿华埠), each with its own grid and query prefix (e.g. 法拉盛 → 八大道 / neighborhood-specific prefix). Ensure matching `regions` rows exist (see migration `supabase/migrations/20260401_business_data_regions_and_review_trigger.sql` for Sunset Park, Elmhurst, Manhattan Chinatown).
+
 **Method:** Google Places Text Search API (`places:searchText`)
 - Search using Chinese terms for Chinese businesses (e.g. "法拉盛川菜", "法拉盛华人牙医")
 - Use `languageCode: 'zh-CN'` to get Chinese names directly
-- Subdivide area into grid zones (5 zones for Flushing, 1.5km radius each)
-- 124 Chinese query terms × 5 zones = 620 searches
+- Subdivide area into grid zones (multiple zones per preset, ~1.5km radius each)
+- For Flushing: 124 Chinese query terms × 5 zones = 620 searches (other regions: same term count × their zone count)
 - Max 20 results per search → ~800-1000 new businesses per run
 - **Cost:** ~$0.032/search, ~$20 per run
 
@@ -50,7 +56,7 @@ type: reference
 - Stored in `reviews` table with `source = 'google'`
 - Fields: `google_review_id`, `google_author_name`, `google_publish_time`, `language`, `body` (review text), `rating`
 
-**IMPORTANT:** The `sync_business_reviews` trigger recalculates `review_count` from our reviews table. Must fix trigger to exclude Google reviews, or run fix-review-counts.ts after importing.
+**Review totals:** Migration `20260401_business_data_regions_and_review_trigger.sql` defines `sync_business_reviews()` so that if `businesses.google_place_id` is set, **`review_count` and `avg_rating` are not overwritten** when rows change in `reviews` (Google Places remains authoritative; stored Google reviews are display samples only). Listings **without** a Google place id still get aggregates from approved `reviews`. After fixing historical bad totals, you can run `scripts/fix-review-counts.ts --apply` once; going forward the trigger avoids clobbering Google-backed listings.
 
 ### Step 5: Chinese Names from nychinaren.com
 **Script:** `scripts/scrape-chinese-names.ts` (by phone) + `scripts/scrape-chinese-names-by-name.ts` (by English name)

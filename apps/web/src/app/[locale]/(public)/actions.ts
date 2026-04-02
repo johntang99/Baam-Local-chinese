@@ -3,6 +3,7 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getCurrentUser } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
+import { moderateDiscoverPost } from '@/lib/ai/moderate-post';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyClient = ReturnType<typeof createAdminClient> extends infer T ? T : any;
@@ -250,6 +251,10 @@ export async function createDiscoverPost(formData: FormData) {
 
   const supabase = createAdminClient();
 
+  // AI moderation check
+  const moderation = await moderateDiscoverPost(title || '', content || '');
+  const postStatus = moderation.pass ? 'published' : 'pending_review';
+
   // Insert post
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: post, error } = await (supabase as any)
@@ -261,8 +266,10 @@ export async function createDiscoverPost(formData: FormData) {
       slug,
       content: content || '',
       visibility: 'public',
-      status: 'published',
+      status: postStatus,
       published_at: new Date().toISOString(),
+      ai_spam_score: moderation.score,
+      moderation_reason: moderation.reason,
       region_id: user.regionId,
       language: 'zh',
       topic_tags: tags,
@@ -311,7 +318,7 @@ export async function createDiscoverPost(formData: FormData) {
   }
 
   revalidatePath('/discover');
-  return { success: true, redirect: `/discover/${post?.slug}` };
+  return { success: true, redirect: `/discover/${post?.slug}`, moderated: postStatus === 'pending_review' };
 }
 
 // ─── Discover: Search Businesses (for business linker) ──

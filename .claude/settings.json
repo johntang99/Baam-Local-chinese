@@ -21,7 +21,9 @@
       "Read(//Users/johntang/Desktop/baam-platform/src/app/api/proposals/discover/**)",
       "Read(//Users/johntang/Desktop/baam-platform/src/app/api/proposals/diagnostic-report/**)",
       "WebFetch(domain:www.nychinaren.com)",
-      "WebFetch(domain:acupunctureflushing.com)"
+      "WebFetch(domain:acupunctureflushing.com)",
+      "WebFetch(domain:data.cityofnewyork.us)",
+      "mcp__playwright__browser_resize"
     ],
     "additionalDirectories": []
   }

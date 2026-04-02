@@ -395,13 +395,14 @@ Reply with exactly one word: FOLLOWUP or SEARCH or NEW`,
       .order('reply_count', { ascending: false })
       .limit(3),
 
-    // Voice posts
+    // Voice posts / Discover posts
     (supabase as any)
       .from('voice_posts')
-      .select('slug, title, excerpt, author_id')
+      .select('id, slug, title, excerpt, content, cover_images, cover_image_url, topic_tags, location_text, like_count, author_id, profiles:author_id(display_name)')
       .eq('status', 'published')
       .or(buildOr(['title', 'content']))
-      .limit(3),
+      .order('like_count', { ascending: false })
+      .limit(5),
 
     // Events
     (supabase as any)
@@ -483,9 +484,14 @@ Reply with exactly one word: FOLLOWUP or SEARCH or NEW`,
   }
 
   if (voices.length > 0) {
-    contextParts.push('【达人分享】\n' + voices.map(v =>
-      `- ${v.title || ''}：${v.excerpt || ''}`
-    ).join('\n'));
+    contextParts.push('【社区笔记/达人分享】\n' + voices.map((v, i) => {
+      const author = v.profiles?.display_name || '匿名';
+      const tags = (v.topic_tags || []).join('、');
+      const loc = v.location_text || '';
+      const likes = v.like_count || 0;
+      const body = (v.content || v.excerpt || '').slice(0, 150);
+      return `${i + 1}. ${v.title || '(无标题)'}（${author}${loc ? ' · ' + loc : ''}${likes ? ` · ${likes}赞` : ''}）${tags ? `\n   标签：${tags}` : ''}\n   ${body}`;
+    }).join('\n'));
   }
 
   const totalResults = businesses.length + news.length + guides.length + threads.length + voices.length + events.length;
@@ -569,6 +575,13 @@ Reply with exactly one word: FOLLOWUP or SEARCH or NEW`,
       type: '活动',
       title: e.title_zh || e.title_en,
       url: `/events/${e.slug}`,
+    }));
+
+    voices.forEach(v => sources.push({
+      type: '笔记',
+      title: v.title || (v.content || '').slice(0, 30),
+      url: `/discover/${v.slug}`,
+      snippet: (v.content || v.excerpt || '').slice(0, 80),
     }));
 
     return { data: { answer, sources, debugPrompt: {

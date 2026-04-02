@@ -1,13 +1,13 @@
 /**
  * Fix Review Counts — Restore real Google review counts and ratings
  *
- * Problem: The sync_business_reviews trigger recalculated review_count and avg_rating
- * from our reviews table (max 5 per business), overwriting the real Google values.
+ * Problem (historical): Before migration 20260401…, sync_business_reviews recalculated
+ * review_count and avg_rating from `reviews` (max 5 Google samples), overwriting Places totals.
  *
  * Fix:
  * 1. Fetch real rating + userRatingCount from Google Place Details
- * 2. Update businesses table directly (bypassing the trigger by updating via REST)
- * 3. Update the trigger to only count user reviews (source='user'), not Google reviews
+ * 2. PATCH businesses (after migration 20260401…, trigger skips Google-backed rows when reviews change)
+ * 3. One-off repair for rows corrupted before the trigger fix (~1 Place Details call per business)
  *
  * Usage:
  *   set -a && source <(grep -v '^#' apps/web/.env.local | grep -v '^$' | grep -v '@') && set +a && npx tsx scripts/fix-review-counts.ts
@@ -109,30 +109,8 @@ async function main() {
   if (!applyChanges) console.log(`\n  👀 DRY RUN — add --apply to save`);
   console.log('═'.repeat(60));
 
-  console.log('\n⚠️  IMPORTANT: You also need to fix the trigger in Supabase SQL Editor:');
-  console.log('    Run this SQL to make the trigger only count user reviews:\n');
-  console.log(`    CREATE OR REPLACE FUNCTION sync_business_reviews()
-    RETURNS TRIGGER AS $$
-    BEGIN
-      UPDATE businesses SET
-        review_count = (
-          SELECT COUNT(*) FROM reviews
-          WHERE business_id = COALESCE(NEW.business_id, OLD.business_id)
-          AND status = 'approved' AND source = 'user'
-        ) + COALESCE(
-          (SELECT review_count FROM businesses WHERE id = COALESCE(NEW.business_id, OLD.business_id)),
-          0
-        ),
-        avg_rating = COALESCE(
-          (SELECT AVG(rating) FROM reviews
-           WHERE business_id = COALESCE(NEW.business_id, OLD.business_id)
-           AND status = 'approved'),
-          (SELECT avg_rating FROM businesses WHERE id = COALESCE(NEW.business_id, OLD.business_id))
-        )
-      WHERE id = COALESCE(NEW.business_id, OLD.business_id);
-      RETURN NEW;
-    END;
-    $$ LANGUAGE plpgsql;`);
+  console.log('\n⚠️  Ensure migration is applied: supabase/migrations/20260401_business_data_regions_and_review_trigger.sql');
+  console.log('    It skips sync_business_reviews updates when google_place_id is set (Google totals stay authoritative).');
 }
 
 main().catch(console.error);

@@ -1,12 +1,14 @@
 # Baam Local Portal — Progress Report
 
-> **Date:** 2026-03-31 (updated)
+> **Date:** 2026-03-31 (updated; business-data notes 2026-04-01)
 > **Scope:** NY Chinese Site (Phase 1 MVP)
 > **Branch:** main
 
 ---
 
 ## Executive Summary
+
+**Maintenance note (business data vs Discover):** Updates under this report that concern **business listings, Google import, reviews, categories, and `/businesses`** are the **business data** workstream. The **Discover** module (separate tables and features) is handled by another team — do not require Discover changes when closing business-data tasks.
 
 **Overall Phase 1 Completion: ~85%** (up from ~75% on 2026-03-26)
 
@@ -74,7 +76,7 @@
 | `scripts/backfill-google-reviews.ts` | Fetch 5 Google reviews per business |
 | `scripts/backfill-business-data.ts` | Phase 1 (enrich) + Phase 2 (discover) from Google |
 | `scripts/backfill-business-details.ts` | Fill hours, Chinese names, AI descriptions |
-| `scripts/discover-chinese-businesses.ts` | Chinese-focused discovery using zh-CN Google search |
+| `scripts/discover-chinese-businesses.ts` | Chinese-focused discovery using zh-CN Google search; `--region=slug`, `--list-regions` for NYC corridors beyond Flushing |
 | `scripts/assign-categories.ts` | Auto-categorize via Google type + AI classification |
 | `scripts/test-ai-search.ts` | Self-test: 44 queries, validates keywords + categories + results |
 | `scripts/populate-search-terms.ts` | 6,600+ search terms across 130 categories |
@@ -84,6 +86,7 @@
 | Migration | Changes |
 |-----------|---------|
 | `20260330_google_reviews.sql` | `google_place_id` on businesses; `source`, `google_author_name`, `google_review_id`, `google_publish_time`, `language` on reviews; nullable `author_id` for Google reviews |
+| `20260401_business_data_regions_and_review_trigger.sql` | Regions: `sunset-park-ny`, `elmhurst-ny`, `manhattan-chinatown-ny`; `sync_business_reviews()` skips overwriting `review_count` / `avg_rating` when `google_place_id` is set |
 
 ---
 

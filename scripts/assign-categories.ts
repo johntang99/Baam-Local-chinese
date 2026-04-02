@@ -1,5 +1,5 @@
 /**
- * Assign Categories to Uncategorized Businesses
+ * Assign primary category to businesses missing `business_categories.is_primary`
  *
  * Strategy:
  * 1. Fetch Google Place Details to get primaryType → map to our category
@@ -175,21 +175,21 @@ ${CATEGORY_LIST}`,
 // ─── Main ────────────────────────────────────────────────────────
 
 async function main() {
-  console.log('📁 Assign Categories to Uncategorized Businesses');
+  console.log('📁 Assign primary category (missing is_primary)');
   console.log(`   Mode: ${applyChanges ? '✅ APPLY' : '👀 DRY RUN'}\n`);
 
-  // Get all businesses
+  // Get all businesses — need a *primary* category (Flushing-quality coverage)
   const allBiz = await supaGet('businesses?is_active=eq.true&select=id,display_name,display_name_zh,short_desc_zh,short_desc_en,google_place_id&order=review_count.desc.nullslast');
-  const catLinks = await supaGet('business_categories?select=business_id');
-  const hasCat = new Set(catLinks.map(l => l.business_id));
-  const noCat = allBiz.filter(b => !hasCat.has(b.id));
+  const primaryRows = await supaGet('business_categories?is_primary=eq.true&select=business_id');
+  const hasPrimary = new Set(primaryRows.map((l: AnyRow) => l.business_id));
+  const noPrimary = allBiz.filter(b => !hasPrimary.has(b.id));
 
   // Load categories
   const categories = await supaGet('categories?type=eq.business&select=id,slug');
   const catMap = new Map(categories.map(c => [c.slug, c.id]));
 
-  const toProcess = limitArg ? noCat.slice(0, limitArg) : noCat;
-  console.log(`📊 Total: ${allBiz.length} | Uncategorized: ${noCat.length} | Processing: ${toProcess.length}\n`);
+  const toProcess = limitArg ? noPrimary.slice(0, limitArg) : noPrimary;
+  console.log(`📊 Total: ${allBiz.length} | Missing primary category: ${noPrimary.length} | Processing: ${toProcess.length}\n`);
 
   let byGoogle = 0, byAI = 0, failed = 0, errors = 0;
 

@@ -19,6 +19,9 @@
  *
  *   # Only fetch reviews (skip place search, use existing google_place_id)
  *   set -a && source <(grep -v '^#' apps/web/.env.local | grep -v '^$' | grep -v '@') && set +a && npx tsx scripts/backfill-google-reviews.ts --apply --reviews-only
+ *
+ *   # Skip businesses that already have at least one stored Google review (faster re-runs)
+ *   npx tsx scripts/backfill-google-reviews.ts --apply --reviews-only --skip-existing
  */
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL!;
@@ -28,6 +31,7 @@ const GOOGLE_API_KEY = process.env.GOOGLE_PLACES_API_KEY!;
 const args = process.argv.slice(2);
 const applyChanges = args.includes('--apply');
 const reviewsOnly = args.includes('--reviews-only');
+const skipExisting = args.includes('--skip-existing');
 
 type AnyRow = Record<string, any>;
 
@@ -51,6 +55,19 @@ async function supaFetch(path: string, options?: RequestInit) {
   if (res.status === 204) return null;
   const text = await res.text();
   return text ? JSON.parse(text) : null;
+}
+
+/** Paginated GET (PostgREST default limit can truncate large tables). */
+async function supaGetAll(pathBase: string): Promise<AnyRow[]> {
+  const out: AnyRow[] = [];
+  for (let offset = 0; ; offset += 1000) {
+    const sep = pathBase.includes('?') ? '&' : '?';
+    const batch = (await supaFetch(`${pathBase}${sep}limit=1000&offset=${offset}`)) as AnyRow[];
+    if (!Array.isArray(batch)) break;
+    out.push(...batch);
+    if (batch.length < 1000) break;
+  }
+  return out;
 }
 
 async function supaUpsert(table: string, data: AnyRow, onConflict: string) {
@@ -155,19 +172,37 @@ async function fetchReviews(placeId: string): Promise<GoogleReview[]> {
 
 async function main() {
   console.log('📝 Google Reviews Backfill');
-  console.log(`   Mode: ${applyChanges ? '✅ APPLY' : '👀 DRY RUN'}${reviewsOnly ? ' (reviews only)' : ''}\n`);
+  console.log(
+    `   Mode: ${applyChanges ? '✅ APPLY' : '👀 DRY RUN'}${reviewsOnly ? ' (reviews only)' : ''}${skipExisting ? ' (skip existing)' : ''}\n`,
+  );
 
   if (!GOOGLE_API_KEY) {
     console.error('❌ GOOGLE_PLACES_API_KEY not set');
     process.exit(1);
   }
 
-  // Fetch businesses
-  const businesses = await supaFetch(
-    'businesses?select=id,slug,display_name,display_name_zh,google_place_id,address_full,city,state&is_active=eq.true&order=review_count.desc.nullslast'
-  ) as AnyRow[];
+  // Fetch businesses (paginated — table is larger than default row limit)
+  let businesses = await supaGetAll(
+    'businesses?select=id,slug,display_name,display_name_zh,google_place_id,address_full,city,state&is_active=eq.true&order=review_count.desc.nullslast',
+  );
 
-  console.log(`📊 Total active businesses: ${businesses.length}\n`);
+  let skippedExisting = 0;
+  if (skipExisting) {
+    const withGoogle: Set<string> = new Set();
+    const reviewRows = await supaGetAll('reviews?source=eq.google&select=business_id');
+    for (const r of reviewRows) withGoogle.add(r.business_id);
+    const before = businesses.length;
+    businesses = businesses.filter(b => {
+      if (withGoogle.has(b.id)) {
+        skippedExisting++;
+        return false;
+      }
+      return true;
+    });
+    console.log(`📊 Skip existing: ${skippedExisting} already have Google reviews | Remaining: ${businesses.length} (was ${before})\n`);
+  }
+
+  console.log(`📊 Total active businesses to process: ${businesses.length}\n`);
 
   let placeFound = 0, placeSkipped = 0, placeNotFound = 0;
   let reviewsFetched = 0, reviewsSaved = 0, errors = 0;
