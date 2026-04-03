@@ -311,7 +311,7 @@ export function AskChat({ initialQuery }: AskChatProps) {
                     )}
                   </div>
                   <div className="space-y-1.5">
-                    {msg.sources.slice(0, 6).map((source, j) => (
+                    {msg.sources.slice(0, 8).map((source, j) => (
                       <a
                         key={j}
                         href={`/zh${source.url}`}

@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>餐厅卫生评分查询 — Baam 纽约华人本地服务</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            baam: { 50:'#FFF7ED', 100:'#FFEDD5', 200:'#FED7AA', 300:'#FDBA74', 400:'#FB923C', 500:'#F97316', 600:'#EA580C', 700:'#C2410C' }
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="../assets/css/prototype.css">
+</head>
+<body class="bg-gray-50 text-gray-900">
+
+<!-- ==================== NAVBAR ==================== -->
+<nav class="bg-white border-b border-gray-200 sticky top-0 z-50">
+  <div class="max-w-7xl mx-auto px-4">
+    <div class="flex items-center justify-between h-16">
+      <div class="flex items-center gap-8">
+        <a href="index.html" class="flex items-center gap-2">
+          <div class="w-8 h-8 bg-baam-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">B</div>
+          <span class="text-xl font-bold text-gray-900">Baam</span>
+          <span class="text-xs text-gray-400 hidden sm:inline">纽约</span>
+        </a>
+        <div class="hidden lg:flex items-center gap-1">
+          <a href="news-list.html" class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-baam-500 rounded-md hover:bg-orange-50">新闻</a>
+          <a href="guides-list.html" class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-baam-500 rounded-md hover:bg-orange-50">生活资讯</a>
+          <a href="business-list.html" class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-baam-500 rounded-md hover:bg-orange-50">商家</a>
+          <a href="events-list.html" class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-baam-500 rounded-md hover:bg-orange-50">活动</a>
+          <a href="forum-home.html" class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-baam-500 rounded-md hover:bg-orange-50">论坛</a>
+          <a href="discover-home.html" class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-baam-500 rounded-md hover:bg-orange-50">发现</a>
+          <a href="services-home.html" class="px-3 py-2 text-sm font-medium text-baam-500 rounded-md bg-orange-50">实用工具</a>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <button class="p-2 text-gray-500 hover:text-baam-500 hover:bg-orange-50 rounded-full">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        </button>
+        <button class="px-2 py-1 text-xs font-medium text-gray-500 border border-gray-300 rounded hover:bg-gray-100">繁</button>
+        <button class="bg-baam-500 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-baam-600 transition">登录 / 注册</button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="max-w-5xl mx-auto px-4 py-8 sm:py-12">
+
+  <!-- ==================== BREADCRUMB ==================== -->
+  <nav class="flex items-center gap-2 text-sm text-gray-500 mb-6">
+    <a href="index.html" class="hover:text-baam-500 transition">首页</a>
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+    <a href="services-home.html" class="hover:text-baam-500 transition">实用工具</a>
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+    <span class="text-gray-900 font-medium">餐厅卫生评分</span>
+  </nav>
+
+  <!-- ==================== PAGE HEADER ==================== -->
+  <div class="text-center mb-10">
+    <div class="text-5xl mb-4">🍽️</div>
+    <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">纽约餐厅卫生评分查询</h1>
+    <p class="text-gray-500 text-lg">NYC Restaurant Health Inspection Lookup</p>
+  </div>
+
+  <!-- ==================== GUIDE CONTENT ==================== -->
+  <div class="bg-white border border-gray-200 rounded-2xl p-6 sm:p-8 mb-10">
+
+    <h2 class="text-xl font-bold text-gray-900 mb-4">纽约餐厅卫生评分怎么看？</h2>
+    <div class="text-sm text-gray-600 leading-relaxed space-y-4 mb-8">
+      <p>在纽约市，每一家持有卫生许可证的餐厅都会定期接受纽约市卫生局（NYC Department of Health and Mental Hygiene, DOHMH）的卫生检查。检查员会根据餐厅的食品处理方式、厨房卫生状况、害虫防控措施、员工操作规范等数十个标准进行评分。这个评分直接关系到你在这家餐厅就餐的安全性——分数越低，说明餐厅卫生条件越好。</p>
+      <p>作为纽约的华人居民，了解如何查看和理解餐厅卫生评分是非常实用的生活技能。尤其是在法拉盛、日落公园、曼哈顿唐人街等华人聚集区域，餐饮选择众多，卫生评分可以帮助你做出更明智的选择。很多华人朋友可能不知道，纽约市卫生局的检查数据是完全公开的，任何人都可以查询任何一家餐厅的历史检查记录。</p>
+      <p>纽约市从2010年开始实施餐厅卫生评分制度（Letter Grading Program）。根据规定，所有餐厅必须在入口处张贴最近一次检查获得的评分标志。如果一家餐厅门口没有张贴评分标志，这本身就可能是一个警示信号——要么是新开业尚未接受检查，要么是评分过低不愿张贴。纽约市目前有超过27,000家餐厅参与评分计划，每家餐厅平均每年接受1到3次检查。</p>
+      <p>检查过程中，检查员会查看冷藏温度是否达标（冷藏食品必须保持在41°F/5°C以下）、热食是否保持足够温度（140°F/60°C以上）、食品是否有交叉污染风险、洗手设施是否正常运作、是否存在老鼠或蟑螂等害虫迹象、垃圾处理是否规范等。每发现一项违规，就会根据严重程度扣分。</p>
+    </div>
+
+    <!-- A/B/C Grade Badges -->
+    <h3 class="text-lg font-bold text-gray-900 mb-5">A / B / C 评级标准</h3>
+    <div class="grid sm:grid-cols-3 gap-4 mb-8">
+
+      <!-- Grade A -->
+      <div class="border-2 border-green-200 bg-green-50 rounded-2xl p-5 text-center">
+        <div class="w-20 h-20 bg-green-500 rounded-2xl flex items-center justify-center text-white text-4xl font-black mx-auto mb-3">A</div>
+        <div class="text-lg font-bold text-green-800 mb-1">优秀</div>
+        <div class="text-sm text-green-700 font-medium mb-2">0 — 13 分</div>
+        <p class="text-xs text-green-600 leading-relaxed">餐厅卫生状况优秀，符合绝大部分卫生标准。极少或没有关键违规项。纽约市超过90%的餐厅在检查后获得A级评分。</p>
+      </div>
+
+      <!-- Grade B -->
+      <div class="border-2 border-yellow-200 bg-yellow-50 rounded-2xl p-5 text-center">
+        <div class="w-20 h-20 bg-yellow-500 rounded-2xl flex items-center justify-center text-white text-4xl font-black mx-auto mb-3">B</div>
+        <div class="text-lg font-bold text-yellow-800 mb-1">良好</div>
+        <div class="text-sm text-yellow-700 font-medium mb-2">14 — 27 分</div>
+        <p class="text-xs text-yellow-600 leading-relaxed">餐厅存在一些卫生问题，但总体仍在可接受范围内。可能有个别关键违规项需要整改。通常会在复查后改善。</p>
+      </div>
+
+      <!-- Grade C -->
+      <div class="border-2 border-orange-200 bg-orange-50 rounded-2xl p-5 text-center">
+        <div class="w-20 h-20 bg-baam-500 rounded-2xl flex items-center justify-center text-white text-4xl font-black mx-auto mb-3">C</div>
+        <div class="text-lg font-bold text-orange-800 mb-1">需改进</div>
+        <div class="text-sm text-orange-700 font-medium mb-2">28 分及以上</div>
+        <p class="text-xs text-orange-600 leading-relaxed">餐厅存在较严重的卫生问题，需要立即整改。可能存在多项关键违规，建议消费者谨慎选择。卫生局会安排更频繁的复查。</p>
+      </div>
+
+    </div>
+
+    <!-- Critical vs Not Critical -->
+    <h3 class="text-lg font-bold text-gray-900 mb-3">常见违规类型</h3>
+    <div class="grid sm:grid-cols-2 gap-4 mb-6">
+      <div class="bg-red-50 border border-red-200 rounded-xl p-4">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="w-2 h-2 bg-red-500 rounded-full"></span>
+          <span class="text-sm font-bold text-red-800">关键违规（Critical）</span>
+        </div>
+        <p class="text-xs text-red-700 leading-relaxed">可能直接导致食源性疾病的违规行为。包括：食品温度不达标、生熟食品交叉污染、员工未正确洗手、使用了过期或来源不明的食材、发现老鼠活动迹象等。每项关键违规通常扣5至28分不等。</p>
+      </div>
+      <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="w-2 h-2 bg-blue-500 rounded-full"></span>
+          <span class="text-sm font-bold text-blue-800">一般违规（Not Critical）</span>
+        </div>
+        <p class="text-xs text-blue-700 leading-relaxed">不会直接导致食源性疾病，但反映卫生管理水平的问题。包括：地面或墙面不够清洁、通风设备维护不当、垃圾桶未加盖、洗手间缺少肥皂或纸巾等。每项一般违规通常扣2至5分。</p>
+      </div>
+    </div>
+
+    <!-- How to Use -->
+    <h3 class="text-lg font-bold text-gray-900 mb-3">如何使用本工具</h3>
+    <div class="text-sm text-gray-600 leading-relaxed space-y-2">
+      <p>使用下方的搜索功能，输入你想查询的餐厅名称或地址，即可查看该餐厅最近一次的卫生检查评分、违规详情和历史记录。你也可以通过筛选区域（Borough）和菜系类型来缩小搜索范围。数据来源为纽约市卫生局公开数据集（NYC Open Data），每周更新一次。</p>
+    </div>
+  </div>
+
+  <!-- ==================== SEARCH TOOL AREA ==================== -->
+  <div class="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-2xl p-6 sm:p-8 mb-10">
+    <h2 class="text-xl font-bold text-gray-900 mb-5">搜索餐厅卫生评分</h2>
+
+    <!-- Search Input -->
+    <div class="mb-4">
+      <input type="text" placeholder="搜索餐厅名称或地址" class="w-full h-12 px-4 border border-gray-300 rounded-xl text-sm bg-white focus:ring-2 focus:ring-baam-500 focus:border-baam-500 outline-none">
+    </div>
+
+    <!-- Filter Row -->
+    <div class="flex flex-col sm:flex-row gap-3 mb-4">
+      <select class="flex-1 h-11 px-4 border border-gray-300 rounded-xl text-sm bg-white focus:ring-2 focus:ring-baam-500 focus:border-baam-500 outline-none">
+        <option>全部区域</option>
+        <option>曼哈顿 (Manhattan)</option>
+        <option>布鲁克林 (Brooklyn)</option>
+        <option>皇后区 (Queens)</option>
+        <option>布朗克斯 (Bronx)</option>
+        <option>斯坦顿岛 (Staten Island)</option>
+      </select>
+      <select class="flex-1 h-11 px-4 border border-gray-300 rounded-xl text-sm bg-white focus:ring-2 focus:ring-baam-500 focus:border-baam-500 outline-none">
+        <option>全部菜系</option>
+        <option>中餐</option>
+        <option>日餐</option>
+        <option>韩餐</option>
+        <option>意餐</option>
+        <option>美式</option>
+        <option>墨西哥</option>
+        <option>印度</option>
+      </select>
+    </div>
+
+    <!-- Search Button -->
+    <button class="w-full sm:w-auto h-11 px-8 bg-baam-500 text-white text-sm font-semibold rounded-xl hover:bg-baam-600 transition flex items-center justify-center gap-2">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+      搜索
+    </button>
+  </div>
+
+  <!-- ==================== SAMPLE SEARCH RESULTS ==================== -->
+  <div class="mb-10">
+    <div class="flex items-center justify-between mb-5">
+      <h2 class="text-lg font-bold text-gray-900">搜索结果</h2>
+      <span class="text-sm text-gray-500">找到 6 家餐厅</span>
+    </div>
+
+    <div class="space-y-3">
+
+      <!-- Result 1: 鼎泰丰 -->
+      <div class="bg-white border border-gray-200 rounded-xl p-4 sm:p-5 flex items-start gap-4 hover:border-baam-200 hover:shadow-sm transition">
+        <div class="w-16 h-16 bg-green-500 rounded-xl flex items-center justify-center text-white text-3xl font-black flex-shrink-0">A</div>
+        <div class="flex-1 min-w-0">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 mb-1.5">
+            <h3 class="text-base font-bold text-gray-900">鼎泰丰 <span class="text-sm font-normal text-gray-400">Din Tai Fung</span></h3>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-medium text-green-700 bg-green-50 px-2 py-0.5 rounded-full">评分 10</span>
+              <span class="text-xs text-gray-400">2026-02-15 检查</span>
+            </div>
+          </div>
+          <p class="text-sm text-gray-500 mb-1">📍 136-18 39th Ave, Flushing, Queens, NY 11354</p>
+          <div class="flex items-center gap-3 text-xs text-gray-400">
+            <span>🍜 中式小笼包</span>
+            <span>📞 (718) 961-2888</span>
+          </div>
+          <a href="#" class="inline-flex items-center gap-1 text-sm text-baam-500 font-medium mt-2 hover:text-baam-600 transition">查看详情 <span>&rarr;</span></a>
+        </div>
+      </div>
+
+      <!-- Result 2: 南翔小笼 -->
+      <div class="bg-white border border-gray-200 rounded-xl p-4 sm:p-5 flex items-start gap-4 hover:border-baam-200 hover:shadow-sm transition">
+        <div class="w-16 h-16 bg-green-500 rounded-xl flex items-center justify-center text-white text-3xl font-black flex-shrink-0">A</div>
+        <div class="flex-1 min-w-0">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 mb-1.5">
+            <h3 class="text-base font-bold text-gray-900">南翔小笼 <span class="text-sm font-normal text-gray-400">Nan Xiang Xiao Long Bao</span></h3>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-medium text-green-700 bg-green-50 px-2 py-0.5 rounded-full">评分 7</span>
+              <span class="text-xs text-gray-400">2026-01-22 检查</span>
+            </div>
+          </div>
+          <p class="text-sm text-gray-500 mb-1">📍 38-12 Prince St, Flushing, Queens, NY 11354</p>
+          <div class="flex items-center gap-3 text-xs text-gray-400">
+            <span>🍜 中式面食</span>
+            <span>📞 (718) 321-3838</span>
+          </div>
+          <a href="#" class="inline-flex items-center gap-1 text-sm text-baam-500 font-medium mt-2 hover:text-baam-600 transition">查看详情 <span>&rarr;</span></a>
+        </div>
+      </div>
+
+      <!-- Result 3: 川味坊 -->
+      <div class="bg-white border border-gray-200 rounded-xl p-4 sm:p-5 flex items-start gap-4 hover:border-baam-200 hover:shadow-sm transition">
+        <div class="w-16 h-16 bg-yellow-500 rounded-xl flex items-center justify-center text-white text-3xl font-black flex-shrink-0">B</div>
+        <div class="flex-1 min-w-0">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 mb-1.5">
+            <h3 class="text-base font-bold text-gray-900">川味坊 <span class="text-sm font-normal text-gray-400">Sichuan Style</span></h3>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-medium text-yellow-700 bg-yellow-50 px-2 py-0.5 rounded-full">评分 19</span>
+              <span class="text-xs text-gray-400">2026-03-08 检查</span>
+            </div>
+          </div>
+          <p class="text-sm text-gray-500 mb-1">📍 40-52 Main St, Flushing, Queens, NY 11354</p>
+          <div class="flex items-center gap-3 text-xs text-gray-400">
+            <span>🌶️ 川菜</span>
+            <span>📞 (718) 886-9260</span>
+          </div>
+          <a href="#" class="inline-flex items-center gap-1 text-sm text-baam-500 font-medium mt-2 hover:text-baam-600 transition">查看详情 <span>&rarr;</span></a>
+        </div>
+      </div>
+
+      <!-- Result 4: 金丰大酒楼 -->
+      <div class="bg-white border border-gray-200 rounded-xl p-4 sm:p-5 flex items-start gap-4 hover:border-baam-200 hover:shadow-sm transition">
+        <div class="w-16 h-16 bg-green-500 rounded-xl flex items-center justify-center text-white text-3xl font-black flex-shrink-0">A</div>
+        <div class="flex-1 min-w-0">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 mb-1.5">
+            <h3 class="text-base font-bold text-gray-900">金丰大酒楼 <span class="text-sm font-normal text-gray-400">Jing Fong</span></h3>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-medium text-green-700 bg-green-50 px-2 py-0.5 rounded-full">评分 12</span>
+              <span class="text-xs text-gray-400">2026-02-28 检查</span>
+            </div>
+          </div>
+          <p class="text-sm text-gray-500 mb-1">📍 202 Centre St, New York, Manhattan, NY 10013</p>
+          <div class="flex items-center gap-3 text-xs text-gray-400">
+            <span>🥟 粤菜</span>
+            <span>📞 (212) 964-5256</span>
+          </div>
+          <a href="#" class="inline-flex items-center gap-1 text-sm text-baam-500 font-medium mt-2 hover:text-baam-600 transition">查看详情 <span>&rarr;</span></a>
+        </div>
+      </div>
+
+      <!-- Result 5: 红烧牛肉面 -->
+      <div class="bg-white border border-gray-200 rounded-xl p-4 sm:p-5 flex items-start gap-4 hover:border-baam-200 hover:shadow-sm transition">
+        <div class="w-16 h-16 bg-green-500 rounded-xl flex items-center justify-center text-white text-3xl font-black flex-shrink-0">A</div>
+        <div class="flex-1 min-w-0">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 mb-1.5">
+            <h3 class="text-base font-bold text-gray-900">红烧牛肉面 <span class="text-sm font-normal text-gray-400">Red Braised Noodle</span></h3>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-medium text-green-700 bg-green-50 px-2 py-0.5 rounded-full">评分 5</span>
+              <span class="text-xs text-gray-400">2026-03-12 检查</span>
+            </div>
+          </div>
+          <p class="text-sm text-gray-500 mb-1">📍 5502 8th Ave, Brooklyn, NY 11220</p>
+          <div class="flex items-center gap-3 text-xs text-gray-400">
+            <span>🍜 中式面食</span>
+            <span>📞 (718) 633-8818</span>
+          </div>
+          <a href="#" class="inline-flex items-center gap-1 text-sm text-baam-500 font-medium mt-2 hover:text-baam-600 transition">查看详情 <span>&rarr;</span></a>
+        </div>
+      </div>
+
+      <!-- Result 6: 新发展 -->
+      <div class="bg-white border border-gray-200 rounded-xl p-4 sm:p-5 flex items-start gap-4 hover:border-baam-200 hover:shadow-sm transition">
+        <div class="w-16 h-16 bg-baam-500 rounded-xl flex items-center justify-center text-white text-3xl font-black flex-shrink-0">C</div>
+        <div class="flex-1 min-w-0">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 mb-1.5">
+            <h3 class="text-base font-bold text-gray-900">新发展 <span class="text-sm font-normal text-gray-400">New Development</span></h3>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-medium text-orange-700 bg-orange-50 px-2 py-0.5 rounded-full">评分 32</span>
+              <span class="text-xs text-gray-400">2026-03-20 检查</span>
+            </div>
+          </div>
+          <p class="text-sm text-gray-500 mb-1">📍 41-28 Main St, Flushing, Queens, NY 11355</p>
+          <div class="flex items-center gap-3 text-xs text-gray-400">
+            <span>🍚 中餐</span>
+            <span>📞 (718) 539-6288</span>
+          </div>
+          <a href="#" class="inline-flex items-center gap-1 text-sm text-baam-500 font-medium mt-2 hover:text-baam-600 transition">查看详情 <span>&rarr;</span></a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== FAQ SECTION ==================== -->
+  <div class="bg-white border border-gray-200 rounded-2xl p-6 sm:p-8 mb-10">
+    <h2 class="text-xl font-bold text-gray-900 mb-6">常见问题</h2>
+    <div class="space-y-5">
+
+      <div class="border-b border-gray-100 pb-5">
+        <h3 class="text-base font-semibold text-gray-900 mb-2">纽约餐厅卫生评分在哪里查？</h3>
+        <p class="text-sm text-gray-600 leading-relaxed">你可以通过纽约市卫生局官方网站（nyc.gov）查询，也可以使用本页面的搜索工具直接查询。我们的数据来源于纽约市开放数据平台（NYC Open Data），与官方数据同步。此外，每家餐厅的入口处也必须张贴最近一次的评分标志，你到店时可以直接查看。</p>
+      </div>
+
+      <div class="border-b border-gray-100 pb-5">
+        <h3 class="text-base font-semibold text-gray-900 mb-2">B级餐厅安全吗？可以吃吗？</h3>
+        <p class="text-sm text-gray-600 leading-relaxed">B级评分意味着餐厅存在一些卫生问题，但总体上仍在可接受范围内。很多知名餐厅偶尔也会因为个别项目扣分而得到B级。B级并不意味着食品不安全，但说明餐厅在某些卫生环节需要改进。你可以查看具体违规项目来判断——如果主要是"一般违规"（如地面清洁度不够），通常问题不大；如果有"关键违规"（如食品温度不达标），则需要多注意。</p>
+      </div>
+
+      <div class="border-b border-gray-100 pb-5">
+        <h3 class="text-base font-semibold text-gray-900 mb-2">评分多久更新一次？</h3>
+        <p class="text-sm text-gray-600 leading-relaxed">纽约市卫生局每年会对每家餐厅进行至少一次例行检查（cycle inspection）。如果餐厅在首次检查中未获得A级评分，通常会在数周内安排复查（re-inspection）。我们的数据每周从NYC Open Data同步一次，所以你看到的评分可能会比最新检查结果延迟1-7天。</p>
+      </div>
+
+      <div>
+        <h3 class="text-base font-semibold text-gray-900 mb-2">如果餐厅没有评分标志是什么意思？</h3>
+        <p class="text-sm text-gray-600 leading-relaxed">根据纽约市法规，所有餐厅必须在入口处张贴评分标志。如果一家餐厅没有张贴，可能有几种情况：新开业尚未接受首次检查、正在等待复查结果、评分被暂时撤销需要申诉，或者违规未张贴（这本身就是一项违规）。如果你发现餐厅未张贴评分标志，可以拨打311向卫生局举报。</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== BAAM INTEGRATION SECTION ==================== -->
+  <div class="mb-10">
+    <h2 class="text-lg font-bold text-gray-900 mb-5">在Baam上探索更多</h2>
+    <div class="grid sm:grid-cols-3 gap-4">
+
+      <a href="business-list.html" class="bg-white border border-gray-200 rounded-xl p-5 hover:border-baam-200 hover:shadow-sm transition group text-center">
+        <div class="text-3xl mb-3">🍜</div>
+        <h3 class="text-sm font-bold text-gray-900 group-hover:text-baam-500 transition mb-1.5">在Baam上找更多美食</h3>
+        <p class="text-xs text-gray-500">浏览纽约华人餐厅、奶茶店、面包房等商家列表</p>
+      </a>
+
+      <a href="discover-create-post.html" class="bg-white border border-gray-200 rounded-xl p-5 hover:border-baam-200 hover:shadow-sm transition group text-center">
+        <div class="text-3xl mb-3">✍️</div>
+        <h3 class="text-sm font-bold text-gray-900 group-hover:text-baam-500 transition mb-1.5">写一篇美食笔记</h3>
+        <p class="text-xs text-gray-500">分享你的美食体验，帮助更多华人发现好餐厅</p>
+      </a>
+
+      <a href="#" class="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-5 hover:shadow-sm transition group text-center">
+        <div class="text-3xl mb-3">🤖</div>
+        <h3 class="text-sm font-bold text-blue-900 group-hover:text-blue-700 transition mb-1.5">问AI小邻</h3>
+        <p class="text-xs text-blue-600">"法拉盛哪家中餐卫生评分最高？"</p>
+      </a>
+
+    </div>
+  </div>
+
+  <!-- ==================== EMAIL CAPTURE ==================== -->
+  <div class="mb-12">
+    <div class="bg-white border border-gray-200 rounded-2xl p-6 sm:p-8 text-center">
+      <div class="text-3xl mb-3">📬</div>
+      <h3 class="text-lg font-bold text-gray-900 mb-2">订阅餐厅卫生评分提醒</h3>
+      <p class="text-sm text-gray-500 mb-5">你关注的餐厅有新检查结果时通知你</p>
+      <div class="flex flex-col sm:flex-row gap-2 max-w-md mx-auto">
+        <input type="email" placeholder="输入你的邮箱" class="flex-1 h-11 px-4 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-baam-500 focus:border-baam-500 outline-none">
+        <button class="h-11 px-6 bg-baam-500 text-white text-sm font-semibold rounded-xl hover:bg-baam-600 transition">订阅</button>
+      </div>
+      <p class="text-xs text-gray-400 mt-3">已有 800+ 纽约华人订阅 · 可随时退订</p>
+    </div>
+  </div>
+
+</div>
+
+<!-- ==================== FOOTER ==================== -->
+<footer class="bg-gray-900 text-gray-400 mt-4">
+  <div class="max-w-7xl mx-auto px-4 py-12">
+    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
+      <div>
+        <div class="flex items-center gap-2 mb-4">
+          <div class="w-8 h-8 bg-baam-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">B</div>
+          <span class="text-xl font-bold text-white">Baam</span>
+        </div>
+        <p class="text-sm">AI驱动的纽约华人本地生活平台</p>
+      </div>
+      <div>
+        <h3 class="text-white font-semibold text-sm mb-3">实用工具</h3>
+        <ul class="space-y-2 text-sm">
+          <li><a href="services-violations.html" class="hover:text-white transition">停车罚单查询</a></li>
+          <li><a href="services-restaurant-search.html" class="hover:text-white transition">餐厅卫生评分</a></li>
+          <li><a href="services-property-tax.html" class="hover:text-white transition">房产税查询</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3 class="text-white font-semibold text-sm mb-3">快速导航</h3>
+        <ul class="space-y-2 text-sm">
+          <li><a href="#" class="hover:text-white transition">新闻</a></li>
+          <li><a href="#" class="hover:text-white transition">生活资讯</a></li>
+          <li><a href="#" class="hover:text-white transition">商家</a></li>
+          <li><a href="#" class="hover:text-white transition">论坛</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3 class="text-white font-semibold text-sm mb-3">关于我们</h3>
+        <ul class="space-y-2 text-sm">
+          <li><a href="#" class="hover:text-white transition">关于 Baam</a></li>
+          <li><a href="#" class="hover:text-white transition">联系我们</a></li>
+          <li><a href="#" class="hover:text-white transition">使用条款</a></li>
+          <li><a href="#" class="hover:text-white transition">隐私政策</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="border-t border-gray-800 mt-8 pt-6 text-xs">© 2026 Baam. All rights reserved.</div>
+  </div>
+</footer>
+
+<script src="../assets/js/prototype.js"></script>
+</body>
+</html>

@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>房产税查询 — Baam 纽约华人本地服务</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            baam: { 50:'#FFF7ED', 100:'#FFEDD5', 200:'#FED7AA', 300:'#FDBA74', 400:'#FB923C', 500:'#F97316', 600:'#EA580C', 700:'#C2410C' }
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="../assets/css/prototype.css">
+</head>
+<body class="bg-gray-50 text-gray-900">
+
+<!-- ==================== NAVBAR ==================== -->
+<nav class="bg-white border-b border-gray-200 sticky top-0 z-50">
+  <div class="max-w-7xl mx-auto px-4">
+    <div class="flex items-center justify-between h-16">
+      <div class="flex items-center gap-8">
+        <a href="index.html" class="flex items-center gap-2">
+          <div class="w-8 h-8 bg-baam-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">B</div>
+          <span class="text-xl font-bold text-gray-900">Baam</span>
+          <span class="text-xs text-gray-400 hidden sm:inline">纽约</span>
+        </a>
+        <div class="hidden lg:flex items-center gap-1">
+          <a href="news-list.html" class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-baam-500 rounded-md hover:bg-orange-50">新闻</a>
+          <a href="guides-list.html" class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-baam-500 rounded-md hover:bg-orange-50">生活资讯</a>
+          <a href="business-list.html" class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-baam-500 rounded-md hover:bg-orange-50">商家</a>
+          <a href="events-list.html" class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-baam-500 rounded-md hover:bg-orange-50">活动</a>
+          <a href="forum-home.html" class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-baam-500 rounded-md hover:bg-orange-50">论坛</a>
+          <a href="discover-home.html" class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-baam-500 rounded-md hover:bg-orange-50">发现</a>
+          <a href="services-home.html" class="px-3 py-2 text-sm font-medium text-baam-500 rounded-md bg-orange-50">实用工具</a>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <button class="p-2 text-gray-500 hover:text-baam-500 hover:bg-orange-50 rounded-full">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        </button>
+        <button class="px-2 py-1 text-xs font-medium text-gray-500 border border-gray-300 rounded hover:bg-gray-100">繁</button>
+        <button class="bg-baam-500 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-baam-600 transition">登录 / 注册</button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="max-w-5xl mx-auto px-4 py-6 sm:py-10">
+
+  <!-- ==================== BREADCRUMB ==================== -->
+  <nav class="flex items-center gap-2 text-sm text-gray-400 mb-6">
+    <a href="index.html" class="hover:text-baam-500 transition">首页</a>
+    <span>/</span>
+    <a href="services-home.html" class="hover:text-baam-500 transition">实用工具</a>
+    <span>/</span>
+    <span class="text-gray-700 font-medium">房产税查询</span>
+  </nav>
+
+  <!-- ==================== PAGE HEADER ==================== -->
+  <div class="text-center mb-10">
+    <div class="text-5xl mb-4">🏠</div>
+    <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">纽约房产税查询</h1>
+    <p class="text-gray-500 text-lg">NYC Property Tax & Assessment Lookup</p>
+  </div>
+
+  <!-- ==================== GUIDE CONTENT ==================== -->
+  <div class="bg-white border border-gray-200 rounded-2xl p-6 sm:p-8 mb-8">
+    <h2 class="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+      <span class="w-1.5 h-6 bg-baam-500 rounded-full"></span>
+      纽约房产税怎么算？
+    </h2>
+    <p class="text-gray-600 leading-relaxed mb-4">
+      在纽约市拥有房产的业主每年都需要缴纳房产税（Property Tax）。纽约市的房产税计算方式与其他城市不同，它基于房产的<strong>评估值（Assessed Value）</strong>而非市场价值。评估值通常远低于市场价值，具体比例取决于房产的税务等级。纽约市财政局（Department of Finance）每年会对所有房产进行评估，并在每年1月公布新的评估值。房产税的计算公式为：<strong>年度房产税 = 评估值 × 税率</strong>。每种税务等级的税率不同，且每年由市议会调整。2025/26财年的税率从Class 1的20.309%到Class 4的10.646%不等。
+    </p>
+
+    <h3 class="text-lg font-bold text-gray-900 mb-3 mt-6 flex items-center gap-2">
+      <span class="w-1.5 h-5 bg-blue-500 rounded-full"></span>
+      四种房产税等级（Tax Class）
+    </h3>
+    <div class="overflow-x-auto mb-6">
+      <table class="w-full text-sm border-collapse">
+        <thead>
+          <tr class="bg-gray-50">
+            <th class="text-left px-4 py-3 font-semibold text-gray-700 border-b border-gray-200">等级</th>
+            <th class="text-left px-4 py-3 font-semibold text-gray-700 border-b border-gray-200">适用房产类型</th>
+            <th class="text-left px-4 py-3 font-semibold text-gray-700 border-b border-gray-200">说明</th>
+            <th class="text-right px-4 py-3 font-semibold text-gray-700 border-b border-gray-200">2025/26税率</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="border-b border-gray-100">
+            <td class="px-4 py-3"><span class="bg-green-50 text-green-700 font-bold text-xs px-2 py-0.5 rounded-full">Class 1</span></td>
+            <td class="px-4 py-3 text-gray-700 font-medium">1-3家庭住宅</td>
+            <td class="px-4 py-3 text-gray-500">独栋、双拼或三拼住宅，包括部分联排别墅和小型公寓</td>
+            <td class="px-4 py-3 text-right font-semibold text-gray-900">20.309%</td>
+          </tr>
+          <tr class="border-b border-gray-100">
+            <td class="px-4 py-3"><span class="bg-blue-50 text-blue-700 font-bold text-xs px-2 py-0.5 rounded-full">Class 2</span></td>
+            <td class="px-4 py-3 text-gray-700 font-medium">公寓楼</td>
+            <td class="px-4 py-3 text-gray-500">4户以上公寓楼，包括合作公寓（Co-op）和共有公寓（Condo）</td>
+            <td class="px-4 py-3 text-right font-semibold text-gray-900">12.267%</td>
+          </tr>
+          <tr class="border-b border-gray-100">
+            <td class="px-4 py-3"><span class="bg-purple-50 text-purple-700 font-bold text-xs px-2 py-0.5 rounded-full">Class 3</span></td>
+            <td class="px-4 py-3 text-gray-700 font-medium">公用事业</td>
+            <td class="px-4 py-3 text-gray-500">电力、天然气、电话、有线电视等公用事业设施</td>
+            <td class="px-4 py-3 text-right font-semibold text-gray-900">12.826%</td>
+          </tr>
+          <tr>
+            <td class="px-4 py-3"><span class="bg-amber-50 text-amber-700 font-bold text-xs px-2 py-0.5 rounded-full">Class 4</span></td>
+            <td class="px-4 py-3 text-gray-700 font-medium">商业地产</td>
+            <td class="px-4 py-3 text-gray-500">写字楼、商铺、工厂、酒店及其他不属于前三类的房产</td>
+            <td class="px-4 py-3 text-right font-semibold text-gray-900">10.646%</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 class="text-lg font-bold text-gray-900 mb-3 mt-6 flex items-center gap-2">
+      <span class="w-1.5 h-5 bg-green-500 rounded-full"></span>
+      什么是STAR减免？
+    </h3>
+    <p class="text-gray-600 leading-relaxed mb-4">
+      STAR（School Tax Relief）是纽约州为自住房业主提供的学区税减免计划。<strong>基本STAR</strong>适用于自住房产的所有业主，不限收入，可以减免评估值中的一部分（纽约市约为$18,800的评估值减免），从而降低每年需缴纳的房产税。<strong>增强型STAR（Enhanced STAR）</strong>则面向65岁以上、年收入低于$107,300的老年业主，提供更大幅度的减免（约$41,400的评估值减免）。需要注意的是，新申请的业主现在会以STAR Credit（退税支票）的形式获得减免，而非直接从税单中扣除。申请STAR需要通过纽约州税务局网站提交，且房产必须是业主的主要住所。
+    </p>
+
+    <h3 class="text-lg font-bold text-gray-900 mb-3 mt-6 flex items-center gap-2">
+      <span class="w-1.5 h-5 bg-red-500 rounded-full"></span>
+      评估值太高怎么申诉？
+    </h3>
+    <p class="text-gray-600 leading-relaxed">
+      如果你认为纽约市财政局对你房产的评估值过高，可以向<strong>税务审查委员会（Tax Commission）</strong>提出申诉。申诉截止日期通常为每年的3月1日（Class 1）或3月15日（Class 2-4）。申诉时需要提供房产的市场价值证据，例如近期同类房产的成交价格、独立评估报告或房产收入证明。你可以在线提交申诉（NYC.gov/taxcommission），也可以聘请房产税律师代为处理。根据统计，约40%的申诉案件会获得评估值下调，平均每年可为房主节省$1,000至$5,000不等的房产税。申诉是免费的，但如果聘请律师，通常按节省税额的一定比例收费。
+    </p>
+  </div>
+
+  <!-- ==================== SEARCH TOOL ==================== -->
+  <div class="bg-blue-50 border border-blue-200 rounded-2xl p-6 sm:p-8 mb-8">
+    <h2 class="text-xl font-bold text-gray-900 mb-1">查询房产税</h2>
+    <p class="text-sm text-gray-500 mb-5">输入房产地址或ZIP Code，查看评估值、税额和交易历史</p>
+
+    <!-- Address Search -->
+    <div class="mb-4">
+      <label class="text-sm font-medium text-gray-700 mb-2 block">按地址查询</label>
+      <div class="grid sm:grid-cols-3 gap-3">
+        <div>
+          <input type="number" placeholder="门牌号" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-baam-500 focus:border-baam-500 outline-none bg-white">
+        </div>
+        <div>
+          <input type="text" placeholder="街道名称 (如 Main St)" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-baam-500 focus:border-baam-500 outline-none bg-white">
+        </div>
+        <div>
+          <select class="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-baam-500 focus:border-baam-500 outline-none bg-white text-gray-500">
+            <option value="">选择区域</option>
+            <option value="manhattan">Manhattan 曼哈顿</option>
+            <option value="brooklyn">Brooklyn 布鲁克林</option>
+            <option value="queens" selected>Queens 皇后区</option>
+            <option value="bronx">Bronx 布朗克斯</option>
+            <option value="staten-island">Staten Island 斯塔滕岛</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Divider -->
+    <div class="flex items-center gap-3 mb-4">
+      <div class="flex-1 border-t border-blue-200"></div>
+      <span class="text-xs text-gray-400 font-medium">或者</span>
+      <div class="flex-1 border-t border-blue-200"></div>
+    </div>
+
+    <!-- ZIP Code Search -->
+    <div class="mb-5">
+      <label class="text-sm font-medium text-gray-700 mb-2 block">按ZIP Code查询</label>
+      <div class="flex gap-3">
+        <input type="text" placeholder="ZIP Code (如 11354)" maxlength="5" class="w-40 px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-baam-500 focus:border-baam-500 outline-none bg-white">
+      </div>
+    </div>
+
+    <button class="bg-baam-500 hover:bg-baam-600 text-white font-semibold px-8 py-3 rounded-xl transition shadow-sm w-full sm:w-auto">
+      查询房产税
+    </button>
+  </div>
+
+  <!-- ==================== SAMPLE RESULTS ==================== -->
+  <div class="mb-8">
+    <div class="flex items-center gap-2 mb-5">
+      <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+      <span class="text-sm text-gray-500">查询结果</span>
+    </div>
+
+    <!-- Property Summary Card -->
+    <div class="bg-white border border-gray-200 rounded-2xl p-6 sm:p-8 mb-4 relative overflow-hidden">
+      <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-blue-50 to-transparent rounded-bl-full"></div>
+      <div class="relative">
+        <div class="flex flex-wrap items-start justify-between gap-4 mb-5">
+          <div>
+            <h3 class="text-xl font-bold text-gray-900 mb-1">36-40 Main Street</h3>
+            <p class="text-gray-500">Flushing, NY 11354</p>
+          </div>
+          <span class="inline-flex items-center gap-1.5 bg-amber-50 text-amber-700 font-bold text-xs px-3 py-1.5 rounded-full border border-amber-200">
+            Class 4 — 商业地产
+          </span>
+        </div>
+        <div class="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+          <div class="text-gray-500">
+            <span class="text-gray-400">业主:</span>
+            <span class="font-medium text-gray-700 ml-1">MAIN STREET ASSOCIATES LLC</span>
+          </div>
+        </div>
+        <div class="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm mt-3">
+          <div class="flex items-center gap-1.5">
+            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+            <span class="text-gray-600">Commercial Office</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            <span class="text-gray-600">建于 1990</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+            <span class="text-gray-600">8层</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+            <span class="text-gray-600">45 单元</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Assessment & Tax Card -->
+    <div class="grid md:grid-cols-2 gap-4 mb-4">
+      <!-- Left: Assessment -->
+      <div class="bg-white border border-gray-200 rounded-2xl p-6">
+        <h4 class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
+          <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+          评估值
+        </h4>
+        <div class="space-y-4">
+          <div class="flex justify-between items-center">
+            <span class="text-sm text-gray-500">土地评估值 (Land)</span>
+            <span class="text-sm font-semibold text-gray-900">$1,250,000</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-sm text-gray-500">总评估值 (Total)</span>
+            <span class="text-lg font-bold text-gray-900">$4,500,000</span>
+          </div>
+          <div class="border-t border-gray-100 pt-3">
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gray-500">市场估值 (Market Value)</span>
+              <span class="text-sm font-bold text-blue-600">$28,125,000</span>
+            </div>
+          </div>
+          <!-- Ratio bar -->
+          <div class="mt-2">
+            <div class="flex justify-between text-xs text-gray-400 mb-1">
+              <span>评估值 vs 市场估值</span>
+              <span>16.0%</span>
+            </div>
+            <div class="w-full bg-gray-100 rounded-full h-2.5">
+              <div class="bg-blue-500 h-2.5 rounded-full" style="width: 16%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Tax -->
+      <div class="bg-white border border-gray-200 rounded-2xl p-6">
+        <h4 class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
+          <svg class="w-5 h-5 text-baam-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          税额
+        </h4>
+        <div class="space-y-4">
+          <div>
+            <span class="text-sm text-gray-500 block mb-1">年度房产税估算</span>
+            <span class="text-3xl font-bold text-baam-600">$47,907</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-sm text-gray-500">税率 (Class 4)</span>
+            <span class="text-sm font-semibold text-gray-900">10.646%</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-sm text-gray-500">每月约</span>
+            <span class="text-sm font-semibold text-gray-700">$3,992 / 月</span>
+          </div>
+          <a href="#" class="inline-flex items-center gap-1 text-sm text-baam-500 font-medium hover:text-baam-600 transition mt-2">
+            查看官方税单
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Exemptions Panel -->
+    <div class="bg-white border border-gray-200 rounded-2xl p-6 mb-4">
+      <h4 class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
+        <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+        税务减免状态
+      </h4>
+      <div class="space-y-3">
+        <div class="flex items-center justify-between py-2 border-b border-gray-50">
+          <div class="flex items-center gap-3">
+            <span class="text-lg">🏠</span>
+            <span class="text-sm text-gray-700 font-medium">STAR基本减免</span>
+          </div>
+          <span class="text-sm text-red-500 font-medium flex items-center gap-1">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            不适用
+          </span>
+        </div>
+        <div class="flex items-center justify-between py-2 border-b border-gray-50">
+          <div class="flex items-center gap-3">
+            <span class="text-lg">👴</span>
+            <span class="text-sm text-gray-700 font-medium">老年减免</span>
+          </div>
+          <span class="text-sm text-red-500 font-medium flex items-center gap-1">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            不适用
+          </span>
+        </div>
+        <div class="flex items-center justify-between py-2">
+          <div class="flex items-center gap-3">
+            <span class="text-lg">🎖️</span>
+            <span class="text-sm text-gray-700 font-medium">退伍军人减免</span>
+          </div>
+          <span class="text-sm text-red-500 font-medium flex items-center gap-1">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            不适用
+          </span>
+        </div>
+      </div>
+      <a href="#" class="inline-flex items-center gap-1 text-sm text-baam-500 font-medium hover:text-baam-600 transition mt-4">
+        查看你是否符合减免条件
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+      </a>
+    </div>
+
+    <!-- Sale History -->
+    <div class="bg-white border border-gray-200 rounded-2xl p-6 mb-4">
+      <h4 class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
+        <svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        交易历史
+      </h4>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="bg-gray-50">
+              <th class="text-left px-4 py-2.5 font-semibold text-gray-600 border-b border-gray-200">交易日期</th>
+              <th class="text-right px-4 py-2.5 font-semibold text-gray-600 border-b border-gray-200">成交价格</th>
+              <th class="text-left px-4 py-2.5 font-semibold text-gray-600 border-b border-gray-200">交易类型</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-b border-gray-50">
+              <td class="px-4 py-3 text-gray-700">2019-06-15</td>
+              <td class="px-4 py-3 text-right font-semibold text-gray-900">$22,500,000</td>
+              <td class="px-4 py-3 text-gray-500">Deed Transfer</td>
+            </tr>
+            <tr class="border-b border-gray-50">
+              <td class="px-4 py-3 text-gray-700">2012-03-20</td>
+              <td class="px-4 py-3 text-right font-semibold text-gray-900">$18,000,000</td>
+              <td class="px-4 py-3 text-gray-500">Deed Transfer</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-3 text-gray-700">2005-11-01</td>
+              <td class="px-4 py-3 text-right font-semibold text-gray-900">$12,000,000</td>
+              <td class="px-4 py-3 text-gray-500">Deed Transfer</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== EMAIL CAPTURE ==================== -->
+  <div class="bg-white border border-gray-200 rounded-2xl p-6 mb-6">
+    <h3 class="text-base font-bold text-gray-900 mb-1">保存查询结果到邮箱</h3>
+    <p class="text-sm text-gray-500 mb-4">将完整的房产税报告发送到你的邮箱，方便日后参考</p>
+    <div class="flex flex-col sm:flex-row gap-3">
+      <input type="email" placeholder="your@email.com" class="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-baam-500 focus:border-baam-500 outline-none">
+      <button class="bg-baam-500 hover:bg-baam-600 text-white font-semibold px-6 py-2.5 rounded-lg transition text-sm whitespace-nowrap">发送报告</button>
+    </div>
+  </div>
+
+  <!-- ==================== SHARE BUTTONS ==================== -->
+  <div class="flex flex-wrap items-center gap-3 mb-10">
+    <span class="text-sm text-gray-500">分享:</span>
+    <button class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-500 text-white text-xs font-medium rounded-lg hover:bg-green-600 transition">
+      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M20.6 3.4C18.4 1.2 15.4 0 12.2 0 5.5 0 0 5.5 0 12.2c0 2.2.6 4.3 1.6 6.1L0 24l5.9-1.5c1.8.9 3.8 1.4 5.8 1.4h.1c6.7 0 12.2-5.5 12.2-12.2.1-3.3-1.2-6.3-3.4-8.3z"/></svg>
+      微信
+    </button>
+    <button class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded-lg hover:bg-green-700 transition">
+      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/></svg>
+      WhatsApp
+    </button>
+    <button class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-200 transition">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
+      复制链接
+    </button>
+    <button class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-200 transition">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+      打印
+    </button>
+  </div>
+
+  <!-- ==================== LEAD GEN CTAs ==================== -->
+  <div class="grid sm:grid-cols-2 gap-4 mb-10">
+    <!-- CTA 1: Tax Appeal -->
+    <div class="relative bg-gradient-to-br from-baam-500 to-baam-700 rounded-2xl p-6 text-white overflow-hidden">
+      <div class="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
+      <div class="relative">
+        <h3 class="text-lg font-bold mb-1">评估值太高？</h3>
+        <p class="text-sm text-white/80 mb-4 leading-relaxed">房主每年平均可节省 <strong class="text-white">$2,400</strong> — 免费咨询房产税律师</p>
+        <button class="bg-white text-baam-600 font-semibold text-sm px-5 py-2 rounded-lg hover:bg-orange-50 transition">免费咨询</button>
+      </div>
+    </div>
+    <!-- CTA 2: Real Estate -->
+    <div class="relative bg-gradient-to-br from-blue-500 to-blue-700 rounded-2xl p-6 text-white overflow-hidden">
+      <div class="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
+      <div class="relative">
+        <h3 class="text-lg font-bold mb-1">想在这个区买房？</h3>
+        <p class="text-sm text-white/80 mb-4 leading-relaxed">了解税务成本 — 联系Baam认证地产经纪</p>
+        <button class="bg-white text-blue-600 font-semibold text-sm px-5 py-2 rounded-lg hover:bg-blue-50 transition">联系经纪</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== FAQ SECTION ==================== -->
+  <div class="bg-white border border-gray-200 rounded-2xl p-6 sm:p-8 mb-8">
+    <h2 class="text-xl font-bold text-gray-900 mb-6">常见问题</h2>
+    <div class="space-y-4">
+      <!-- FAQ 1 -->
+      <details class="group border border-gray-100 rounded-xl">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-gray-50 rounded-xl transition">
+          <span class="text-sm font-semibold text-gray-800">纽约房产税税率是多少？</span>
+          <svg class="w-5 h-5 text-gray-400 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </summary>
+        <div class="px-5 pb-4 text-sm text-gray-600 leading-relaxed">
+          纽约市的房产税税率根据房产类别不同而有所差异。2025/26财年，Class 1（1-3家庭住宅）税率为20.309%，Class 2（公寓楼）为12.267%，Class 3（公用事业）为12.826%，Class 4（商业地产）为10.646%。请注意，这里的税率是基于评估值（Assessed Value）而非市场价值，评估值通常远低于房产的实际市场价格。
+        </div>
+      </details>
+      <!-- FAQ 2 -->
+      <details class="group border border-gray-100 rounded-xl">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-gray-50 rounded-xl transition">
+          <span class="text-sm font-semibold text-gray-800">怎么查自己房子的评估值？</span>
+          <svg class="w-5 h-5 text-gray-400 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </summary>
+        <div class="px-5 pb-4 text-sm text-gray-600 leading-relaxed">
+          你可以通过本页面的查询工具输入房产地址来查看评估值，也可以直接访问纽约市财政局官网（NYC.gov/finance），在Property Tax页面输入你的Borough（区）、Block和Lot号来查询。每年1月，纽约市财政局会公布新的评估值，你也会收到一封Assessment Notice邮件通知。
+        </div>
+      </details>
+      <!-- FAQ 3 -->
+      <details class="group border border-gray-100 rounded-xl">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-gray-50 rounded-xl transition">
+          <span class="text-sm font-semibold text-gray-800">房产评估值太高怎么申诉？</span>
+          <svg class="w-5 h-5 text-gray-400 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </summary>
+        <div class="px-5 pb-4 text-sm text-gray-600 leading-relaxed">
+          如果你认为评估值过高，可以在每年3月1日（Class 1）或3月15日（Class 2-4）之前向纽约市税务审查委员会（Tax Commission）提出申诉。你需要准备市场价值证据，如近期可比房产的成交价格、独立评估报告等。申诉可以在线提交（NYC.gov/taxcommission），也可以委托律师代理。整个流程免费，约40%的申诉会获得评估值下调。
+        </div>
+      </details>
+      <!-- FAQ 4 -->
+      <details class="group border border-gray-100 rounded-xl">
+        <summary class="flex items-center justify-between px-5 py-4 cursor-pointer hover:bg-gray-50 rounded-xl transition">
+          <span class="text-sm font-semibold text-gray-800">STAR减免怎么申请？</span>
+          <svg class="w-5 h-5 text-gray-400 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </summary>
+        <div class="px-5 pb-4 text-sm text-gray-600 leading-relaxed">
+          STAR减免需要通过纽约州税务局（NYS Department of Taxation and Finance）网站在线申请，网址为 tax.ny.gov/star。申请条件包括：房产必须是你的主要住所，且你需要提供社会安全号码和收入信息。基本STAR不限收入，增强型STAR要求65岁以上且年收入低于$107,300。新申请者将以退税支票（STAR Credit）的形式获得减免，每年自动发放。
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <!-- ==================== RELATED CONTENT ==================== -->
+  <div class="mb-8">
+    <div class="grid sm:grid-cols-2 gap-6">
+      <!-- Related Guides -->
+      <div>
+        <h3 class="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
+          <svg class="w-4 h-4 text-baam-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+          相关指南
+        </h3>
+        <div class="space-y-2">
+          <a href="guide-detail.html" class="block bg-white border border-gray-200 rounded-xl p-4 hover:border-baam-200 hover:shadow-sm transition group">
+            <h4 class="text-sm font-semibold text-gray-900 group-hover:text-baam-500 mb-1">纽约买房指南</h4>
+            <p class="text-xs text-gray-500">从看房到过户，华人买房全流程解析</p>
+          </a>
+          <a href="guide-detail.html" class="block bg-white border border-gray-200 rounded-xl p-4 hover:border-baam-200 hover:shadow-sm transition group">
+            <h4 class="text-sm font-semibold text-gray-900 group-hover:text-baam-500 mb-1">STAR减免申请指南</h4>
+            <p class="text-xs text-gray-500">手把手教你申请纽约STAR学区税减免</p>
+          </a>
+          <a href="guide-detail.html" class="block bg-white border border-gray-200 rounded-xl p-4 hover:border-baam-200 hover:shadow-sm transition group">
+            <h4 class="text-sm font-semibold text-gray-900 group-hover:text-baam-500 mb-1">房产税申诉攻略</h4>
+            <p class="text-xs text-gray-500">评估值太高？教你如何有效申诉降低房产税</p>
+          </a>
+        </div>
+      </div>
+      <!-- Related Tools -->
+      <div>
+        <h3 class="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
+          <svg class="w-4 h-4 text-baam-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          相关工具
+        </h3>
+        <div class="space-y-2">
+          <a href="services-violations.html" class="block bg-white border border-gray-200 rounded-xl p-4 hover:border-baam-200 hover:shadow-sm transition group">
+            <div class="flex items-center gap-3">
+              <span class="text-xl">🚗</span>
+              <div>
+                <h4 class="text-sm font-semibold text-gray-900 group-hover:text-baam-500">停车罚单查询</h4>
+                <p class="text-xs text-gray-500">查询NYC停车罚单和缴费状态</p>
+              </div>
+            </div>
+          </a>
+          <a href="services-311.html" class="block bg-white border border-gray-200 rounded-xl p-4 hover:border-baam-200 hover:shadow-sm transition group">
+            <div class="flex items-center gap-3">
+              <span class="text-xl">📞</span>
+              <div>
+                <h4 class="text-sm font-semibold text-gray-900 group-hover:text-baam-500">311投诉查询</h4>
+                <p class="text-xs text-gray-500">查看任何地址的311投诉和处理记录</p>
+              </div>
+            </div>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ==================== FOOTER ==================== -->
+<footer class="bg-gray-900 text-gray-400 mt-4">
+  <div class="max-w-7xl mx-auto px-4 py-12">
+    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
+      <div>
+        <div class="flex items-center gap-2 mb-4">
+          <div class="w-8 h-8 bg-baam-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">B</div>
+          <span class="text-xl font-bold text-white">Baam</span>
+        </div>
+        <p class="text-sm">AI驱动的纽约华人本地生活平台</p>
+      </div>
+      <div>
+        <h3 class="text-white font-semibold text-sm mb-3">实用工具</h3>
+        <ul class="space-y-2 text-sm">
+          <li><a href="services-violations.html" class="hover:text-white transition">停车罚单查询</a></li>
+          <li><a href="services-restaurant-search.html" class="hover:text-white transition">餐厅卫生评分</a></li>
+          <li><a href="services-property-tax.html" class="hover:text-white transition">房产税查询</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3 class="text-white font-semibold text-sm mb-3">快速导航</h3>
+        <ul class="space-y-2 text-sm">
+          <li><a href="#" class="hover:text-white transition">新闻</a></li>
+          <li><a href="#" class="hover:text-white transition">生活资讯</a></li>
+          <li><a href="#" class="hover:text-white transition">商家</a></li>
+          <li><a href="#" class="hover:text-white transition">论坛</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3 class="text-white font-semibold text-sm mb-3">关于我们</h3>
+        <ul class="space-y-2 text-sm">
+          <li><a href="#" class="hover:text-white transition">关于 Baam</a></li>
+          <li><a href="#" class="hover:text-white transition">联系我们</a></li>
+          <li><a href="#" class="hover:text-white transition">使用条款</a></li>
+          <li><a href="#" class="hover:text-white transition">隐私政策</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="border-t border-gray-800 mt-8 pt-6 text-xs">&copy; 2026 Baam. All rights reserved.</div>
+  </div>
+</footer>
+
+<script src="../assets/js/prototype.js"></script>
+</body>
+</html>

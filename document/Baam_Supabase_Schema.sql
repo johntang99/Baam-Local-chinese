@@ -99,6 +99,11 @@ INSERT INTO regions (slug, name_en, name_zh, type, timezone, latitude, longitude
   ('sunset-park-ny', 'Sunset Park, Brooklyn', '日落公园', 'neighborhood', 'America/New_York', 40.6410, -73.9950),
   ('elmhurst-ny', 'Elmhurst, Queens', '艾姆赫斯特', 'neighborhood', 'America/New_York', 40.7370, -73.8800),
   ('manhattan-chinatown-ny', 'Manhattan Chinatown', '曼哈顿华埠', 'neighborhood', 'America/New_York', 40.7150, -73.9980),
+  ('avenue-u-brooklyn-ny', 'Avenue U / Homecrest (Brooklyn)', '布鲁克林U大道', 'neighborhood', 'America/New_York', 40.5950, -73.9650),
+  ('bensonhurst-ny', 'Bensonhurst, Brooklyn', '本森赫斯特', 'neighborhood', 'America/New_York', 40.6080, -73.9970),
+  ('corona-ny', 'Corona, Queens', '可乐娜', 'neighborhood', 'America/New_York', 40.7490, -73.8700),
+  ('long-island-city-ny', 'Long Island City, Queens', '长岛市', 'neighborhood', 'America/New_York', 40.7447, -73.9485),
+  ('forest-hills-ny', 'Forest Hills & Rego Park, Queens', '森林小丘', 'neighborhood', 'America/New_York', 40.7210, -73.8440),
   ('queens-ny', 'Queens, NY', '皇后区', 'borough', 'America/New_York', 40.7282, -73.7949),
   ('new-york-city', 'New York City', '纽约市', 'city', 'America/New_York', 40.7128, -74.0060);
 
@@ -108,9 +113,9 @@ UPDATE regions SET parent_id = (SELECT id FROM regions WHERE slug='new-york-stat
 UPDATE regions SET parent_id = (SELECT id FROM regions WHERE slug='orange-county-ny')
   WHERE slug = 'middletown-ny';
 UPDATE regions SET parent_id = (SELECT id FROM regions WHERE slug='queens-ny')
-  WHERE slug IN ('flushing-ny', 'elmhurst-ny');
+  WHERE slug IN ('flushing-ny', 'elmhurst-ny', 'corona-ny', 'long-island-city-ny', 'forest-hills-ny');
 UPDATE regions SET parent_id = (SELECT id FROM regions WHERE slug='new-york-city')
-  WHERE slug IN ('sunset-park-ny', 'manhattan-chinatown-ny');
+  WHERE slug IN ('sunset-park-ny', 'manhattan-chinatown-ny', 'avenue-u-brooklyn-ny', 'bensonhurst-ny');
 
 
 CREATE TABLE categories (

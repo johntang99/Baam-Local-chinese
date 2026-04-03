@@ -1,0 +1,1 @@
+[   91982ms] [ERROR] WebSocket connection to 'ws://localhost:5001/_next/webpack-hmr' failed:  @ webpack-internal:///(app-pages-browser)/../../node_modules/next/dist/client/dev/hot-reloader/app/use-websocket.js:41

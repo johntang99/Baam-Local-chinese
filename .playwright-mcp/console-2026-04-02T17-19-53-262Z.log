@@ -1,0 +1,26 @@
+[    1257ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:5001/zh/services/restaurant-inspections:0
+[    1462ms] Error: Cannot find module './vendor-chunks/@supabase.js'
+Require stack:
+- /Users/johntang/Desktop/clients/baam-local/apps/web/.next/server/webpack-runtime.js
+- /Users/johntang/Desktop/clients/baam-local/apps/web/.next/server/app/[locale]/(public)/services/restaurant-inspections/page.js
+- /Users/johntang/Desktop/clients/baam-local/node_modules/next/dist/server/require.js
+- /Users/johntang/Desktop/clients/baam-local/node_modules/next/dist/server/load-components.js
+- /Users/johntang/Desktop/clients/baam-local/node_modules/next/dist/build/utils.js
+- /Users/johntang/Desktop/clients/baam-local/node_modules/next/dist/server/dev/static-paths-worker.js
+- /Users/johntang/Desktop/clients/baam-local/node_modules/next/dist/compiled/jest-worker/processChild.js
+    at Function.<anonymous> (node:internal/modules/cjs/loader:1405:15)
+    at <unknown> (file:///Users/johntang/Desktop/clients/baam-local/node_modules/next/dist/server/require-hook.js:57:36)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1061:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1066:22)
+    at Function._load (node:internal/modules/cjs/loader:1215:37)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)
+    at Module.<anonymous> (node:internal/modules/cjs/loader:1491:12)
+    at mod.require (file:///Users/johntang/Desktop/clients/baam-local/node_modules/next/dist/server/require-hook.js:68:28)
+    at require (node:internal/modules/helpers:135:16)
+[    1617ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5001/favicon.ico:0
+[   25987ms] [ERROR] WebSocket connection to 'ws://localhost:5001/_next/webpack-hmr' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ webpack-internal:///(pages-dir-browser)/../../node_modules/next/dist/client/dev/hot-reloader/pages/websocket.js:88
+[   27728ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5001/_next/static/webpack/1052fe33830c6436.webpack.hot-update.json:0
+[   27728ms] [WARNING] [Fast Refresh] performing full reload because your application had an unrecoverable error @ webpack-internal:///(pages-dir-browser)/../../node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:347
+[   28768ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:5001/_next/static/webpack/1052fe33830c6436.webpack.hot-update.json:0
+[   28768ms] [WARNING] [Fast Refresh] performing full reload because your application had an unrecoverable error @ webpack-internal:///(pages-dir-browser)/../../node_modules/next/dist/client/dev/hot-reloader/pages/hot-reloader-pages.js:347

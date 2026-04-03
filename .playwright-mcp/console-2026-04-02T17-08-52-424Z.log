@@ -1,0 +1,2 @@
+[      54ms] [ERROR] Failed to load resource: the server responded with a status of 404 (File not found) @ http://localhost:3334/prototypes/zh/services-home.html:0
+[      62ms] [ERROR] Failed to load resource: the server responded with a status of 404 (File not found) @ http://localhost:3334/favicon.ico:0

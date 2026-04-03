@@ -584,7 +584,24 @@ Reply with exactly one word: FOLLOWUP or SEARCH or NEW`,
       snippet: (v.content || v.excerpt || '').slice(0, 80),
     }));
 
-    return { data: { answer, sources, debugPrompt: {
+    // Reorder sources: show diverse types first (max 3 per type, interleaved)
+    const typeGroups: Record<string, typeof sources> = {};
+    for (const s of sources) {
+      (typeGroups[s.type] ||= []).push(s);
+    }
+    const diverseSources: typeof sources = [];
+    let hasMore = true;
+    for (let i = 0; hasMore; i++) {
+      hasMore = false;
+      for (const type of Object.keys(typeGroups)) {
+        if (i < typeGroups[type].length) {
+          diverseSources.push(typeGroups[type][i]);
+          hasMore = true;
+        }
+      }
+    }
+
+    return { data: { answer, sources: diverseSources, debugPrompt: {
       keywords,
       systemPrompt,
       userPrompt,

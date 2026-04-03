@@ -13,7 +13,8 @@
  *   npx tsx scripts/discover-chinese-businesses.ts [--region=flushing-ny] [--list-regions]
  *   npx tsx scripts/discover-chinese-businesses.ts --region=sunset-park-ny --apply
  *
- * Regions require matching `regions.slug` in Supabase (see migration 20260401_business_data_regions_and_review_trigger.sql).
+ * Regions require matching `regions.slug` in Supabase (see migrations
+ * 20260401_business_data_regions_and_review_trigger.sql, 20260402_nyc_chinese_corridors_p0_p1.sql).
  */
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -276,6 +277,66 @@ const DISCOVERY_REGIONS: Record<string, DiscoveryRegion> = {
       { name: 'Chinatown north', lat: 40.722, lng: -73.998, radius: 1200 },
       { name: 'Chinatown east', lat: 40.715, lng: -73.988, radius: 1200 },
       { name: 'Two Bridges', lat: 40.708, lng: -73.995, radius: 1200 },
+    ],
+  },
+  // ─── P0 / P1 corridor expansion (v1) ─────────────────────────────
+  'avenue-u-brooklyn-ny': {
+    regionSlug: 'avenue-u-brooklyn-ny',
+    queryPrefix: '布鲁克林U大道',
+    locationCityEn: 'Brooklyn',
+    gridZones: [
+      { name: 'Ave U & Ocean Pkwy', lat: 40.595, lng: -73.965, radius: 1500 },
+      { name: 'Ave U east (Homecrest)', lat: 40.599, lng: -73.952, radius: 1500 },
+      { name: 'Gravesend west', lat: 40.591, lng: -73.976, radius: 1500 },
+      { name: 'Kings Hwy north', lat: 40.606, lng: -73.958, radius: 1500 },
+      { name: 'Sheepshead south', lat: 40.586, lng: -73.955, radius: 1500 },
+    ],
+  },
+  'corona-ny': {
+    regionSlug: 'corona-ny',
+    queryPrefix: '可乐娜',
+    locationCityEn: 'Corona',
+    gridZones: [
+      { name: 'Corona Plaza', lat: 40.7498, lng: -73.8706, radius: 1500 },
+      { name: 'Corona north', lat: 40.756, lng: -73.875, radius: 1500 },
+      { name: 'Corona south', lat: 40.742, lng: -73.865, radius: 1500 },
+      { name: 'Corona east', lat: 40.748, lng: -73.858, radius: 1500 },
+      { name: 'Corona west', lat: 40.748, lng: -73.882, radius: 1500 },
+    ],
+  },
+  'bensonhurst-ny': {
+    regionSlug: 'bensonhurst-ny',
+    queryPrefix: '本森赫斯特',
+    locationCityEn: 'Brooklyn',
+    gridZones: [
+      { name: '18th Ave core', lat: 40.620, lng: -73.998, radius: 1500 },
+      { name: 'Bay Pkwy', lat: 40.603, lng: -73.996, radius: 1500 },
+      { name: '86th St', lat: 40.601, lng: -74.012, radius: 1500 },
+      { name: 'Bensonhurst north', lat: 40.630, lng: -73.985, radius: 1500 },
+      { name: 'Bensonhurst south', lat: 40.588, lng: -73.985, radius: 1500 },
+    ],
+  },
+  'long-island-city-ny': {
+    regionSlug: 'long-island-city-ny',
+    queryPrefix: '长岛市',
+    locationCityEn: 'Long Island City',
+    gridZones: [
+      { name: 'Court Square', lat: 40.747, lng: -73.945, radius: 1200 },
+      { name: 'Queens Plaza', lat: 40.749, lng: -73.937, radius: 1200 },
+      { name: 'Vernon corridor', lat: 40.744, lng: -73.950, radius: 1200 },
+      { name: 'Hunters Point', lat: 40.742, lng: -73.958, radius: 1200 },
+    ],
+  },
+  'forest-hills-ny': {
+    regionSlug: 'forest-hills-ny',
+    queryPrefix: '森林小丘',
+    locationCityEn: 'Forest Hills',
+    gridZones: [
+      { name: 'Queens Blvd / Continental', lat: 40.718, lng: -73.838, radius: 1500 },
+      { name: 'Forest Hills 71st', lat: 40.721, lng: -73.844, radius: 1500 },
+      { name: 'Rego Park', lat: 40.726, lng: -73.853, radius: 1500 },
+      { name: 'Forest Hills north', lat: 40.728, lng: -73.835, radius: 1500 },
+      { name: 'Kew Gardens slope', lat: 40.708, lng: -73.830, radius: 1500 },
     ],
   },
 };

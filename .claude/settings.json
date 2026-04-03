@@ -23,7 +23,9 @@
       "WebFetch(domain:www.nychinaren.com)",
       "WebFetch(domain:acupunctureflushing.com)",
       "WebFetch(domain:data.cityofnewyork.us)",
-      "mcp__playwright__browser_resize"
+      "mcp__playwright__browser_resize",
+      "mcp__playwright__browser_close",
+      "WebFetch(domain:www.nyc.gov)"
     ],
     "additionalDirectories": []
   }

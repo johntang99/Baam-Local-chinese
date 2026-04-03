@@ -15,7 +15,16 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 ENV_PATH = ROOT / "apps/web/.env.local"
 
-REGION_SLUGS = ["sunset-park-ny", "elmhurst-ny", "manhattan-chinatown-ny"]
+REGION_SLUGS = [
+    "sunset-park-ny",
+    "elmhurst-ny",
+    "manhattan-chinatown-ny",
+    "avenue-u-brooklyn-ny",
+    "corona-ny",
+    "bensonhurst-ny",
+    "long-island-city-ny",
+    "forest-hills-ny",
+]
 COMPARE_FLUSHING = "flushing-ny"
 
 

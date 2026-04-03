@@ -13,7 +13,7 @@ This document and the scripts below cover **business listing data** (`businesses
 ### Step 1: Discover Businesses
 **Script:** `scripts/discover-chinese-businesses.ts` (for Chinese-focused) or `scripts/backfill-business-data.ts` (general)
 
-**Regions:** Pass `--region=<slug>` (default `flushing-ny`). Run `npx tsx scripts/discover-chinese-businesses.ts --list-regions` for slugs. Presets include Flushing, Sunset Park (八大道), Elmhurst (艾姆赫斯特), and Manhattan Chinatown (曼哈顿华埠), each with its own grid and query prefix (e.g. 法拉盛 → 八大道 / neighborhood-specific prefix). Ensure matching `regions` rows exist (see migration `supabase/migrations/20260401_business_data_regions_and_review_trigger.sql` for Sunset Park, Elmhurst, Manhattan Chinatown).
+**Regions:** Pass `--region=<slug>` (default `flushing-ny`). Run `npx tsx scripts/discover-chinese-businesses.ts --list-regions` for slugs. Presets cover **Flushing**, **Sunset Park** (八大道), **Elmhurst**, **Manhattan Chinatown**, plus v1 expansion **Avenue U / Homecrest** (`avenue-u-brooklyn-ny`, 布鲁克林U大道), **Corona** (`corona-ny`, 可乐娜), **Bensonhurst** (`bensonhurst-ny`), **Long Island City** (`long-island-city-ny`, 长岛市), and **Forest Hills / Rego Park** (`forest-hills-ny`, 森林小丘). Ensure `regions` rows exist: `supabase/migrations/20260401_business_data_regions_and_review_trigger.sql` and `20260402_nyc_chinese_corridors_p0_p1.sql`.
 
 **Method:** Google Places Text Search API (`places:searchText`)
 - Search using Chinese terms for Chinese businesses (e.g. "法拉盛川菜", "法拉盛华人牙医")

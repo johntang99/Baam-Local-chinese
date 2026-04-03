@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>纽约停车罚单查询 | NYC Parking Ticket Lookup · Baam</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            baam: { 50:'#FFF7ED', 100:'#FFEDD5', 200:'#FED7AA', 300:'#FDBA74', 400:'#FB923C', 500:'#F97316', 600:'#EA580C', 700:'#C2410C' }
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="../assets/css/prototype.css">
+  <style>
+    .faq-answer { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
+    .faq-answer.open { max-height: 500px; }
+    .faq-chevron { transition: transform 0.3s ease; }
+    .faq-chevron.open { transform: rotate(180deg); }
+    .detail-row { display: none; }
+    .detail-row.open { display: table-row; }
+    .detail-card { display: none; }
+    .detail-card.open { display: block; }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-900">
+
+<!-- ==================== NAVBAR ==================== -->
+<nav class="bg-white border-b border-gray-200 sticky top-0 z-50">
+  <div class="max-w-7xl mx-auto px-4">
+    <div class="flex items-center justify-between h-16">
+      <div class="flex items-center gap-8">
+        <a href="index.html" class="flex items-center gap-2">
+          <div class="w-8 h-8 bg-baam-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">B</div>
+          <span class="text-xl font-bold text-gray-900">Baam</span>
+          <span class="text-xs text-gray-400 hidden sm:inline">纽约</span>
+        </a>
+        <div class="hidden lg:flex items-center gap-1">
+          <a href="news-list.html" class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-baam-500 rounded-md hover:bg-orange-50">新闻</a>
+          <a href="guides-list.html" class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-baam-500 rounded-md hover:bg-orange-50">生活资讯</a>
+          <a href="business-list.html" class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-baam-500 rounded-md hover:bg-orange-50">商家</a>
+          <a href="events-list.html" class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-baam-500 rounded-md hover:bg-orange-50">活动</a>
+          <a href="forum-home.html" class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-baam-500 rounded-md hover:bg-orange-50">论坛</a>
+          <a href="discover-home.html" class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-baam-500 rounded-md hover:bg-orange-50">发现</a>
+          <a href="services-home.html" class="px-3 py-2 text-sm font-medium text-baam-500 rounded-md bg-orange-50">实用工具</a>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <button class="p-2 text-gray-500 hover:text-baam-500 hover:bg-orange-50 rounded-full">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        </button>
+        <button class="px-2 py-1 text-xs font-medium text-gray-500 border border-gray-300 rounded hover:bg-gray-100">繁</button>
+        <button class="bg-baam-500 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-baam-600 transition">登录 / 注册</button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="max-w-4xl mx-auto px-4 py-6 sm:py-10">
+
+  <!-- ==================== BREADCRUMB ==================== -->
+  <nav class="flex items-center gap-2 text-sm text-gray-500 mb-6">
+    <a href="index.html" class="hover:text-baam-500 transition">首页</a>
+    <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+    <a href="services-home.html" class="hover:text-baam-500 transition">实用工具</a>
+    <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+    <span class="text-gray-900 font-medium">停车罚单查询</span>
+  </nav>
+
+  <!-- ==================== PAGE HEADER ==================== -->
+  <div class="flex items-center gap-4 mb-8">
+    <div class="w-14 h-14 bg-red-50 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">🚗</div>
+    <div>
+      <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">停车罚单查询</h1>
+      <p class="text-sm text-gray-500 mt-0.5">NYC Parking Ticket & Violation Lookup</p>
+    </div>
+  </div>
+
+  <!-- ==================== GUIDE CONTENT ==================== -->
+  <article class="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 mb-8 prose-gray">
+
+    <h2 class="text-xl font-bold text-gray-900 mb-3">什么是NYC停车罚单？</h2>
+    <p class="text-[15px] text-gray-700 leading-relaxed mb-4">
+      在纽约市，停车罚单（Parking Ticket）是由交通执法人员（Traffic Agent）或自动摄像系统对违反交通规则的车辆开具的罚款通知。纽约市每年开出超过1000万张停车罚单，是全美罚单数量最多的城市。无论你是新移民还是老纽约客，了解停车罚单的相关规定都非常重要——因为一张未处理的罚单可能会滚雪球般累积罚款、利息甚至影响车辆注册。
+    </p>
+    <p class="text-[15px] text-gray-700 leading-relaxed mb-6">
+      NYC停车罚单由纽约市财政局（Department of Finance）管理，所有罚单记录都可以通过车牌号在网上查询。Baam为纽约华人社区提供了中文界面的罚单查询工具，让你无需跳转到英文政府网站，即可快速查看罚单详情、罚款金额和缴费状态。
+    </p>
+
+    <h2 class="text-xl font-bold text-gray-900 mb-3">常见违规类型及罚款金额</h2>
+    <p class="text-[15px] text-gray-700 leading-relaxed mb-4">
+      纽约市的停车违规类型超过100种，以下是华人社区最常见的违规类型和相应罚款金额。了解这些金额可以帮助你评估罚单是否合理，以及是否值得申诉。
+    </p>
+    <div class="overflow-x-auto mb-6">
+      <table class="w-full text-sm border-collapse">
+        <thead>
+          <tr class="bg-gray-50">
+            <th class="text-left py-2.5 px-3 font-semibold text-gray-700 border-b border-gray-200">违规类型</th>
+            <th class="text-left py-2.5 px-3 font-semibold text-gray-700 border-b border-gray-200">英文名称</th>
+            <th class="text-right py-2.5 px-3 font-semibold text-gray-700 border-b border-gray-200">罚款金额</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          <tr><td class="py-2.5 px-3 text-gray-800">禁止停车区</td><td class="py-2.5 px-3 text-gray-500">NO STANDING</td><td class="py-2.5 px-3 text-right font-medium text-gray-900">$115</td></tr>
+          <tr><td class="py-2.5 px-3 text-gray-800">咪表过期</td><td class="py-2.5 px-3 text-gray-500">EXPIRED METER</td><td class="py-2.5 px-3 text-right font-medium text-gray-900">$65</td></tr>
+          <tr><td class="py-2.5 px-3 text-gray-800">双排停车</td><td class="py-2.5 px-3 text-gray-500">DOUBLE PARKING</td><td class="py-2.5 px-3 text-right font-medium text-gray-900">$115</td></tr>
+          <tr><td class="py-2.5 px-3 text-gray-800">消防栓旁停车</td><td class="py-2.5 px-3 text-gray-500">HYDRANT</td><td class="py-2.5 px-3 text-right font-medium text-gray-900">$115</td></tr>
+          <tr><td class="py-2.5 px-3 text-gray-800">扫街违规</td><td class="py-2.5 px-3 text-gray-500">STREET CLEANING</td><td class="py-2.5 px-3 text-right font-medium text-gray-900">$65</td></tr>
+          <tr><td class="py-2.5 px-3 text-gray-800">学校区域违规</td><td class="py-2.5 px-3 text-gray-500">SCHOOL ZONE</td><td class="py-2.5 px-3 text-right font-medium text-gray-900">$115</td></tr>
+          <tr><td class="py-2.5 px-3 text-gray-800">闯红灯（摄像头）</td><td class="py-2.5 px-3 text-gray-500">RED LIGHT CAMERA</td><td class="py-2.5 px-3 text-right font-medium text-gray-900">$50</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 class="text-xl font-bold text-gray-900 mb-3">收到罚单怎么办？</h2>
+    <p class="text-[15px] text-gray-700 leading-relaxed mb-3">
+      收到停车罚单后，你通常有两个选择：<strong>缴纳罚款</strong>或<strong>申诉罚单</strong>。无论选哪种方式，都建议尽快处理，避免逾期产生额外费用。
+    </p>
+    <div class="grid sm:grid-cols-2 gap-4 mb-6">
+      <div class="bg-green-50 border border-green-100 rounded-xl p-4">
+        <h3 class="text-sm font-bold text-green-800 mb-2">选择一：缴纳罚款</h3>
+        <ul class="text-[13px] text-green-700 space-y-1.5 list-disc list-inside">
+          <li>在线缴费：通过NYC CityPay网站用信用卡或借记卡支付</li>
+          <li>电话缴费：拨打311并选择中文服务</li>
+          <li>亲自缴费：前往各区的DOF商业中心</li>
+          <li>邮寄缴费：将支票或汇票寄至罚单上的地址</li>
+        </ul>
+      </div>
+      <div class="bg-blue-50 border border-blue-100 rounded-xl p-4">
+        <h3 class="text-sm font-bold text-blue-800 mb-2">选择二：申诉罚单</h3>
+        <ul class="text-[13px] text-blue-700 space-y-1.5 list-disc list-inside">
+          <li>在线申诉：通过NYC DOF网站提交争议</li>
+          <li>申诉期限：收到罚单后30天内</li>
+          <li>提供证据：照片、标志不清、标志遮挡等</li>
+          <li>申诉成功率：约30-40%的申诉被接受</li>
+        </ul>
+      </div>
+    </div>
+
+    <h2 class="text-xl font-bold text-gray-900 mb-3">逾期不缴的后果</h2>
+    <p class="text-[15px] text-gray-700 leading-relaxed mb-2">
+      很多华人朋友认为罚单拖一拖没关系，但实际上逾期不缴会带来严重后果。罚单在开具后30天内未缴纳即视为逾期，系统会自动加收附加罚款（通常为$10-$30）。如果持续未缴，罚单会进入「Default Judgment」状态，此时罚款金额可能翻倍，并且会产生利息。
+    </p>
+    <p class="text-[15px] text-gray-700 leading-relaxed mb-2">
+      更严重的是，多张未缴罚单可能导致你的车辆被锁轮（Boot），甚至被拖走。纽约市规定，如果一辆车有超过$350的未缴罚单或有多张进入judgment的罚单，就可能被锁轮。被拖走后需要额外支付拖车费（约$185）和每日保管费（约$20/天），经济损失会非常大。
+    </p>
+    <p class="text-[15px] text-gray-700 leading-relaxed">
+      此外，未缴罚单还会影响你的车辆注册续期——DMV会拒绝为有未清罚单的车辆续期注册。因此，我们强烈建议使用下方的查询工具定期检查车辆罚单状态，及时处理所有未缴罚款。
+    </p>
+  </article>
+
+  <!-- ==================== INTERACTIVE TOOL AREA ==================== -->
+  <div class="bg-orange-50/40 border-2 border-orange-200 rounded-2xl p-6 sm:p-8 mb-8" id="tool-section">
+
+    <div class="flex items-center gap-2 mb-5">
+      <svg class="w-5 h-5 text-baam-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+      <h2 class="text-lg font-bold text-gray-900">在线查询工具</h2>
+      <span class="text-[11px] font-medium text-green-700 bg-green-50 px-2 py-0.5 rounded-full">免费</span>
+    </div>
+
+    <!-- Search Form -->
+    <div class="bg-white rounded-xl border border-gray-200 p-4 sm:p-5 mb-6">
+      <div class="flex flex-col sm:flex-row gap-3">
+        <div class="flex-1">
+          <label class="block text-xs font-medium text-gray-600 mb-1.5">车牌号码</label>
+          <input type="text" value="ABC1234" class="w-full h-12 px-4 border border-gray-300 rounded-lg text-lg font-mono font-bold tracking-widest text-gray-900 focus:ring-2 focus:ring-baam-500 focus:border-baam-500 outline-none uppercase" placeholder="输入车牌号">
+        </div>
+        <div class="w-full sm:w-36">
+          <label class="block text-xs font-medium text-gray-600 mb-1.5">州</label>
+          <select class="w-full h-12 px-3 border border-gray-300 rounded-lg text-sm text-gray-700 focus:ring-2 focus:ring-baam-500 focus:border-baam-500 outline-none bg-white">
+            <option selected>NY - 纽约</option>
+            <option>NJ - 新泽西</option>
+            <option>CT - 康涅狄格</option>
+            <option>PA - 宾夕法尼亚</option>
+            <option>其他州</option>
+          </select>
+        </div>
+        <div class="flex items-end">
+          <button class="w-full sm:w-auto h-12 px-8 bg-baam-500 text-white text-sm font-bold rounded-lg hover:bg-baam-600 transition flex items-center justify-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            查询
+          </button>
+        </div>
+      </div>
+      <p class="text-xs text-gray-400 mt-3">数据来源：NYC Department of Finance · 查询结果仅供参考</p>
+    </div>
+
+    <!-- Sample Results -->
+    <div id="results-section">
+      <!-- Results Header -->
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-2">
+          <span class="text-sm font-bold text-gray-900">查询结果</span>
+          <span class="text-xs text-gray-500">车牌：</span>
+          <span class="text-sm font-mono font-bold text-gray-900 bg-gray-100 px-2 py-0.5 rounded">NY ABC1234</span>
+        </div>
+        <span class="text-xs text-gray-400">更新于 2026-03-28</span>
+      </div>
+
+      <!-- Summary Cards -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+        <div class="bg-white border border-gray-200 rounded-xl p-4 text-center">
+          <div class="text-2xl font-bold text-gray-900">8</div>
+          <div class="text-xs text-gray-500 mt-1">条违规</div>
+        </div>
+        <div class="bg-white border border-gray-200 rounded-xl p-4 text-center">
+          <div class="text-2xl font-bold text-gray-900">$920<span class="text-base">.00</span></div>
+          <div class="text-xs text-gray-500 mt-1">罚款总额</div>
+        </div>
+        <div class="bg-white border border-gray-200 rounded-xl p-4 text-center">
+          <div class="text-2xl font-bold text-green-600">$620<span class="text-base">.00</span></div>
+          <div class="text-xs text-gray-500 mt-1">已付</div>
+        </div>
+        <div class="bg-red-50 border-2 border-red-200 rounded-xl p-4 text-center">
+          <div class="text-2xl font-bold text-red-600">$300<span class="text-base">.00</span></div>
+          <div class="text-xs text-red-500 font-medium mt-1">未付余额</div>
+        </div>
+      </div>
+
+      <!-- Desktop Results Table -->
+      <div class="hidden sm:block bg-white border border-gray-200 rounded-xl overflow-hidden mb-5">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="bg-gray-50 border-b border-gray-200">
+              <th class="text-left py-3 px-4 font-semibold text-gray-600 text-xs">日期</th>
+              <th class="text-left py-3 px-4 font-semibold text-gray-600 text-xs">违规类型</th>
+              <th class="text-right py-3 px-4 font-semibold text-gray-600 text-xs">罚款</th>
+              <th class="text-right py-3 px-4 font-semibold text-gray-600 text-xs">已付</th>
+              <th class="text-right py-3 px-4 font-semibold text-gray-600 text-xs">欠款</th>
+              <th class="text-left py-3 px-4 font-semibold text-gray-600 text-xs">区域</th>
+              <th class="py-3 px-4"></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            <tr class="hover:bg-gray-50 cursor-pointer" onclick="toggleDetail('detail-1')">
+              <td class="py-3 px-4 text-gray-900">03/15/2026</td>
+              <td class="py-3 px-4 text-gray-700">扫街违规 <span class="text-gray-400 text-xs">(STREET CLEANING)</span></td>
+              <td class="py-3 px-4 text-right font-medium text-gray-900">$65.00</td>
+              <td class="py-3 px-4 text-right text-green-600">$0.00</td>
+              <td class="py-3 px-4 text-right font-bold text-red-600">$65.00</td>
+              <td class="py-3 px-4 text-gray-500">Queens</td>
+              <td class="py-3 px-4 text-gray-400"><svg class="w-4 h-4 transition-transform" id="chevron-detail-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg></td>
+            </tr>
+            <!-- Expanded detail row -->
+            <tr class="detail-row bg-gray-50/50" id="detail-1">
+              <td colspan="7" class="px-4 py-4">
+                <div class="grid sm:grid-cols-3 gap-4 text-sm">
+                  <div>
+                    <div class="text-xs text-gray-500 mb-1">罚单号</div>
+                    <div class="font-mono font-medium text-gray-900">8736291045</div>
+                  </div>
+                  <div>
+                    <div class="text-xs text-gray-500 mb-1">开票机构</div>
+                    <div class="text-gray-900">Traffic (NYPD)</div>
+                  </div>
+                  <div>
+                    <div class="text-xs text-gray-500 mb-1">违规地点</div>
+                    <div class="text-gray-900">41-20 Main St, Flushing</div>
+                  </div>
+                  <div>
+                    <div class="text-xs text-gray-500 mb-1">附加罚款</div>
+                    <div class="text-gray-900">$0.00</div>
+                  </div>
+                  <div>
+                    <div class="text-xs text-gray-500 mb-1">利息</div>
+                    <div class="text-gray-900">$0.00</div>
+                  </div>
+                  <div>
+                    <div class="text-xs text-gray-500 mb-1">减免</div>
+                    <div class="text-gray-900">$0.00</div>
+                  </div>
+                </div>
+                <a href="#" class="inline-flex items-center gap-1 text-baam-500 text-sm font-medium mt-3 hover:text-baam-600 transition">
+                  查看罚单原件
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                </a>
+              </td>
+            </tr>
+
+            <tr class="hover:bg-gray-50 cursor-pointer" onclick="toggleDetail('detail-2')">
+              <td class="py-3 px-4 text-gray-900">02/28/2026</td>
+              <td class="py-3 px-4 text-gray-700">消防栓旁停车 <span class="text-gray-400 text-xs">(HYDRANT)</span></td>
+              <td class="py-3 px-4 text-right font-medium text-gray-900">$115.00</td>
+              <td class="py-3 px-4 text-right text-green-600">$0.00</td>
+              <td class="py-3 px-4 text-right font-bold text-red-600">$115.00</td>
+              <td class="py-3 px-4 text-gray-500">Manhattan</td>
+              <td class="py-3 px-4 text-gray-400"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg></td>
+            </tr>
+            <tr class="detail-row bg-gray-50/50" id="detail-2">
+              <td colspan="7" class="px-4 py-4">
+                <div class="grid sm:grid-cols-3 gap-4 text-sm">
+                  <div><div class="text-xs text-gray-500 mb-1">罚单号</div><div class="font-mono font-medium text-gray-900">8734108832</div></div>
+                  <div><div class="text-xs text-gray-500 mb-1">开票机构</div><div class="text-gray-900">Traffic (NYPD)</div></div>
+                  <div><div class="text-xs text-gray-500 mb-1">违规地点</div><div class="text-gray-900">120 E Broadway, Manhattan</div></div>
+                  <div><div class="text-xs text-gray-500 mb-1">附加罚款</div><div class="text-gray-900">$0.00</div></div>
+                  <div><div class="text-xs text-gray-500 mb-1">利息</div><div class="text-gray-900">$0.00</div></div>
+                  <div><div class="text-xs text-gray-500 mb-1">减免</div><div class="text-gray-900">$0.00</div></div>
+                </div>
+                <a href="#" class="inline-flex items-center gap-1 text-baam-500 text-sm font-medium mt-3 hover:text-baam-600 transition">查看罚单原件 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg></a>
+              </td>
+            </tr>
+
+            <tr class="hover:bg-gray-50 cursor-pointer" onclick="toggleDetail('detail-3')">
+              <td class="py-3 px-4 text-gray-900">02/10/2026</td>
+              <td class="py-3 px-4 text-gray-700">双排停车 <span class="text-gray-400 text-xs">(DOUBLE PARKING)</span></td>
+              <td class="py-3 px-4 text-right font-medium text-gray-900">$115.00</td>
+              <td class="py-3 px-4 text-right text-green-600">$0.00</td>
+              <td class="py-3 px-4 text-right font-bold text-red-600">$120.00</td>
+              <td class="py-3 px-4 text-gray-500">Brooklyn</td>
+              <td class="py-3 px-4 text-gray-400"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg></td>
+            </tr>
+            <tr class="detail-row bg-gray-50/50" id="detail-3">
+              <td colspan="7" class="px-4 py-4">
+                <div class="grid sm:grid-cols-3 gap-4 text-sm">
+                  <div><div class="text-xs text-gray-500 mb-1">罚单号</div><div class="font-mono font-medium text-gray-900">8731876423</div></div>
+                  <div><div class="text-xs text-gray-500 mb-1">开票机构</div><div class="text-gray-900">Traffic (NYPD)</div></div>
+                  <div><div class="text-xs text-gray-500 mb-1">违规地点</div><div class="text-gray-900">5502 8th Ave, Brooklyn</div></div>
+                  <div><div class="text-xs text-gray-500 mb-1">附加罚款</div><div class="text-gray-900">$5.00</div></div>
+                  <div><div class="text-xs text-gray-500 mb-1">利息</div><div class="text-gray-900">$0.00</div></div>
+                  <div><div class="text-xs text-gray-500 mb-1">减免</div><div class="text-gray-900">$0.00</div></div>
+                </div>
+                <a href="#" class="inline-flex items-center gap-1 text-baam-500 text-sm font-medium mt-3 hover:text-baam-600 transition">查看罚单原件 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg></a>
+              </td>
+            </tr>
+
+            <tr class="hover:bg-gray-50">
+              <td class="py-3 px-4 text-gray-900">01/22/2026</td>
+              <td class="py-3 px-4 text-gray-700">咪表过期 <span class="text-gray-400 text-xs">(EXPIRED METER)</span></td>
+              <td class="py-3 px-4 text-right font-medium text-gray-900">$65.00</td>
+              <td class="py-3 px-4 text-right text-green-600">$65.00</td>
+              <td class="py-3 px-4 text-right text-gray-400">$0.00</td>
+              <td class="py-3 px-4 text-gray-500">Manhattan</td>
+              <td class="py-3 px-4"></td>
+            </tr>
+            <tr class="hover:bg-gray-50">
+              <td class="py-3 px-4 text-gray-900">12/05/2025</td>
+              <td class="py-3 px-4 text-gray-700">禁止停车区 <span class="text-gray-400 text-xs">(NO STANDING)</span></td>
+              <td class="py-3 px-4 text-right font-medium text-gray-900">$115.00</td>
+              <td class="py-3 px-4 text-right text-green-600">$115.00</td>
+              <td class="py-3 px-4 text-right text-gray-400">$0.00</td>
+              <td class="py-3 px-4 text-gray-500">Queens</td>
+              <td class="py-3 px-4"></td>
+            </tr>
+            <tr class="hover:bg-gray-50">
+              <td class="py-3 px-4 text-gray-900">11/18/2025</td>
+              <td class="py-3 px-4 text-gray-700">学校区域违规 <span class="text-gray-400 text-xs">(SCHOOL ZONE)</span></td>
+              <td class="py-3 px-4 text-right font-medium text-gray-900">$115.00</td>
+              <td class="py-3 px-4 text-right text-green-600">$115.00</td>
+              <td class="py-3 px-4 text-right text-gray-400">$0.00</td>
+              <td class="py-3 px-4 text-gray-500">Brooklyn</td>
+              <td class="py-3 px-4"></td>
+            </tr>
+            <tr class="hover:bg-gray-50">
+              <td class="py-3 px-4 text-gray-900">10/02/2025</td>
+              <td class="py-3 px-4 text-gray-700">扫街违规 <span class="text-gray-400 text-xs">(STREET CLEANING)</span></td>
+              <td class="py-3 px-4 text-right font-medium text-gray-900">$65.00</td>
+              <td class="py-3 px-4 text-right text-green-600">$65.00</td>
+              <td class="py-3 px-4 text-right text-gray-400">$0.00</td>
+              <td class="py-3 px-4 text-gray-500">Queens</td>
+              <td class="py-3 px-4"></td>
+            </tr>
+            <tr class="hover:bg-gray-50">
+              <td class="py-3 px-4 text-gray-900">08/14/2025</td>
+              <td class="py-3 px-4 text-gray-700">闯红灯（摄像头） <span class="text-gray-400 text-xs">(RED LIGHT CAMERA)</span></td>
+              <td class="py-3 px-4 text-right font-medium text-gray-900">$50.00</td>
+              <td class="py-3 px-4 text-right text-green-600">$50.00</td>
+              <td class="py-3 px-4 text-right text-gray-400">$0.00</td>
+              <td class="py-3 px-4 text-gray-500">Bronx</td>
+              <td class="py-3 px-4"></td>
+            </tr>
+            <tr class="hover:bg-gray-50">
+              <td class="py-3 px-4 text-gray-900">06/30/2025</td>
+              <td class="py-3 px-4 text-gray-700">咪表过期 <span class="text-gray-400 text-xs">(EXPIRED METER)</span></td>
+              <td class="py-3 px-4 text-right font-medium text-gray-900">$65.00</td>
+              <td class="py-3 px-4 text-right text-green-600">$65.00</td>
+              <td class="py-3 px-4 text-right text-gray-400">$0.00</td>
+              <td class="py-3 px-4 text-gray-500">Manhattan</td>
+              <td class="py-3 px-4"></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Mobile Results Cards -->
+      <div class="sm:hidden space-y-3 mb-5">
+        <!-- Mobile Card 1 -->
+        <div class="bg-white border border-gray-200 rounded-xl p-4">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs text-gray-500">03/15/2026</span>
+            <span class="text-sm font-bold text-red-600">欠 $65.00</span>
+          </div>
+          <div class="text-sm font-medium text-gray-900 mb-1">扫街违规</div>
+          <div class="text-xs text-gray-500">STREET CLEANING · Queens</div>
+          <button class="mt-3 text-xs text-baam-500 font-medium" onclick="toggleDetail('detail-m-1')">查看详情</button>
+          <div class="detail-card mt-3 pt-3 border-t border-gray-100" id="detail-m-1">
+            <div class="grid grid-cols-2 gap-3 text-xs">
+              <div><span class="text-gray-500">罚单号</span><div class="font-mono font-medium mt-0.5">8736291045</div></div>
+              <div><span class="text-gray-500">开票机构</span><div class="mt-0.5">Traffic (NYPD)</div></div>
+              <div><span class="text-gray-500">附加罚款</span><div class="mt-0.5">$0.00</div></div>
+              <div><span class="text-gray-500">利息</span><div class="mt-0.5">$0.00</div></div>
+            </div>
+            <a href="#" class="inline-flex items-center gap-1 text-baam-500 text-xs font-medium mt-2">查看罚单原件 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg></a>
+          </div>
+        </div>
+        <!-- Mobile Card 2 -->
+        <div class="bg-white border border-gray-200 rounded-xl p-4">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs text-gray-500">02/28/2026</span>
+            <span class="text-sm font-bold text-red-600">欠 $115.00</span>
+          </div>
+          <div class="text-sm font-medium text-gray-900 mb-1">消防栓旁停车</div>
+          <div class="text-xs text-gray-500">HYDRANT · Manhattan</div>
+        </div>
+        <!-- Mobile Card 3 -->
+        <div class="bg-white border border-gray-200 rounded-xl p-4">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs text-gray-500">02/10/2026</span>
+            <span class="text-sm font-bold text-red-600">欠 $120.00</span>
+          </div>
+          <div class="text-sm font-medium text-gray-900 mb-1">双排停车</div>
+          <div class="text-xs text-gray-500">DOUBLE PARKING · Brooklyn</div>
+        </div>
+        <button class="w-full text-center text-sm text-baam-500 font-medium py-2">查看全部 8 条记录</button>
+      </div>
+
+      <!-- Email Capture -->
+      <div class="bg-white border border-gray-200 rounded-xl p-4 sm:p-5">
+        <div class="flex flex-col sm:flex-row items-center gap-3">
+          <div class="flex-1 text-center sm:text-left">
+            <div class="text-sm font-bold text-gray-900 mb-0.5">保存查询结果到邮箱</div>
+            <div class="text-xs text-gray-500">我们会将完整的罚单记录发送到你的邮箱，方便保存和分享</div>
+          </div>
+          <div class="flex gap-2 w-full sm:w-auto">
+            <input type="email" placeholder="输入邮箱地址" class="flex-1 sm:w-56 h-10 px-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-baam-500 focus:border-baam-500 outline-none">
+            <button class="h-10 px-5 bg-baam-500 text-white text-sm font-medium rounded-lg hover:bg-baam-600 transition whitespace-nowrap">发送</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== SHARE BUTTONS ==================== -->
+  <div class="flex flex-wrap items-center gap-2 mb-8">
+    <span class="text-sm text-gray-500 mr-1">分享：</span>
+    <button class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-500 text-white text-xs font-medium rounded-lg hover:bg-green-600 transition">
+      <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8.5 19.5c-1.1 0-2-.9-2-2v-4.3L3.3 9.8C2.5 9 2.5 7.7 3.3 7l4.3-4.3c.8-.8 2-.8 2.8 0L14.7 7c.8.8.8 2 0 2.8l-3.2 3.4v4.3c0 1.1-.9 2-2 2h-1z"/></svg>
+      分享到微信
+    </button>
+    <button class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded-lg hover:bg-green-700 transition">
+      <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 17.708c-.78.78-1.687 1.39-2.694 1.816-1.042.44-2.15.664-3.293.664-1.143 0-2.251-.224-3.293-.664-1.007-.427-1.914-1.037-2.694-1.816S4.53 16.021 4.104 15.014C3.664 13.972 3.44 12.864 3.44 11.72c0-1.143.224-2.251.664-3.293C4.53 7.42 5.14 6.513 5.92 5.733s1.687-1.39 2.694-1.816C9.656 3.477 10.764 3.253 11.907 3.253c1.143 0 2.251.224 3.293.664 1.007.427 1.914 1.037 2.694 1.816s1.39 1.687 1.816 2.694c.44 1.042.664 2.15.664 3.293 0 1.143-.224 2.251-.664 3.293-.427 1.007-1.037 1.914-1.816 2.694z"/></svg>
+      WhatsApp
+    </button>
+    <button onclick="navigator.clipboard.writeText(window.location.href)" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-200 transition">
+      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
+      复制链接
+    </button>
+    <button onclick="window.print()" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-200 transition">
+      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+      打印
+    </button>
+  </div>
+
+  <!-- ==================== FAQ SECTION ==================== -->
+  <div class="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 mb-8">
+    <h2 class="text-xl font-bold text-gray-900 mb-5">常见问题</h2>
+    <div class="divide-y divide-gray-100">
+
+      <div class="py-4 first:pt-0">
+        <button class="w-full flex items-center justify-between text-left" onclick="toggleFaq(this)">
+          <span class="text-[15px] font-semibold text-gray-900 pr-4">怎么查询纽约停车罚单？</span>
+          <svg class="w-5 h-5 text-gray-400 flex-shrink-0 faq-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div class="faq-answer">
+          <p class="text-sm text-gray-600 leading-relaxed mt-3">
+            查询纽约停车罚单最简单的方法是使用Baam的在线查询工具——只需在上方输入你的车牌号和注册州，即可查看所有罚单记录。你也可以通过NYC Department of Finance的官方网站查询，或拨打311电话（选择中文服务）进行查询。所有罚单信息通常在开票后24-48小时内可查。
+          </p>
+        </div>
+      </div>
+
+      <div class="py-4">
+        <button class="w-full flex items-center justify-between text-left" onclick="toggleFaq(this)">
+          <span class="text-[15px] font-semibold text-gray-900 pr-4">停车罚单多久会进入judgment？</span>
+          <svg class="w-5 h-5 text-gray-400 flex-shrink-0 faq-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div class="faq-answer">
+          <p class="text-sm text-gray-600 leading-relaxed mt-3">
+            一般来说，停车罚单在开具后如果在规定期限内（通常为30天）未缴纳或申诉，会进入「Default」状态。在此之后，如果继续不处理，通常在90天后会进入「Judgment」状态。一旦进入judgment，罚款金额可能大幅增加（附加罚款+利息），并且该记录会影响你的信用记录。建议收到罚单后尽快处理。
+          </p>
+        </div>
+      </div>
+
+      <div class="py-4">
+        <button class="w-full flex items-center justify-between text-left" onclick="toggleFaq(this)">
+          <span class="text-[15px] font-semibold text-gray-900 pr-4">外州车牌也会收到NYC罚单吗？</span>
+          <svg class="w-5 h-5 text-gray-400 flex-shrink-0 faq-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div class="faq-answer">
+          <p class="text-sm text-gray-600 leading-relaxed mt-3">
+            是的，外州车牌在纽约市停车同样受纽约市交通法规管辖。无论你的车是在纽约、新泽西、康涅狄格还是其他任何州注册的，在NYC停车违规都会收到罚单。纽约市与其他州有数据共享协议，长期未缴的罚单可能会影响你在注册州的车辆续期。你可以在上方的查询工具中选择你的注册州来查询罚单。
+          </p>
+        </div>
+      </div>
+
+      <div class="py-4 last:pb-0">
+        <button class="w-full flex items-center justify-between text-left" onclick="toggleFaq(this)">
+          <span class="text-[15px] font-semibold text-gray-900 pr-4">如何申诉停车罚单？</span>
+          <svg class="w-5 h-5 text-gray-400 flex-shrink-0 faq-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div class="faq-answer">
+          <p class="text-sm text-gray-600 leading-relaxed mt-3">
+            申诉纽约停车罚单可以在线进行，步骤如下：1) 登录NYC DOF网站的争议页面；2) 输入罚单号码；3) 选择申诉理由（如标志不清、标志被遮挡、情况紧急等）；4) 上传支持证据（照片最有效）；5) 提交申诉。申诉必须在罚单开具后30天内提交。审理结果通常在30-60天内以邮件形式通知。如果初次申诉失败，你还可以向Appeal Board提起二次申诉。
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==================== LEAD GEN CTA (visible when unpaid tickets) ==================== -->
+  <div class="bg-gradient-to-r from-baam-500 to-baam-600 rounded-2xl p-6 sm:p-8 mb-8 text-white" id="lead-gen-cta">
+    <div class="flex flex-col sm:flex-row items-center gap-5">
+      <div class="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
+        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/></svg>
+      </div>
+      <div class="flex-1 text-center sm:text-left">
+        <h3 class="text-lg font-bold mb-1">有未缴罚单？免费咨询交通律师</h3>
+        <p class="text-sm text-white/80">专业交通律师提供免费初次咨询，帮你减免罚款或成功申诉</p>
+      </div>
+      <a href="#" class="px-6 py-2.5 bg-white text-baam-600 text-sm font-bold rounded-xl hover:bg-gray-100 transition flex-shrink-0">免费咨询</a>
+    </div>
+    <a href="#" class="block text-center sm:text-left text-sm text-white/70 hover:text-white mt-4 transition">多次违规可能影响保险费率，了解更多 &rarr;</a>
+  </div>
+
+  <!-- ==================== RELATED CONTENT ==================== -->
+  <div class="grid sm:grid-cols-2 gap-6 mb-8">
+    <!-- Related Guides -->
+    <div>
+      <h2 class="text-base font-bold text-gray-900 mb-3">相关指南</h2>
+      <div class="space-y-2">
+        <a href="guide-detail.html" class="block bg-white border border-gray-200 rounded-xl p-4 hover:border-baam-200 hover:shadow-sm transition group">
+          <h3 class="text-sm font-semibold text-gray-900 group-hover:text-baam-500 transition mb-1">纽约停车完全攻略</h3>
+          <p class="text-xs text-gray-500">路边停车规则、标志解读、最佳停车App推荐</p>
+        </a>
+        <a href="guide-detail.html" class="block bg-white border border-gray-200 rounded-xl p-4 hover:border-baam-200 hover:shadow-sm transition group">
+          <h3 class="text-sm font-semibold text-gray-900 group-hover:text-baam-500 transition mb-1">交替停车规则详解</h3>
+          <p class="text-xs text-gray-500">什么是Alternate Side Parking？暂停日历和避罚指南</p>
+        </a>
+      </div>
+    </div>
+    <!-- Related Tools -->
+    <div>
+      <h2 class="text-base font-bold text-gray-900 mb-3">相关工具</h2>
+      <div class="space-y-2">
+        <a href="#" class="block bg-white border border-gray-200 rounded-xl p-4 hover:border-baam-200 hover:shadow-sm transition group">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 bg-amber-50 rounded-lg flex items-center justify-center text-lg flex-shrink-0">🅿️</div>
+            <div>
+              <h3 class="text-sm font-semibold text-gray-900 group-hover:text-baam-500 transition">扫街时间查询</h3>
+              <p class="text-xs text-gray-500">输入地址查看扫街时间表</p>
+            </div>
+          </div>
+        </a>
+        <a href="services-property-tax.html" class="block bg-white border border-gray-200 rounded-xl p-4 hover:border-baam-200 hover:shadow-sm transition group">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 bg-blue-50 rounded-lg flex items-center justify-center text-lg flex-shrink-0">🏠</div>
+            <div>
+              <h3 class="text-sm font-semibold text-gray-900 group-hover:text-baam-500 transition">房产税查询</h3>
+              <p class="text-xs text-gray-500">查看纽约市房产评估值和税费</p>
+            </div>
+          </div>
+        </a>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ==================== FOOTER ==================== -->
+<footer class="bg-gray-900 text-gray-400 mt-4">
+  <div class="max-w-7xl mx-auto px-4 py-12">
+    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
+      <div>
+        <div class="flex items-center gap-2 mb-4">
+          <div class="w-8 h-8 bg-baam-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">B</div>
+          <span class="text-xl font-bold text-white">Baam</span>
+        </div>
+        <p class="text-sm">AI驱动的纽约华人本地生活平台</p>
+      </div>
+      <div>
+        <h3 class="text-white font-semibold text-sm mb-3">实用工具</h3>
+        <ul class="space-y-2 text-sm">
+          <li><a href="services-violations.html" class="hover:text-white transition">停车罚单查询</a></li>
+          <li><a href="services-restaurant-search.html" class="hover:text-white transition">餐厅卫生评分</a></li>
+          <li><a href="services-property-tax.html" class="hover:text-white transition">房产税查询</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3 class="text-white font-semibold text-sm mb-3">快速导航</h3>
+        <ul class="space-y-2 text-sm">
+          <li><a href="#" class="hover:text-white transition">新闻</a></li>
+          <li><a href="#" class="hover:text-white transition">生活资讯</a></li>
+          <li><a href="#" class="hover:text-white transition">商家</a></li>
+          <li><a href="#" class="hover:text-white transition">论坛</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3 class="text-white font-semibold text-sm mb-3">关于我们</h3>
+        <ul class="space-y-2 text-sm">
+          <li><a href="#" class="hover:text-white transition">关于 Baam</a></li>
+          <li><a href="#" class="hover:text-white transition">联系我们</a></li>
+          <li><a href="#" class="hover:text-white transition">使用条款</a></li>
+          <li><a href="#" class="hover:text-white transition">隐私政策</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="border-t border-gray-800 mt-8 pt-6 text-xs">&copy; 2026 Baam. All rights reserved.</div>
+  </div>
+</footer>
+
+<script src="../assets/js/prototype.js"></script>
+<script>
+  // FAQ accordion toggle
+  function toggleFaq(btn) {
+    const answer = btn.nextElementSibling;
+    const chevron = btn.querySelector('.faq-chevron');
+    answer.classList.toggle('open');
+    chevron.classList.toggle('open');
+  }
+
+  // Detail row toggle (desktop)
+  function toggleDetail(id) {
+    const row = document.getElementById(id);
+    if (row) {
+      row.classList.toggle('open');
+      // Also toggle mobile detail cards
+      const card = document.getElementById(id);
+      if (card && card.classList.contains('detail-card')) {
+        card.classList.toggle('open');
+      }
+    }
+    // Rotate chevron
+    const chevron = document.getElementById('chevron-' + id);
+    if (chevron) {
+      chevron.style.transform = row.classList.contains('open') ? 'rotate(180deg)' : '';
+    }
+  }
+</script>
+</body>
+</html>
