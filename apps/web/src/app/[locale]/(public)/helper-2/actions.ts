@@ -44,7 +44,6 @@ export async function askHelper2(
         anthropicApiKey: process.env.ANTHROPIC_API_KEY,
         anthropicModel: process.env.HELPER2_ANTHROPIC_MODEL || 'claude-haiku-4-5',
         webFallbackEnabled: true,
-        fastMode: false,
         answerMaxTokens: 1800,
       },
     });
