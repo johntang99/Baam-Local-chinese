@@ -17,9 +17,7 @@
       { "name": "next" }
     ],
     "paths": {
-      "@/*": ["./src/*"],
-      "@baam/helper-core": ["../../packages/helper-core/src/index.ts"],
-      "@baam/helper-core/*": ["../../packages/helper-core/src/*"]
+      "@/*": ["./src/*"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],

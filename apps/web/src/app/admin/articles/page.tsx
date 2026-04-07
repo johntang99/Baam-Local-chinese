@@ -25,50 +25,88 @@ const typeOptions = [
   { key: 'guide', label: '指南' },
 ];
 
+const GUIDE_VERTICALS = [
+  'guide_howto',
+  'guide_checklist',
+  'guide_comparison',
+  'guide_bestof',
+  'guide_resource',
+  'guide_scenario',
+  'guide_seasonal',
+  'guide_neighborhood',
+];
+
+const NEWS_VERTICALS = [
+  'news_alert',
+  'news_brief',
+  'news_explainer',
+  'news_roundup',
+  'news_community',
+];
+
 export default async function AdminArticlesPage({ searchParams }: Props) {
   const params = await searchParams;
   const ctx = await getAdminSiteContext(params);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = createAdminClient() as any;
+  const siteScope = String(ctx.locale || '').toLowerCase().startsWith('en') ? 'en' : 'zh';
 
   // Resolve filters from searchParams
   const statusFilter = typeof params.status === 'string' ? params.status : '';
   const typeFilter = typeof params.type === 'string' ? params.type : '';
   const regionFilter = typeof params.filter_region === 'string' ? params.filter_region : '';
+  const categoryFilter = typeof params.cat === 'string' ? params.cat : '';
 
   // Page
   const page = Math.max(1, parseInt(typeof params.page === 'string' ? params.page : '1', 10));
   const pageSize = 50;
 
   // Fetch region names for display
-  const { data: regRows } = await supabase
-    .from('regions')
-    .select('id, name_zh, slug')
-    .in('id', ctx.regionIds);
+  const [{ data: regRows }, { data: rawGuideCategories }] = await Promise.all([
+    supabase
+      .from('regions')
+      .select('id, name_zh, slug')
+      .in('id', ctx.regionIds),
+    supabase
+      .from('categories_guide')
+      .select('id, slug, name_zh, name_en, sort_order, site_scope')
+      .eq('site_scope', siteScope)
+      .order('sort_order', { ascending: true }),
+  ]);
   const regionNameMap: Record<string, string> = {};
   (regRows || []).forEach((r: AnyRow) => {
     regionNameMap[r.id] = r.name_zh || r.slug;
   });
+  const guideCategories = (rawGuideCategories || []) as AnyRow[];
 
   // Build query
   let query = supabase
     .from('articles')
     .select('*', { count: 'exact' })
-    .in('region_id', ctx.regionIds)
+    .eq('site_id', ctx.siteId)
     .order('created_at', { ascending: false });
+
+  // Some legacy/AI-generated guide articles may not have region_id.
+  // Keep site-scoped rows, but include region-less rows so they are visible in admin.
+  if (ctx.regionIds.length > 0) {
+    query = query.or(`region_id.in.(${ctx.regionIds.join(',')}),region_id.is.null`);
+  }
 
   if (statusFilter) {
     query = query.eq('editorial_status', statusFilter);
   }
 
   if (typeFilter === 'news') {
-    query = query.like('content_vertical', 'news_%');
+    query = query.in('content_vertical', NEWS_VERTICALS);
   } else if (typeFilter === 'guide') {
-    query = query.like('content_vertical', 'guide_%');
+    query = query.in('content_vertical', GUIDE_VERTICALS);
   }
 
   if (regionFilter) {
     query = query.eq('region_id', regionFilter);
+  }
+  if (typeFilter === 'guide' && categoryFilter) {
+    query = query.eq('category_id', categoryFilter);
   }
 
   const from = (page - 1) * pageSize;
@@ -93,6 +131,7 @@ export default async function AdminArticlesPage({ searchParams }: Props) {
     if (!('status' in overrides) && statusFilter) p.set('status', statusFilter);
     if (!('type' in overrides) && typeFilter) p.set('type', typeFilter);
     if (!('filter_region' in overrides) && regionFilter) p.set('filter_region', regionFilter);
+    if (!('cat' in overrides) && categoryFilter) p.set('cat', categoryFilter);
     return `/admin/articles?${p.toString()}`;
   }
 
@@ -173,6 +212,35 @@ export default async function AdminArticlesPage({ searchParams }: Props) {
             </div>
           )}
         </div>
+
+        {/* Guide category submenu */}
+        {typeFilter === 'guide' && (
+          <div className="flex flex-wrap items-center gap-1">
+            <Link
+              href={filterUrl({ cat: '', page: '' })}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md border transition-colors ${
+                !categoryFilter
+                  ? 'border-primary text-primary bg-primary/5'
+                  : 'border-border text-text-muted hover:text-text'
+              }`}
+            >
+              全部分类
+            </Link>
+            {guideCategories.map((cat) => (
+              <Link
+                key={cat.id}
+                href={filterUrl({ cat: String(cat.id), page: '' })}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md border transition-colors ${
+                  categoryFilter === String(cat.id)
+                    ? 'border-primary text-primary bg-primary/5'
+                    : 'border-border text-text-muted hover:text-text'
+                }`}
+              >
+                {cat.name_zh || cat.name_en || cat.slug}
+              </Link>
+            ))}
+          </div>
+        )}
 
         {/* Articles table (client component for bulk actions) */}
         {articles.length === 0 ? (

@@ -38,13 +38,14 @@ export async function askHelper2(
         assistantName: 'Helper-2',
         assistantNameZh: '小帮手-2',
         locale: 'zh',
-        providerStrategy:
-          (process.env.HELPER2_PROVIDER_STRATEGY as 'hybrid' | 'openai' | 'anthropic' | undefined) || 'hybrid',
+        providerStrategy: 'anthropic',
         openAiApiKey: process.env.OPENAI_API_KEY,
         openAiModel: process.env.HELPER2_OPENAI_MODEL || 'gpt-5.4',
         anthropicApiKey: process.env.ANTHROPIC_API_KEY,
-        anthropicModel: process.env.HELPER2_ANTHROPIC_MODEL || 'claude-sonnet-4-6',
+        anthropicModel: process.env.HELPER2_ANTHROPIC_MODEL || 'claude-haiku-4-5',
         webFallbackEnabled: true,
+        fastMode: false,
+        answerMaxTokens: 1800,
       },
     });
 

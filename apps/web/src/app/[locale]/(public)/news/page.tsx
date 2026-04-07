@@ -1,8 +1,14 @@
 import { createClient } from '@/lib/supabase/server';
+import { getCurrentSite } from '@/lib/sites';
 import { getTranslations } from 'next-intl/server';
 import { Link } from '@/lib/i18n/routing';
+import { PageContainer } from '@/components/layout/page-shell';
 import { Pagination } from '@/components/shared/pagination';
 import { NewsletterForm } from '@/components/shared/newsletter-form';
+import { Badge } from '@/components/ui/badge';
+import { buttonVariants } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 import type { Metadata } from 'next';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -19,11 +25,11 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 const verticalConfig: Record<string, { label: string; className: string; key: string }> = {
-  news_alert: { label: '快报', className: 'badge-red', key: 'alert' },
-  news_brief: { label: '简报', className: 'badge-blue', key: 'brief' },
-  news_explainer: { label: '政策解读', className: 'badge-purple', key: 'explainer' },
-  news_roundup: { label: '周度汇总', className: 'badge-primary', key: 'roundup' },
-  news_community: { label: '社区新闻', className: 'badge-green', key: 'community' },
+  news_alert: { label: '快报', className: 'bg-red-100 text-red-700', key: 'alert' },
+  news_brief: { label: '简报', className: 'bg-blue-100 text-blue-700', key: 'brief' },
+  news_explainer: { label: '政策解读', className: 'bg-purple-100 text-purple-700', key: 'explainer' },
+  news_roundup: { label: '周度汇总', className: 'bg-primary-100 text-primary-700', key: 'roundup' },
+  news_community: { label: '社区新闻', className: 'bg-green-100 text-green-700', key: 'community' },
 };
 
 const filterTabs = [
@@ -46,12 +52,14 @@ export default async function NewsListPage({ searchParams }: Props) {
   const activeTab = filterTabs.find(t => t.key === activeType) || filterTabs[0];
 
   const supabase = await createClient();
+  const site = await getCurrentSite();
   const t = await getTranslations();
 
   // Count total for pagination
   const countQuery = supabase
     .from('articles')
     .select('id', { count: 'exact', head: true })
+    .eq('site_id', site.id)
     .in('content_vertical', activeTab.verticals)
     .eq('editorial_status', 'published');
   const { count } = await countQuery;
@@ -62,6 +70,7 @@ export default async function NewsListPage({ searchParams }: Props) {
   const { data: rawArticles, error } = await supabase
     .from('articles')
     .select('*')
+    .eq('site_id', site.id)
     .in('content_vertical', activeTab.verticals)
     .eq('editorial_status', 'published')
     .order('published_at', { ascending: false })
@@ -73,6 +82,7 @@ export default async function NewsListPage({ searchParams }: Props) {
   const { data: rawAlerts } = await supabase
     .from('articles')
     .select('*')
+    .eq('site_id', site.id)
     .eq('content_vertical', 'news_alert')
     .eq('editorial_status', 'published')
     .order('published_at', { ascending: false })
@@ -103,7 +113,7 @@ export default async function NewsListPage({ searchParams }: Props) {
         </div>
       )}
 
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <PageContainer className="py-6">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <span>📰</span> {t('nav.news')}
@@ -118,11 +128,13 @@ export default async function NewsListPage({ searchParams }: Props) {
                 <Link
                   key={tab.key}
                   href={tab.key === 'all' ? '/news' : `/news?type=${tab.key}`}
-                  className={`px-4 py-2 text-sm font-medium rounded-full transition-colors ${
+                  className={cn(
+                    buttonVariants({ size: 'sm' }),
+                    'rounded-full',
                     activeType === tab.key
                       ? 'bg-primary text-text-inverse'
-                      : 'bg-border-light text-text-secondary hover:bg-gray-200'
-                  }`}
+                      : 'bg-border-light text-text-secondary hover:bg-gray-200 hover:text-text-primary'
+                  )}
                 >
                   {tab.label}
                 </Link>
@@ -143,7 +155,7 @@ export default async function NewsListPage({ searchParams }: Props) {
                 {articles.map((article) => {
                   const vertical = verticalConfig[article.content_vertical] || {
                     label: '新闻',
-                    className: 'badge-gray',
+                    className: 'bg-gray-100 text-gray-700',
                   };
                   const summary = article.ai_summary_zh || article.summary_zh;
                   const timeAgo = formatTimeAgo(article.published_at);
@@ -152,19 +164,23 @@ export default async function NewsListPage({ searchParams }: Props) {
                     <Link
                       key={article.id}
                       href={`/news/${article.slug}`}
-                      className={`card p-5 block cursor-pointer ${
-                        article.content_vertical === 'news_alert'
-                          ? 'border-l-4 border-l-accent-red bg-accent-red-light/30'
-                          : ''
-                      }`}
+                      className="block cursor-pointer"
                     >
+                      <Card
+                        className={cn(
+                          'p-5 hover:shadow-md transition-shadow',
+                          article.content_vertical === 'news_alert'
+                            ? 'border-l-4 border-l-accent-red bg-accent-red-light/30'
+                            : ''
+                        )}
+                      >
                       <div className="flex items-center gap-2 mb-2">
-                        <span className={`badge ${vertical.className}`}>{vertical.label}</span>
+                        <Badge className={cn('text-xs', vertical.className)}>{vertical.label}</Badge>
                         <span className="text-xs text-text-muted">{timeAgo}</span>
                         {article.source_name && (
-                          <span className="text-xs text-text-muted bg-border-light px-2 py-0.5 rounded">
+                          <Badge variant="muted" className="text-xs">
                             {article.source_name}
-                          </span>
+                          </Badge>
                         )}
                       </div>
                       <h3 className="font-semibold text-base mb-2 line-clamp-2">
@@ -173,6 +189,7 @@ export default async function NewsListPage({ searchParams }: Props) {
                       {summary && (
                         <p className="text-sm text-text-secondary line-clamp-2">{summary}</p>
                       )}
+                      </Card>
                     </Link>
                   );
                 })}
@@ -190,14 +207,14 @@ export default async function NewsListPage({ searchParams }: Props) {
 
           {/* Sidebar */}
           <aside className="hidden lg:block w-80 flex-shrink-0 space-y-6 mt-8 lg:mt-0">
-            <div className="bg-bg-card rounded-xl border border-border p-5">
+            <Card className="bg-bg-card p-5">
               <h3 className="font-semibold text-sm mb-3">📬 订阅本地周报</h3>
               <p className="text-xs text-text-secondary mb-3">每周精选本地新闻、指南、活动</p>
               <NewsletterForm source="news_sidebar" />
-            </div>
+            </Card>
           </aside>
         </div>
-      </div>
+      </PageContainer>
     </main>
   );
 }

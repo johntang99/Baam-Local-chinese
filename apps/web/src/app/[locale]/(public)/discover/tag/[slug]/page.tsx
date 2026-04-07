@@ -1,9 +1,13 @@
 import { createClient } from '@/lib/supabase/server';
+import { getCurrentSite } from '@/lib/sites';
 import { notFound } from 'next/navigation';
 import { Link } from '@/lib/i18n/routing';
 import { DiscoverCard } from '@/components/discover/discover-card';
 import { MasonryGrid } from '@/components/discover/masonry-grid';
 import { Pagination } from '@/components/shared/pagination';
+import { PageContainer } from '@/components/layout/page-shell';
+import { buttonVariants } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import type { Metadata } from 'next';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -44,6 +48,7 @@ export default async function TopicPage({ params, searchParams }: Props) {
   const currentPage = Math.max(1, parseInt(sp.page || '1', 10));
 
   const supabase = await createClient();
+  const site = await getCurrentSite();
 
   // Fetch topic
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -73,6 +78,7 @@ export default async function TopicPage({ params, searchParams }: Props) {
   const { data: rawPosts, count } = await supabase
     .from('voice_posts')
     .select('*, profiles!voice_posts_author_id_fkey(id, username, display_name, avatar_url, is_verified)', { count: 'exact' })
+    .eq('site_id', site.id)
     .eq('status', 'published')
     .eq('visibility', 'public')
     .or(
@@ -102,7 +108,7 @@ export default async function TopicPage({ params, searchParams }: Props) {
     <main className="bg-gray-50 min-h-screen">
       {/* Topic Header */}
       <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 py-8">
+        <PageContainer className="py-8">
           <nav className="text-sm text-gray-400 mb-4">
             <Link href="/discover" className="hover:text-primary">发现</Link>
             <span className="mx-2">›</span>
@@ -132,10 +138,10 @@ export default async function TopicPage({ params, searchParams }: Props) {
           {topic.description && (
             <p className="text-sm text-gray-500 mt-4 max-w-2xl">{topic.description}</p>
           )}
-        </div>
+        </PageContainer>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <PageContainer className="py-6">
         {/* Related Topics */}
         {relatedTopics.length > 0 && (
           <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide mb-2">
@@ -143,7 +149,7 @@ export default async function TopicPage({ params, searchParams }: Props) {
               <Link
                 key={t.id}
                 href={`/discover/tag/${t.slug}`}
-                className="inline-flex items-center gap-1 px-3.5 py-1.5 bg-gray-100 text-gray-600 rounded-full text-[13px] whitespace-nowrap hover:bg-orange-50 hover:text-orange-600 transition"
+                className={cn(buttonVariants({ size: 'sm', variant: 'secondary' }), 'inline-flex items-center gap-1 rounded-full text-[13px] whitespace-nowrap hover:bg-orange-50 hover:text-orange-600')}
               >
                 {t.icon_emoji && <span>{t.icon_emoji}</span>}
                 {t.name_zh}
@@ -158,7 +164,7 @@ export default async function TopicPage({ params, searchParams }: Props) {
             <p className="text-4xl mb-4">{topic.icon_emoji || '📝'}</p>
             <p className="text-gray-500">暂无关于 #{topic.name_zh} 的内容</p>
             <p className="text-sm text-gray-400 mt-1">成为第一个发布的人吧！</p>
-            <Link href="/discover/new-post" className="inline-block mt-4 px-5 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary-dark transition-colors">
+            <Link href="/discover/new-post" className={cn(buttonVariants({ size: 'sm' }), 'inline-block mt-4 px-5')}>
               发布笔记
             </Link>
           </div>
@@ -178,7 +184,7 @@ export default async function TopicPage({ params, searchParams }: Props) {
             />
           </>
         )}
-      </div>
+      </PageContainer>
     </main>
   );
 }

@@ -52,10 +52,10 @@ export default async function AdminLeadsPage({ searchParams }: Props) {
     { count: contactedCount },
     { count: convertedCount },
   ] = await Promise.all([
-    supabase.from('leads').select('*', { count: 'exact', head: true }).in('region_id', ctx.regionIds),
-    supabase.from('leads').select('*', { count: 'exact', head: true }).in('region_id', ctx.regionIds).eq('status', 'new'),
-    supabase.from('leads').select('*', { count: 'exact', head: true }).in('region_id', ctx.regionIds).eq('status', 'contacted'),
-    supabase.from('leads').select('*', { count: 'exact', head: true }).in('region_id', ctx.regionIds).eq('status', 'converted'),
+    supabase.from('leads').select('*', { count: 'exact', head: true }).eq('site_id', ctx.siteId).in('region_id', ctx.regionIds),
+    supabase.from('leads').select('*', { count: 'exact', head: true }).eq('site_id', ctx.siteId).in('region_id', ctx.regionIds).eq('status', 'new'),
+    supabase.from('leads').select('*', { count: 'exact', head: true }).eq('site_id', ctx.siteId).in('region_id', ctx.regionIds).eq('status', 'contacted'),
+    supabase.from('leads').select('*', { count: 'exact', head: true }).eq('site_id', ctx.siteId).in('region_id', ctx.regionIds).eq('status', 'converted'),
   ]);
 
   const stats = [
@@ -69,6 +69,7 @@ export default async function AdminLeadsPage({ searchParams }: Props) {
   let query = supabase
     .from('leads')
     .select('*, businesses(name_zh)', { count: 'exact' })
+    .eq('site_id', ctx.siteId)
     .in('region_id', ctx.regionIds)
     .order('created_at', { ascending: false });
 

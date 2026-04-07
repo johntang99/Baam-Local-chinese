@@ -7,6 +7,9 @@ import { ImageUploader } from '@/components/discover/image-uploader';
 import { VideoUploader } from '@/components/discover/video-uploader';
 import { BusinessSearchInput } from '@/components/discover/business-search-input';
 import { TagInput } from '@/components/discover/tag-input';
+import { buttonVariants } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyRow = Record<string, any>;
@@ -45,11 +48,11 @@ export function VoicePostForm({ isLoggedIn, prelinkedBusiness }: CreatePostFormP
 
   if (!isLoggedIn) {
     return (
-      <div className="card p-8 text-center">
+      <Card className="p-8 text-center">
         <p className="text-4xl mb-4">🔒</p>
         <p className="text-gray-500 mb-2">请先登录后再发布内容</p>
         <p className="text-sm text-gray-400">点击右上角「登录/注册」按钮</p>
-      </div>
+      </Card>
     );
   }
 
@@ -255,7 +258,7 @@ export function VoicePostForm({ isLoggedIn, prelinkedBusiness }: CreatePostFormP
       <div className="flex items-center gap-3 pb-8">
         <button
           type="button"
-          className="flex-1 py-3 text-sm font-medium text-gray-500 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition"
+          className={cn(buttonVariants({ variant: 'outline' }), 'flex-1 py-3 text-sm font-medium rounded-xl')}
         >
           存为草稿
         </button>
@@ -263,7 +266,7 @@ export function VoicePostForm({ isLoggedIn, prelinkedBusiness }: CreatePostFormP
           type="button"
           onClick={handleSubmit}
           disabled={loading}
-          className="flex-1 py-3 text-sm font-semibold text-white bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl hover:from-orange-600 hover:to-orange-700 transition shadow-md disabled:opacity-50"
+          className={cn(buttonVariants(), 'flex-1 py-3 text-sm font-semibold rounded-xl disabled:opacity-50')}
         >
           {loading ? (
             '发布中...'

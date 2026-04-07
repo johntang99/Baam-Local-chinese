@@ -31,24 +31,25 @@ const planBadgeMap: Record<string, { cls: string; label: string }> = {
 
 interface BusinessesTableProps {
   businesses: AnyRow[];
+  siteId: string;
   siteParams?: string;
 }
 
-export default function BusinessesTable({ businesses, siteParams = '' }: BusinessesTableProps) {
+export default function BusinessesTable({ businesses, siteId, siteParams = '' }: BusinessesTableProps) {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
   const handleDelete = (id: string) => {
     if (!confirm('确定要删除这个商家吗？')) return;
     startTransition(async () => {
-      await deleteBusiness(id);
+      await deleteBusiness(id, siteId);
       router.refresh();
     });
   };
 
   const handleToggleFeatured = (id: string, current: boolean) => {
     startTransition(async () => {
-      await toggleFeatured(id, !current);
+      await toggleFeatured(id, !current, siteId);
       router.refresh();
     });
   };
@@ -131,15 +132,16 @@ export default function BusinessesTable({ businesses, siteParams = '' }: Busines
 
 interface ClaimsTableProps {
   claims: AnyRow[];
+  siteId: string;
 }
 
-export function ClaimsTable({ claims }: ClaimsTableProps) {
+export function ClaimsTable({ claims, siteId }: ClaimsTableProps) {
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
   const handleApprove = (claimId: string) => {
     startTransition(async () => {
-      await approveClaim(claimId);
+      await approveClaim(claimId, siteId);
       router.refresh();
     });
   };
@@ -147,7 +149,7 @@ export function ClaimsTable({ claims }: ClaimsTableProps) {
   const handleReject = (claimId: string) => {
     if (!confirm('确定要拒绝这个认领申请吗？')) return;
     startTransition(async () => {
-      await rejectClaim(claimId);
+      await rejectClaim(claimId, siteId);
       router.refresh();
     });
   };

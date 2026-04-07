@@ -6,6 +6,14 @@ const withNextIntl = createNextIntlPlugin('./src/lib/i18n/request.ts');
 
 const nextConfig: NextConfig = {
   outputFileTracingRoot: path.join(__dirname, '../../'),
+  transpilePackages: ['@baam/helper-core'],
+  webpack: (config, { dev }) => {
+    if (dev) {
+      // Stability-first in dev: avoids intermittent corrupted vendor/client-manifest chunks.
+      config.cache = false;
+    }
+    return config;
+  },
   images: {
     remotePatterns: [
       {

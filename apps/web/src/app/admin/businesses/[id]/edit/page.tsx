@@ -45,6 +45,7 @@ export default async function EditBusinessPage({ params, searchParams }: Props) 
     .from('businesses')
     .select('*')
     .eq('id', id)
+    .eq('site_id', ctx.siteId)
     .single();
 
   if (!business) {
@@ -64,6 +65,7 @@ export default async function EditBusinessPage({ params, searchParams }: Props) 
     .from('categories')
     .select('id, name_zh, name_en, slug, type, parent_id')
     .eq('type', 'business')
+    .eq('site_scope', 'zh')
     .order('sort_order', { ascending: true });
   const categories = (rawCategories || []) as AnyRow[];
   const categoryTree = buildCategoryTree(categories);
@@ -110,6 +112,7 @@ export default async function EditBusinessPage({ params, searchParams }: Props) 
       selectedCategoryIds={selectedCategoryIds}
       existingImages={existingImages}
       isNew={false}
+      siteId={ctx.siteId}
       siteParams={siteParamsObj.toString()}
     />
   );

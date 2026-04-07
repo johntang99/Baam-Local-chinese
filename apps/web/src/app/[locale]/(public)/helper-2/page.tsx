@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import { Helper2Chat } from './chat';
+import { PageContainer } from '@/components/layout/page-shell';
+import { Card } from '@/components/ui/card';
 
 export const metadata: Metadata = {
   title: '小帮手-2 · Baam',
@@ -16,8 +18,8 @@ export default async function Helper2Page({ searchParams }: Props) {
 
   return (
     <main>
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="text-center mb-8">
+      <PageContainer className="max-w-4xl py-8">
+        <Card className="text-center mb-8 p-6 sm:p-8 bg-gradient-to-br from-primary/5 to-blue-50 border-primary/20">
           <div className="w-16 h-16 bg-gradient-to-br from-primary to-blue-500 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4">
             🧭
           </div>
@@ -26,10 +28,10 @@ export default async function Helper2Page({ searchParams }: Props) {
             一个新的中文聊天式本地智能助手。它会先利用 Baam 的新闻、生活资讯、发现、商家、论坛和活动内容，
             再在需要时补充网页信息，而不是只做站内搜索。
           </p>
-        </div>
+        </Card>
 
         <Helper2Chat initialQuery={initialQuery} />
-      </div>
+      </PageContainer>
     </main>
   );
 }

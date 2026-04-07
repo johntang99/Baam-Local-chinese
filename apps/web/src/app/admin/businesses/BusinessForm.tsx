@@ -41,6 +41,7 @@ interface BusinessFormProps {
   selectedCategoryIds?: string[];
   existingImages?: string[];
   isNew: boolean;
+  siteId: string;
   siteParams?: string;
 }
 
@@ -77,6 +78,7 @@ export default function BusinessForm({
   selectedCategoryIds: initialSelectedCategoryIds = [],
   existingImages = [],
   isNew,
+  siteId,
   siteParams = '',
 }: BusinessFormProps) {
   const siteQuery = siteParams ? `?${siteParams}` : '';
@@ -153,6 +155,7 @@ export default function BusinessForm({
     fd.set('verification_status', verificationStatus);
     fd.set('current_plan', currentPlan);
     fd.set('is_featured', isFeatured ? 'true' : 'false');
+    fd.set('site_id', siteId);
     // Send category ids as JSON array — use child if selected, otherwise parent
     const categoryId = selectedChildId || selectedParentId;
     fd.set('category_ids', JSON.stringify(categoryId ? [categoryId] : []));
@@ -171,7 +174,7 @@ export default function BusinessForm({
           router.push(`/admin/businesses/${result.id}/edit${siteQuery}`);
         }
       } else {
-        const result = await updateBusiness(business!.id, fd);
+        const result = await updateBusiness(business!.id, siteId, fd);
         if (result.error) {
           setError(result.error);
         } else {

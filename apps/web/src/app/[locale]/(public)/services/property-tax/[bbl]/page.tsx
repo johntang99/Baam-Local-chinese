@@ -1,5 +1,7 @@
 import { Link } from '@/lib/i18n/routing';
 import { notFound } from 'next/navigation';
+import { PageContainer } from '@/components/layout/page-shell';
+import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import type { Metadata } from 'next';
 
@@ -74,7 +76,8 @@ export default async function PropertyDetailPage({ params }: Props) {
   const location = isNYS ? `${p.municipality}, ${p.county} County, NY` : `${p.boro}, NY ${p.zipCode || ''}`;
 
   return (
-    <main className="max-w-4xl mx-auto px-4 py-8">
+    <main>
+      <PageContainer className="max-w-4xl py-8">
       {/* Breadcrumb */}
       <nav className="text-sm text-gray-400 mb-6">
         <Link href="/" className="hover:text-primary">首页</Link>
@@ -87,7 +90,7 @@ export default async function PropertyDetailPage({ params }: Props) {
       </nav>
 
       {/* Property Header */}
-      <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-6">
+      <Card className="rounded-2xl p-6 mb-6">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1">{p.address}</h1>
@@ -116,12 +119,12 @@ export default async function PropertyDetailPage({ params }: Props) {
           {p.frontage && <span>📏 正面 {p.frontage}ft</span>}
           {p.depth && <span>📏 深度 {p.depth}ft</span>}
         </div>
-      </div>
+      </Card>
 
       {/* Assessment & Tax Cards */}
       <div className="grid md:grid-cols-2 gap-4 mb-6">
         {/* Assessment */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-5">
+        <Card className="rounded-2xl p-5">
           <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
             <span className="text-base">📊</span> 评估值
           </h3>
@@ -159,10 +162,10 @@ export default async function PropertyDetailPage({ params }: Props) {
               )}
             </div>
           </div>
-        </div>
+        </Card>
 
         {/* Tax */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-5">
+        <Card className="rounded-2xl p-5">
           <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
             <span className="text-base">💰</span> {isNYS && p.estimatedTotalTax > 0 ? '年度税额' : isNYS ? '应税价值' : '税额'}
           </h3>
@@ -238,11 +241,11 @@ export default async function PropertyDetailPage({ params }: Props) {
               )}
             </div>
           </div>
-        </div>
+        </Card>
       </div>
 
       {/* Exemptions */}
-      <div className="bg-white border border-gray-200 rounded-2xl p-5 mb-6">
+      <Card className="rounded-2xl p-5 mb-6">
         <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
           <span className="text-base">🛡️</span> 税务减免状态
         </h3>
@@ -277,11 +280,11 @@ export default async function PropertyDetailPage({ params }: Props) {
             ))}
           </div>
         )}
-      </div>
+      </Card>
 
       {/* Assessment History */}
       {history.length > 0 && (
-        <div className="bg-white border border-gray-200 rounded-2xl p-5 mb-6">
+        <Card className="rounded-2xl p-5 mb-6">
           <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
             <span className="text-base">📈</span> 评估值历史
           </h3>
@@ -305,12 +308,12 @@ export default async function PropertyDetailPage({ params }: Props) {
               </tbody>
             </table>
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Sale History */}
       {sales.length > 0 && (
-        <div className="bg-white border border-gray-200 rounded-2xl p-5 mb-6">
+        <Card className="rounded-2xl p-5 mb-6">
           <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
             <span className="text-base">🔄</span> 交易历史
           </h3>
@@ -334,21 +337,21 @@ export default async function PropertyDetailPage({ params }: Props) {
               </tbody>
             </table>
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Lead Gen CTAs */}
       <div className="grid sm:grid-cols-2 gap-4 mb-6">
-        <div className="bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-200 rounded-2xl p-5">
+        <Card className="bg-gradient-to-br from-orange-50 to-amber-50 border-orange-200 rounded-2xl p-5">
           <h3 className="text-sm font-bold text-gray-900 mb-1">评估值太高？</h3>
           <p className="text-xs text-gray-600 mb-3">房主每年平均可节省<strong>$2,400</strong> — 免费咨询房产税律师</p>
           <Link href="/businesses" className="inline-flex text-xs font-semibold text-primary hover:underline">免费咨询 →</Link>
-        </div>
-        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-5">
+        </Card>
+        <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200 rounded-2xl p-5">
           <h3 className="text-sm font-bold text-gray-900 mb-1">想在这个区买房？</h3>
           <p className="text-xs text-gray-600 mb-3">了解税务成本 — 联系Baam认证地产经纪</p>
           <Link href="/businesses" className="inline-flex text-xs font-semibold text-primary hover:underline">联系经纪 →</Link>
-        </div>
+        </Card>
       </div>
 
       {/* Disclaimer */}
@@ -381,6 +384,7 @@ export default async function PropertyDetailPage({ params }: Props) {
           </>
         )}
       </div>
+      </PageContainer>
     </main>
   );
 }

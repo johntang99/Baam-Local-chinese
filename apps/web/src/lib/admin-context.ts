@@ -16,6 +16,21 @@ import { cookies } from 'next/headers';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyRow = Record<string, any>;
 
+function parseAdminSiteCookie(raw: string | undefined): { siteSlug?: string; locale?: string } | null {
+  if (!raw) return null;
+  const candidates = [raw];
+  try {
+    candidates.push(decodeURIComponent(raw));
+  } catch {}
+  for (const value of candidates) {
+    try {
+      const parsed = JSON.parse(value);
+      if (parsed && typeof parsed === 'object') return parsed;
+    } catch {}
+  }
+  return null;
+}
+
 export interface AdminSiteContext {
   siteId: string;
   siteSlug: string;
@@ -43,10 +58,8 @@ export async function getAdminSiteContext(
     try {
       const cookieStore = await cookies();
       const cookieVal = cookieStore.get('baam-admin-site')?.value;
-      if (cookieVal) {
-        const parsed = JSON.parse(cookieVal);
-        if (parsed.siteSlug) siteSlug = parsed.siteSlug;
-      }
+      const parsed = parseAdminSiteCookie(cookieVal);
+      if (parsed?.siteSlug) siteSlug = parsed.siteSlug;
     } catch {}
   }
 
@@ -84,10 +97,8 @@ export async function getAdminSiteContext(
     try {
       const cookieStore = await cookies();
       const cookieVal = cookieStore.get('baam-admin-site')?.value;
-      if (cookieVal) {
-        const parsed = JSON.parse(cookieVal);
-        if (parsed.locale) locale = parsed.locale;
-      }
+      const parsed = parseAdminSiteCookie(cookieVal);
+      if (parsed?.locale) locale = parsed.locale;
     } catch {}
   }
 

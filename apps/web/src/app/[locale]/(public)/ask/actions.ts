@@ -1,6 +1,8 @@
 'use server';
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { getCurrentSite } from '@/lib/sites';
+import { pickBusinessDisplayName } from '@/lib/business-name';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyRow = Record<string, any>;
@@ -194,6 +196,7 @@ Reply with exactly one word: FOLLOWUP or SEARCH or NEW`,
 
   // ─── Full RAG search (new topic) ──────────────────────────────
   const supabase = createAdminClient();
+  const site = await getCurrentSite();
   const keywords = await extractKeywordsWithAI(query);
 
   // Common/generic Chinese words that match too broadly for business search
@@ -236,7 +239,7 @@ Reply with exactly one word: FOLLOWUP or SEARCH or NEW`,
     const results: AnyRow[] = [];
     const seenIds = new Set<string>();
     const categoryBizIds = new Set<string>(); // Track businesses from directly matched categories
-    const bizFields = 'id, slug, display_name, display_name_zh, short_desc_zh, ai_tags, avg_rating, review_count, phone, is_featured, address_full, website_url';
+    const bizFields = 'id, slug, display_name, display_name_zh, short_desc_zh, ai_tags, avg_rating, review_count, phone, is_featured, address_full, website_url, total_score';
 
     const addResults = (data: AnyRow[] | null) => {
       for (const b of (data || [])) {
@@ -249,7 +252,8 @@ Reply with exactly one word: FOLLOWUP or SEARCH or NEW`,
     const { data: allBizCats } = await (supabase as any)
       .from('categories')
       .select('id, name_zh, slug, parent_id, search_terms')
-      .eq('type', 'business');
+      .eq('type', 'business')
+      .eq('site_scope', 'zh');
 
     // Match categories, tracking HOW they matched:
     // - 'name': keyword matches category name (e.g. "火锅" → "火锅烧烤") — core match
@@ -305,7 +309,8 @@ Reply with exactly one word: FOLLOWUP or SEARCH or NEW`,
       const { data: allBizCatLinks } = await (supabase as any)
         .from('business_categories')
         .select('business_id, category_id')
-        .in('category_id', [...catIdsByMatch.keys()]);
+        .in('category_id', [...catIdsByMatch.keys()])
+        .limit(10000);
 
       const bizPerCat = new Map<string, string[]>();
       for (const link of (allBizCatLinks || []) as AnyRow[]) {
@@ -329,9 +334,8 @@ Reply with exactly one word: FOLLOWUP or SEARCH or NEW`,
       if (includedBizIds.size > 0) {
         const { data } = await (supabase as any)
           .from('businesses').select(bizFields)
-          .eq('is_active', true).in('id', [...includedBizIds].slice(0, 100))
-          .order('is_featured', { ascending: false })
-          .order('avg_rating', { ascending: false }).limit(30);
+          .eq('is_active', true).eq('site_id', site.id).in('id', [...includedBizIds].slice(0, 100))
+          .order('total_score', { ascending: false, nullsFirst: false }).limit(30);
         addResults(data);
       }
     }
@@ -342,8 +346,9 @@ Reply with exactly one word: FOLLOWUP or SEARCH or NEW`,
       const { data } = await (supabase as any)
         .from('businesses').select(bizFields)
         .eq('is_active', true)
+        .eq('site_id', site.id)
         .contains('ai_tags', [kw])
-        .order('avg_rating', { ascending: false }).limit(10);
+        .order('total_score', { ascending: false, nullsFirst: false }).limit(10);
       addResults(data);
     }
 
@@ -353,34 +358,37 @@ Reply with exactly one word: FOLLOWUP or SEARCH or NEW`,
       const { data } = await (supabase as any)
         .from('businesses').select(bizFields)
         .eq('is_active', true)
+        .eq('site_id', site.id)
         .or(buildBusinessOr(['display_name', 'display_name_zh', 'short_desc_zh', 'ai_summary_zh']))
-        .order('avg_rating', { ascending: false }).limit(10);
+        .order('total_score', { ascending: false, nullsFirst: false }).limit(10);
       addResults(data);
     }
 
-    // Sort priority:
-    // 1. Businesses with keyword in name/description (explicit text match — most relevant)
-    // 2. Businesses from directly matched category (e.g. all noodle shops for "饺子")
-    // 3. Other businesses (from ai_tags or text fallback)
-    // Within each tier: featured first, then by rating
+    // Sort by total_score primarily, with tier as secondary signal
+    // For broad queries like "推荐餐厅", total_score should dominate
+    // Tier (text match > category > other) only matters for narrow/specific queries
+    const genericWords = new Set(['餐厅', '饭店', '美食', '餐馆', '好吃', '推荐', '最好', '哪家', '附近', '商家', '店', '服务']);
+    const hasSpecificKeywords = keywords.some((kw: string) =>
+      kw.length >= 2 && !genericWords.has(kw)
+    );
+
     results.sort((a, b) => {
-      const aText = [a.display_name_zh, a.display_name, a.short_desc_zh].filter(Boolean).join(' ');
-      const bText = [b.display_name_zh, b.display_name, b.short_desc_zh].filter(Boolean).join(' ');
-      const aHasKeyword = keywords.some((kw: string) => aText.includes(kw));
-      const bHasKeyword = keywords.some((kw: string) => bText.includes(kw));
-      const aInCategory = categoryBizIds.has(a.id);
-      const bInCategory = categoryBizIds.has(b.id);
+      if (hasSpecificKeywords) {
+        // Narrow query (e.g., "火锅", "牙医"): tier first, then total_score
+        const aText = [a.display_name_zh, a.display_name, a.short_desc_zh].filter(Boolean).join(' ');
+        const bText = [b.display_name_zh, b.display_name, b.short_desc_zh].filter(Boolean).join(' ');
+        const aHasKeyword = keywords.some((kw: string) => aText.includes(kw));
+        const bHasKeyword = keywords.some((kw: string) => bText.includes(kw));
+        const aInCategory = categoryBizIds.has(a.id);
+        const bInCategory = categoryBizIds.has(b.id);
+        const aTier = aHasKeyword ? 0 : aInCategory ? 1 : 2;
+        const bTier = bHasKeyword ? 0 : bInCategory ? 1 : 2;
+        if (aTier !== bTier) return aTier - bTier;
+      }
 
-      // Tier: 0 = text match, 1 = category match, 2 = other
-      const aTier = aHasKeyword ? 0 : aInCategory ? 1 : 2;
-      const bTier = bHasKeyword ? 0 : bInCategory ? 1 : 2;
-      if (aTier !== bTier) return aTier - bTier;
-
-      // Within same tier: featured first, then by rating
       if (a.is_featured && !b.is_featured) return -1;
       if (!a.is_featured && b.is_featured) return 1;
-      // Then by rating
-      return (b.avg_rating || 0) - (a.avg_rating || 0);
+      return (b.total_score || 0) - (a.total_score || 0);
     });
     return results.slice(0, 30);
   }
@@ -392,6 +400,7 @@ Reply with exactly one word: FOLLOWUP or SEARCH or NEW`,
     (supabase as any)
       .from('articles')
       .select('slug, title_zh, ai_summary_zh, content_vertical, published_at')
+      .eq('site_id', site.id)
       .eq('editorial_status', 'published')
       .in('content_vertical', ['news_alert', 'news_brief', 'news_explainer', 'news_roundup', 'news_community'])
       .or(buildOr(['title_zh', 'ai_summary_zh']))
@@ -402,6 +411,7 @@ Reply with exactly one word: FOLLOWUP or SEARCH or NEW`,
     (supabase as any)
       .from('articles')
       .select('slug, title_zh, ai_summary_zh, content_vertical')
+      .eq('site_id', site.id)
       .eq('editorial_status', 'published')
       .in('content_vertical', ['guide_howto', 'guide_checklist', 'guide_bestof', 'guide_comparison', 'guide_neighborhood', 'guide_seasonal', 'guide_resource', 'guide_scenario'])
       .or(buildOr(['title_zh', 'ai_summary_zh', 'body_zh']))
@@ -411,6 +421,7 @@ Reply with exactly one word: FOLLOWUP or SEARCH or NEW`,
     (supabase as any)
       .from('forum_threads')
       .select('slug, title, ai_summary_zh, reply_count, board_id, categories:board_id(slug)')
+      .eq('site_id', site.id)
       .eq('status', 'published')
       .or(buildOr(['title', 'body', 'ai_summary_zh']))
       .order('reply_count', { ascending: false })
@@ -420,6 +431,7 @@ Reply with exactly one word: FOLLOWUP or SEARCH or NEW`,
     (supabase as any)
       .from('voice_posts')
       .select('id, slug, title, excerpt, content, cover_images, cover_image_url, topic_tags, location_text, like_count, author_id, profiles:author_id(display_name)')
+      .eq('site_id', site.id)
       .eq('status', 'published')
       .or(buildOr(['title', 'content']))
       .order('like_count', { ascending: false })
@@ -429,6 +441,7 @@ Reply with exactly one word: FOLLOWUP or SEARCH or NEW`,
     (supabase as any)
       .from('events')
       .select('slug, title_zh, title_en, summary_zh, venue_name, start_at, is_free')
+      .eq('site_id', site.id)
       .eq('status', 'published')
       .or(buildOr(['title_zh', 'title_en', 'summary_zh', 'venue_name']))
       .order('start_at', { ascending: true })
@@ -468,7 +481,8 @@ Reply with exactly one word: FOLLOWUP or SEARCH or NEW`,
   if (businesses.length > 0) {
     const tags = (b: AnyRow) => (b.ai_tags || []).filter((t: string) => t !== 'GBP已认领').slice(0, 4).join('、');
     contextParts.push(`【商家信息】共找到${businesses.length}家相关商家：\n` + businesses.map((b, i) => {
-      let line = `${i + 1}. ${b.display_name_zh || b.display_name}${b.avg_rating ? ` — 评分${b.avg_rating}分(${b.review_count || 0}条评价)` : ''} ${b.phone ? `电话${b.phone}` : ''} ${b.address_full ? `地址：${b.address_full}` : ''} ${tags(b) ? `特色：${tags(b)}` : ''} ${b.short_desc_zh ? `简介：${b.short_desc_zh.slice(0, 60)}` : ''}`;
+      const displayName = pickBusinessDisplayName(b, '商家');
+      let line = `${i + 1}. ${displayName}${b.avg_rating ? ` — 评分${b.avg_rating}分(${b.review_count || 0}条评价)` : ''} ${b.phone ? `电话${b.phone}` : ''} ${b.address_full ? `地址：${b.address_full}` : ''} ${tags(b) ? `特色：${tags(b)}` : ''} ${b.short_desc_zh ? `简介：${b.short_desc_zh.slice(0, 60)}` : ''}`;
       // Add review snippets if available
       const reviews = reviewsByBiz[b.id];
       if (reviews && reviews.length > 0) {
@@ -534,14 +548,14 @@ Reply with exactly one word: FOLLOWUP or SEARCH or NEW`,
 
 【回答格式】
 - 用简体中文回答
-- 简洁明了，重点突出
-- 如果有推荐商家，给出名字和联系方式（电话、地址）
-- 如果有相关指南，提到可以查看
+- 多用emoji图标（📍地址、📞电话、⭐评分、🌐网站、🏷️特色等）
+- 商家推荐用**markdown表格**展示（列：餐厅名称、评分、电话、地址、特色），确保表格完整
+- 实用建议用**带emoji的项目符号**列出（💡、🅿️、🕐、📌、🎉等）
+- 用带emoji的小标题分段（如"🍜 推荐餐厅"、"💡 实用建议"、"📰 相关资讯"）
 - 语气像朋友聊天，不要太正式
-- 当搜索结果中有相关商家时，尽量在回答中推荐和列出它们，包括评分、电话和地址
+- 当搜索结果中有相关商家时，尽量在回答中推荐和列出它们
 - 当用户问"有多少"或"列出来"时，必须列出搜索结果中的所有商家，不要省略
-- 用markdown表格展示列表数据（商家排名等），确保表格完整
-- 如果搜索到的商家与问题高度相关（如问驾照推荐驾校、问律师推荐律师），主动在回答中推荐前3-5家评分最高的商家
+- 如果搜索到的商家与问题高度相关（如问驾照推荐驾校、问律师推荐律师），主动推荐前3-5家评分最高的商家
 - 回答要完整：既回答用户的问题，也推荐相关的本地资源和商家`;
 
     const userPrompt = totalResults > 0
@@ -571,7 +585,7 @@ Reply with exactly one word: FOLLOWUP or SEARCH or NEW`,
 
     businesses.forEach(b => sources.push({
       type: '商家',
-      title: b.display_name_zh || b.display_name,
+      title: pickBusinessDisplayName(b, '商家'),
       url: `/businesses/${b.slug}`,
       snippet: b.short_desc_zh,
     }));

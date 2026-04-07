@@ -1,7 +1,13 @@
 import { createClient } from '@/lib/supabase/server';
 import { getTranslations } from 'next-intl/server';
 import { Link } from '@/lib/i18n/routing';
+import { PageContainer } from '@/components/layout/page-shell';
+import { Badge } from '@/components/ui/badge';
+import { buttonVariants } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 import type { Metadata } from 'next';
+import { getCurrentSite } from '@/lib/sites';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyRow = Record<string, any>;
@@ -14,24 +20,39 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default async function ForumHomePage() {
+interface Props {
+  params: Promise<{ locale: string }>;
+}
+
+export default async function ForumHomePage({ params }: Props) {
+  const { locale } = await params;
   const supabase = await createClient();
+  const site = await getCurrentSite();
   const t = await getTranslations();
+  const siteScope = String(locale || '').toLowerCase().startsWith('en') ? 'en' : 'zh';
 
-  // Fetch forum boards (categories where type='forum')
-  const { data: rawBoards } = await supabase
-    .from('categories')
+  // Fetch forum boards
+  const { data: rawScopedBoards } = await supabase
+    .from('categories_forum')
     .select('*')
-    .eq('type', 'forum')
+    .eq('site_scope', siteScope)
     .order('sort_order', { ascending: true });
-
-  const boards = (rawBoards || []) as AnyRow[];
+  let boards = (rawScopedBoards || []) as AnyRow[];
+  if (boards.length === 0 && siteScope === 'en') {
+    const { data: rawZhBoards } = await supabase
+      .from('categories_forum')
+      .select('*')
+      .eq('site_scope', 'zh')
+      .order('sort_order', { ascending: true });
+    boards = (rawZhBoards || []) as AnyRow[];
+  }
 
   // Fetch hot threads: weighted by replies and views
   const { data: rawHotThreads } = await supabase
     .from('forum_threads')
     .select('*')
     .eq('status', 'published')
+    .eq('site_id', site.id)
     .order('reply_count', { ascending: false })
     .limit(10);
 
@@ -39,7 +60,7 @@ export default async function ForumHomePage() {
 
   return (
     <main>
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <PageContainer className="py-6">
         {/* Page Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -66,20 +87,22 @@ export default async function ForumHomePage() {
                 <Link
                   key={board.id}
                   href={`/forum/${board.slug}`}
-                  className="card p-5 block cursor-pointer hover:shadow-md transition-shadow"
+                  className="block cursor-pointer"
                 >
-                  <div className="flex items-start gap-3">
-                    <span className="text-3xl">{board.emoji || '📋'}</span>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-base mb-1">{board.name_zh || board.name}</h3>
-                      {board.description && (
-                        <p className="text-xs text-text-secondary line-clamp-2">{board.description}</p>
-                      )}
-                      <div className="flex items-center gap-2 mt-2">
-                        <span className="text-xs text-text-muted">今日帖子 --</span>
+                  <Card className="p-5 h-full hover:shadow-md transition-shadow">
+                    <div className="flex items-start gap-3">
+                      <span className="text-3xl">{board.emoji || board.icon || '📋'}</span>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-base mb-1">{board.name_zh || board.name || board.name_en}</h3>
+                        {board.description && (
+                          <p className="text-xs text-text-secondary line-clamp-2">{board.description}</p>
+                        )}
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className="text-xs text-text-muted">今日帖子 --</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  </Card>
                 </Link>
               ))}
             </div>
@@ -103,38 +126,40 @@ export default async function ForumHomePage() {
                   <Link
                     key={thread.id}
                     href={`/forum/${thread.board_slug || 'general'}/${thread.slug}`}
-                    className="card p-4 block cursor-pointer"
+                    className="block cursor-pointer"
                   >
-                    <div className="flex items-center gap-2 mb-2">
-                      {thread.board_name && (
-                        <span className="badge badge-blue text-xs">{thread.board_name}</span>
-                      )}
-                      <span className="text-xs text-text-muted">{timeAgo}</span>
-                    </div>
-                    <h3 className="font-semibold text-sm mb-1 line-clamp-1">
-                      {thread.title_zh || thread.title}
-                    </h3>
-                    {thread.ai_summary_zh && (
-                      <div className="ai-summary-card mt-2 mb-2">
-                        <p className="text-xs text-text-secondary line-clamp-2">{thread.ai_summary_zh}</p>
+                    <Card className="p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        {thread.board_name && (
+                          <Badge className="text-xs bg-blue-100 text-blue-700">{thread.board_name}</Badge>
+                        )}
+                        <span className="text-xs text-text-muted">{timeAgo}</span>
                       </div>
-                    )}
-                    <div className="flex items-center gap-3 text-xs text-text-muted">
-                      <span>💬 {thread.reply_count || 0}</span>
-                      <span>👀 {thread.view_count || 0}</span>
-                    </div>
+                      <h3 className="font-semibold text-sm mb-1 line-clamp-1">
+                        {thread.title_zh || thread.title}
+                      </h3>
+                      {thread.ai_summary_zh && (
+                        <div className="ai-summary-card mt-2 mb-2">
+                          <p className="text-xs text-text-secondary line-clamp-2">{thread.ai_summary_zh}</p>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-3 text-xs text-text-muted">
+                        <span>💬 {thread.reply_count || 0}</span>
+                        <span>👀 {thread.view_count || 0}</span>
+                      </div>
+                    </Card>
                   </Link>
                 );
               })}
             </div>
           )}
         </section>
-      </div>
+      </PageContainer>
 
       {/* Floating New Post Button */}
       <Link
         href="/forum/new"
-        className="fab fixed bottom-6 right-6 w-14 h-14 bg-primary text-white rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow text-2xl z-50"
+        className={cn(buttonVariants({ size: 'icon' }), 'fab fixed bottom-6 right-6 w-14 h-14 rounded-full shadow-lg hover:shadow-xl transition-shadow text-2xl z-50')}
         style={{ backgroundColor: 'var(--color-accent-orange, #f97316)' }}
       >
         ✏️

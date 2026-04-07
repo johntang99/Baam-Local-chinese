@@ -137,13 +137,36 @@ export default function ArticleForm({ article, categories, regions, businesses =
   };
 
   const handlePublish = () => {
-    if (isNew) {
-      setEditorialStatus('published');
-      handleSave();
-      return;
-    }
     startTransition(async () => {
-      await publishArticle(article!.id);
+      setError(null);
+      const fd = buildFormData();
+      fd.set('editorial_status', 'published');
+
+      if (isNew) {
+        const created = await createArticle(fd);
+        if (created.error || !created.id) {
+          setError(created.error || '发布失败');
+          return;
+        }
+        const published = await publishArticle(created.id);
+        if (published.error) {
+          setError(published.error);
+          return;
+        }
+        router.push(`/admin/articles/${created.id}/edit${siteQuery}`);
+        return;
+      }
+
+      const updated = await updateArticle(article!.id, fd);
+      if (updated.error) {
+        setError(updated.error);
+        return;
+      }
+      const published = await publishArticle(article!.id);
+      if (published.error) {
+        setError(published.error);
+        return;
+      }
       router.refresh();
     });
   };
@@ -478,7 +501,7 @@ export default function ArticleForm({ article, categories, regions, businesses =
             >
               <option value="">选择分类</option>
               {categories.map((c) => (
-                <option key={c.id} value={c.id}>{c.name_zh || c.name || c.slug}</option>
+                <option key={c.id} value={c.id}>{c.name_zh || c.name_en || c.slug}</option>
               ))}
             </select>
           </div>

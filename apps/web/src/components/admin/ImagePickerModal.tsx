@@ -23,7 +23,7 @@ interface ProviderItem {
   author?: string;
 }
 
-type SourceTab = 'library' | 'unsplash' | 'pexels';
+type SourceTab = 'library' | 'unsplash' | 'pexels' | 'ai';
 
 async function parseApiPayload(response: Response) {
   const text = await response.text();
@@ -46,6 +46,7 @@ export function ImagePickerModal({ open, folder, onClose, onSelect }: ImagePicke
   const [status, setStatus] = useState<string | null>(null);
   const [importingId, setImportingId] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [generating, setGenerating] = useState(false);
 
   const loadLibrary = async () => {
     setLoading(true);
@@ -164,7 +165,42 @@ export function ImagePickerModal({ open, folder, onClose, onSelect }: ImagePicke
   const onProviderSearchSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     if (sourceTab === 'library') return;
+    if (sourceTab === 'ai') {
+      void handleGenerateAiImage();
+      return;
+    }
     loadProvider(sourceTab, 1);
+  };
+
+  const handleGenerateAiImage = async () => {
+    const prompt = query.trim();
+    if (!prompt) {
+      setStatus('请先输入图片描述（例如：纽约法拉盛街景，温暖真实摄影风格）');
+      return;
+    }
+    setGenerating(true);
+    setStatus(null);
+    try {
+      const response = await fetch('/api/media/provider/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          folder,
+          prompt,
+          size: '1536x1024',
+        }),
+      });
+      const payload = await parseApiPayload(response);
+      if (!response.ok) {
+        throw new Error(payload.message || 'AI 生成失败');
+      }
+      onSelect(payload.url);
+      onClose();
+    } catch (error: any) {
+      setStatus(error?.message || 'AI 生成失败');
+    } finally {
+      setGenerating(false);
+    }
   };
 
   const renderProviderGrid = () => (
@@ -231,6 +267,25 @@ export function ImagePickerModal({ open, folder, onClose, onSelect }: ImagePicke
     </div>
   );
 
+  const renderAiPanel = () => (
+    <div className="space-y-3">
+      <div className="text-xs text-gray-500">
+        使用 GPT 生成封面图。建议描述包含：场景、地点、风格、光线、构图。
+      </div>
+      <div className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-600 leading-relaxed">
+        示例：纽约法拉盛社区街道，白天自然光，纪实摄影风格，画面干净，适合作为生活指南文章封面，不含文字或水印。
+      </div>
+      <button
+        type="button"
+        onClick={() => void handleGenerateAiImage()}
+        disabled={generating}
+        className="px-3 py-2 rounded-md border border-gray-200 text-xs text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+      >
+        {generating ? '生成中...' : '生成并使用'}
+      </button>
+    </div>
+  );
+
   if (!open) return null;
 
   return (
@@ -271,7 +326,7 @@ export function ImagePickerModal({ open, folder, onClose, onSelect }: ImagePicke
 
         <div className="px-5 py-3 border-b border-gray-200 space-y-3">
           <div className="flex items-center gap-2">
-            {(['library', 'unsplash', 'pexels'] as SourceTab[]).map((tab) => (
+            {(['library', 'unsplash', 'pexels', 'ai'] as SourceTab[]).map((tab) => (
               <button
                 key={tab}
                 type="button"
@@ -296,7 +351,9 @@ export function ImagePickerModal({ open, folder, onClose, onSelect }: ImagePicke
                   ? '图库'
                   : tab === 'unsplash'
                     ? 'Unsplash'
-                    : 'Pexels'}
+                    : tab === 'pexels'
+                      ? 'Pexels'
+                      : 'AI 生成'}
               </button>
             ))}
           </div>
@@ -307,16 +364,23 @@ export function ImagePickerModal({ open, folder, onClose, onSelect }: ImagePicke
           >
             <input
               className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm"
-              placeholder={sourceTab === 'library' ? '按文件名搜索' : '搜索图片'}
+              placeholder={
+                sourceTab === 'library'
+                  ? '按文件名搜索'
+                  : sourceTab === 'ai'
+                    ? '输入 AI 生成提示词'
+                    : '搜索图片'
+              }
               value={query}
               onChange={(event) => setQuery(event.target.value)}
             />
             {sourceTab !== 'library' && (
               <button
                 type="submit"
+                disabled={generating}
                 className="px-3 py-2 rounded-md border border-gray-200 text-xs text-gray-700 hover:bg-gray-50"
               >
-                搜索
+                {sourceTab === 'ai' ? (generating ? '生成中...' : '生成') : '搜索'}
               </button>
             )}
           </form>
@@ -363,6 +427,8 @@ export function ImagePickerModal({ open, folder, onClose, onSelect }: ImagePicke
                 )}
               </div>
             </div>
+          ) : sourceTab === 'ai' ? (
+            renderAiPanel()
           ) : (
             renderProviderGrid()
           )}

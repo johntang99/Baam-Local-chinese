@@ -27,6 +27,7 @@ export default async function EditEventPage({ params, searchParams }: Props) {
     .from('events')
     .select('*')
     .eq('id', id)
+    .eq('site_id', ctx.siteId)
     .single();
 
   if (!event) {

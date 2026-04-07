@@ -1,7 +1,13 @@
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUser } from '@/lib/auth';
+import { getCurrentSite } from '@/lib/sites';
 import { notFound } from 'next/navigation';
 import { Link } from '@/lib/i18n/routing';
+import { PageContainer } from '@/components/layout/page-shell';
+import { Badge } from '@/components/ui/badge';
+import { buttonVariants } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 import type { Metadata } from 'next';
 
 interface Props {
@@ -29,6 +35,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function UserProfilePage({ params }: Props) {
   const { username } = await params;
   const supabase = await createClient();
+  const site = await getCurrentSite();
   const currentUser = await getCurrentUser().catch(() => null);
 
   // Fetch profile
@@ -49,6 +56,7 @@ export default async function UserProfilePage({ params }: Props) {
     .from('forum_threads')
     .select('id, slug, title, reply_count, created_at')
     .eq('author_id', profile.id)
+    .eq('site_id', site.id)
     .eq('status', 'published')
     .order('created_at', { ascending: false })
     .limit(5);
@@ -58,6 +66,7 @@ export default async function UserProfilePage({ params }: Props) {
     .from('voice_posts')
     .select('id, slug, title, like_count, comment_count, published_at')
     .eq('author_id', profile.id)
+    .eq('site_id', site.id)
     .eq('status', 'published')
     .order('published_at', { ascending: false })
     .limit(5);
@@ -77,9 +86,9 @@ export default async function UserProfilePage({ params }: Props) {
 
   return (
     <main>
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <PageContainer className="max-w-4xl py-8">
         {/* Profile Header */}
-        <div className="card p-6 sm:p-8 mb-6">
+        <Card className="p-6 sm:p-8 mb-6">
           <div className="flex items-start gap-6">
             <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-primary/10 flex items-center justify-center text-3xl sm:text-4xl flex-shrink-0">
               {profile.display_name?.[0] || '?'}
@@ -87,7 +96,7 @@ export default async function UserProfilePage({ params }: Props) {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-3 mb-1">
                 <h1 className="text-2xl font-bold">{profile.display_name}</h1>
-                {profile.is_verified && <span className="badge badge-blue text-xs">已认证</span>}
+                {profile.is_verified && <Badge className="text-xs bg-blue-100 text-blue-700">已认证</Badge>}
               </div>
               <p className="text-sm text-text-muted mb-2">@{profile.username}</p>
               <p className="text-sm text-text-secondary mb-3">
@@ -103,19 +112,19 @@ export default async function UserProfilePage({ params }: Props) {
               </div>
             </div>
             {isOwnProfile && (
-              <Link href="/settings" className="btn btn-outline h-9 px-4 text-sm flex-shrink-0">
+              <Link href="/settings" className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'h-9 px-4 text-sm flex-shrink-0')}>
                 编辑资料
               </Link>
             )}
           </div>
-        </div>
+        </Card>
 
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             {/* Voice Posts */}
             {posts && posts.length > 0 && (
-              <section className="card p-5">
+              <Card className="p-5">
                 <h2 className="font-bold text-base mb-4">发布的内容</h2>
                 <div className="space-y-3">
                   {(posts as AnyRow[]).map((post) => (
@@ -135,12 +144,12 @@ export default async function UserProfilePage({ params }: Props) {
                     </Link>
                   ))}
                 </div>
-              </section>
+              </Card>
             )}
 
             {/* Forum Threads */}
             {threads && threads.length > 0 && (
-              <section className="card p-5">
+              <Card className="p-5">
                 <h2 className="font-bold text-base mb-4">论坛帖子</h2>
                 <div className="space-y-3">
                   {(threads as AnyRow[]).map((thread) => (
@@ -153,32 +162,32 @@ export default async function UserProfilePage({ params }: Props) {
                     </div>
                   ))}
                 </div>
-              </section>
+              </Card>
             )}
 
             {/* Empty State */}
             {(!posts || posts.length === 0) && (!threads || threads.length === 0) && (
-              <div className="card p-8 text-center">
+              <Card className="p-8 text-center">
                 <p className="text-text-muted">还没有发布内容</p>
-              </div>
+              </Card>
             )}
           </div>
 
           {/* Sidebar */}
           <aside className="space-y-6">
             {profile.interest_tags && Array.isArray(profile.interest_tags) && profile.interest_tags.length > 0 && (
-              <div className="card p-5">
+              <Card className="p-5">
                 <h3 className="font-semibold text-sm mb-3">兴趣标签</h3>
                 <div className="flex flex-wrap gap-1.5">
                   {profile.interest_tags.map((tag: string) => (
-                    <span key={tag} className="badge badge-gray text-xs">{tag}</span>
+                    <Badge key={tag} variant="muted" className="text-xs">{tag}</Badge>
                   ))}
                 </div>
-              </div>
+              </Card>
             )}
           </aside>
         </div>
-      </div>
+      </PageContainer>
     </main>
   );
 }

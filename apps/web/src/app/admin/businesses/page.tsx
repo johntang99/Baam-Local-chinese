@@ -59,6 +59,7 @@ export default async function AdminBusinessesPage({ searchParams }: Props) {
     .from('categories')
     .select('id, name_zh, slug, parent_id, icon')
     .eq('type', 'business')
+    .eq('site_scope', 'zh')
     .order('sort_order', { ascending: true });
   const allCats = (rawCats || []) as AnyRow[];
   const parentCats = allCats.filter((c: AnyRow) => !c.parent_id);
@@ -102,38 +103,39 @@ export default async function AdminBusinessesPage({ searchParams }: Props) {
   let claims: AnyRow[] = [];
 
   if (tab === 'claims') {
-    // Fetch pending claims
-    const { data: rawClaims } = await supabase
-      .from('business_claim_requests')
-      .select('*')
-      .eq('status', 'pending')
-      .order('created_at', { ascending: false })
-      .limit(50);
-    claims = (rawClaims || []) as AnyRow[];
+    // Fetch pending claims scoped to this site
+    const { data: siteBizRows } = await supabase
+      .from('businesses')
+      .select('id')
+      .eq('site_id', ctx.siteId);
+    const siteBizIds = (siteBizRows || []).map((r: AnyRow) => r.id);
+
+    if (siteBizIds.length > 0) {
+      const { data: rawClaims } = await supabase
+        .from('business_claim_requests')
+        .select('*')
+        .eq('status', 'pending')
+        .in('business_id', siteBizIds)
+        .order('created_at', { ascending: false })
+        .limit(50);
+      claims = (rawClaims || []) as AnyRow[];
+    } else {
+      claims = [];
+    }
   } else {
-    // Build businesses query
+    // Build businesses query — filter by site_id directly
     let query = supabase
       .from('businesses')
       .select('*', { count: 'exact' })
+      .eq('site_id', ctx.siteId)
       .order('created_at', { ascending: false });
 
-    if (tab === 'featured') {
-      query = query.eq('is_featured', true);
-    }
+    if (tab === 'featured') query = query.eq('is_featured', true);
+    if (statusFilter) query = query.eq('status', statusFilter);
+    if (verificationFilter) query = query.eq('verification_status', verificationFilter);
+    if (planFilter) query = query.eq('current_plan', planFilter);
 
-    if (statusFilter) {
-      query = query.eq('status', statusFilter);
-    }
-
-    if (verificationFilter) {
-      query = query.eq('verification_status', verificationFilter);
-    }
-
-    if (planFilter) {
-      query = query.eq('current_plan', planFilter);
-    }
-
-    // Category filter: get business IDs from business_categories
+    // Category filter
     const filterCatSlug = subFilter || catFilter;
     if (filterCatSlug) {
       const matchedCat = allCats.find((c: AnyRow) => c.slug === filterCatSlug);
@@ -145,7 +147,8 @@ export default async function AdminBusinessesPage({ searchParams }: Props) {
         const { data: bizCatRows } = await supabase
           .from('business_categories')
           .select('business_id')
-          .in('category_id', filterCatIds);
+          .in('category_id', filterCatIds)
+          .limit(10000);
         const bizIds = (bizCatRows || []).map((r: AnyRow) => r.business_id);
         if (bizIds.length > 0) {
           query = query.in('id', bizIds);
@@ -306,14 +309,14 @@ export default async function AdminBusinessesPage({ searchParams }: Props) {
 
         {/* Content based on tab */}
         {tab === 'claims' ? (
-          <ClaimsTable claims={claims} />
+          <ClaimsTable claims={claims} siteId={ctx.siteId} />
         ) : businesses.length === 0 ? (
           <div className="bg-bg-card border border-border rounded-xl p-12 text-center">
             <p className="text-text-muted">暂无商家数据</p>
             <p className="text-sm text-text-muted mt-1">切换筛选条件或创建新商家</p>
           </div>
         ) : (
-          <BusinessesTable businesses={businesses} siteParams={baseParams.toString()} />
+          <BusinessesTable businesses={businesses} siteId={ctx.siteId} siteParams={baseParams.toString()} />
         )}
 
         {/* Pagination (not for claims tab) */}

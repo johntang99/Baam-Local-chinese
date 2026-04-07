@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin';
+import { getDefaultSite } from '@/lib/sites';
 import type { MetadataRoute } from 'next';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -7,6 +8,8 @@ const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://baam.us';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const supabase = createAdminClient();
+  const defaultSite = await getDefaultSite();
+  const defaultSiteId = defaultSite?.id ?? '';
 
   // Fetch all published content slugs
   const [
@@ -15,10 +18,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { data: events },
     { data: threads },
   ] = await Promise.all([
-    supabase.from('articles').select('slug, updated_at').eq('editorial_status', 'published'),
-    supabase.from('businesses').select('slug, updated_at').eq('is_active', true).eq('status', 'active'),
-    supabase.from('events').select('slug, updated_at').eq('status', 'published'),
-    supabase.from('forum_threads').select('slug, updated_at, board_id').eq('status', 'published'),
+    supabase.from('articles').select('slug, updated_at, content_vertical').eq('editorial_status', 'published').eq('site_id', defaultSiteId),
+    supabase.from('businesses').select('slug, updated_at').eq('site_id', defaultSiteId).eq('is_active', true).eq('status', 'active'),
+    supabase.from('events').select('slug, updated_at').eq('status', 'published').eq('site_id', defaultSiteId),
+    supabase.from('forum_threads').select('slug, updated_at, board_id').eq('status', 'published').eq('site_id', defaultSiteId),
   ]);
 
   const staticPages: MetadataRoute.Sitemap = [
@@ -31,15 +34,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/zh/events`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.7 },
   ];
 
-  const articlePages = ((articles || []) as AnyRow[]).map((a) => ({
+  const articlePages = ((articles || []) as AnyRow[])
+    .filter((a) => String(a.content_vertical || '').startsWith('news_'))
+    .map((a) => ({
     url: `${BASE_URL}/zh/news/${a.slug}`,
     lastModified: new Date(a.updated_at),
     changeFrequency: 'weekly' as const,
     priority: 0.7,
-  }));
+    }));
 
   const guidePages = ((articles || []) as AnyRow[])
-    .filter((a) => a.slug?.startsWith('guide'))
+    .filter((a) => String(a.content_vertical || '').startsWith('guide_'))
     .map((a) => ({
       url: `${BASE_URL}/zh/guides/${a.slug}`,
       lastModified: new Date(a.updated_at),

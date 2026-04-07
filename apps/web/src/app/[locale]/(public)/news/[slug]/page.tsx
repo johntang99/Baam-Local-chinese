@@ -1,6 +1,13 @@
 import { createClient } from '@/lib/supabase/server';
+import { getCurrentSite } from '@/lib/sites';
+import { decodeRouteSlug } from '@/lib/slug';
 import { notFound } from 'next/navigation';
 import { Link } from '@/lib/i18n/routing';
+import { PageContainer } from '@/components/layout/page-shell';
+import { Badge } from '@/components/ui/badge';
+import { buttonVariants } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { Metadata } from 'next';
@@ -13,11 +20,14 @@ interface Props {
 type AnyRow = Record<string, any>;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug } = await params;
+  const { slug: rawSlug } = await params;
+  const slug = decodeRouteSlug(rawSlug);
   const supabase = await createClient();
+  const site = await getCurrentSite();
   const { data } = await supabase
     .from('articles')
     .select('title_zh, title_en, ai_summary_zh, summary_zh, cover_image_url')
+    .eq('site_id', site.id)
     .eq('slug', slug)
     .single();
 
@@ -36,21 +46,24 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 const verticalConfig: Record<string, { label: string; className: string }> = {
-  news_alert: { label: '快报', className: 'badge-red' },
-  news_brief: { label: '简报', className: 'badge-blue' },
-  news_explainer: { label: '政策解读', className: 'badge-purple' },
-  news_roundup: { label: '周度汇总', className: 'badge-primary' },
-  news_community: { label: '社区新闻', className: 'badge-green' },
+  news_alert: { label: '快报', className: 'bg-red-100 text-red-700' },
+  news_brief: { label: '简报', className: 'bg-blue-100 text-blue-700' },
+  news_explainer: { label: '政策解读', className: 'bg-purple-100 text-purple-700' },
+  news_roundup: { label: '周度汇总', className: 'bg-primary-100 text-primary-700' },
+  news_community: { label: '社区新闻', className: 'bg-green-100 text-green-700' },
 };
 
 export default async function NewsDetailPage({ params }: Props) {
-  const { slug } = await params;
+  const { slug: rawSlug } = await params;
+  const slug = decodeRouteSlug(rawSlug);
   const supabase = await createClient();
+  const site = await getCurrentSite();
 
   // Fetch article
   const { data, error } = await supabase
     .from('articles')
     .select('*')
+    .eq('site_id', site.id)
     .eq('slug', slug)
     .eq('editorial_status', 'published')
     .single();
@@ -60,7 +73,7 @@ export default async function NewsDetailPage({ params }: Props) {
 
   // TODO: Increment view count via API route or server action
 
-  const vertical = verticalConfig[article.content_vertical] || { label: '新闻', className: 'badge-gray' };
+  const vertical = verticalConfig[article.content_vertical] || { label: '新闻', className: 'bg-gray-100 text-gray-700' };
   const title = article.title_zh || article.title_en;
   const body = article.body_zh || article.body_en;
   const summary = article.ai_summary_zh || article.summary_zh;
@@ -71,6 +84,7 @@ export default async function NewsDetailPage({ params }: Props) {
   const { data: rawGuides } = await supabase
     .from('articles')
     .select('*')
+    .eq('site_id', site.id)
     .in('content_vertical', ['guide_howto', 'guide_checklist', 'guide_bestof', 'guide_comparison'])
     .eq('editorial_status', 'published')
     .limit(3);
@@ -79,7 +93,7 @@ export default async function NewsDetailPage({ params }: Props) {
 
   return (
     <main>
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <PageContainer className="py-6">
         <div className="lg:flex gap-8">
           {/* Main Content */}
           <article className="flex-1 max-w-[var(--content-max)]">
@@ -95,11 +109,11 @@ export default async function NewsDetailPage({ params }: Props) {
             {/* Header */}
             <header className="mb-6">
               <div className="flex items-center gap-2 mb-3">
-                <span className={`badge ${vertical.className}`}>{vertical.label}</span>
+                <Badge className={cn('text-xs', vertical.className)}>{vertical.label}</Badge>
                 {article.source_type && (
-                  <span className="text-xs text-text-muted bg-border-light px-2 py-0.5 rounded">
+                  <Badge variant="muted" className="text-xs">
                     {article.source_type === 'official_gov' ? 'A类来源' : '来源'} · {article.source_name}
-                  </span>
+                  </Badge>
                 )}
               </div>
               <h1 className="text-2xl sm:text-3xl font-bold leading-tight mb-3">{title}</h1>
@@ -121,6 +135,17 @@ export default async function NewsDetailPage({ params }: Props) {
               </div>
             </header>
 
+            {/* Cover Image */}
+            {article.cover_image_url && (
+              <div className="mb-6 rounded-xl overflow-hidden" style={{ aspectRatio: '16/9' }}>
+                <img
+                  src={article.cover_image_url}
+                  alt={title}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            )}
+
             {/* AI Summary */}
             {summary && (
               <div className="ai-summary-card mb-6">
@@ -132,10 +157,10 @@ export default async function NewsDetailPage({ params }: Props) {
             {keyFacts && Object.keys(keyFacts).length > 0 && (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
                 {Object.entries(keyFacts).map(([key, value]) => (
-                  <div key={key} className="bg-bg-page border border-border rounded-lg p-3 text-center">
+                  <Card key={key} className="bg-bg-page p-3 text-center">
                     <p className="text-xs text-text-muted mb-1">{key}</p>
                     <p className="text-sm font-semibold">{value}</p>
-                  </div>
+                  </Card>
                 ))}
               </div>
             )}
@@ -170,9 +195,9 @@ export default async function NewsDetailPage({ params }: Props) {
             {/* Share */}
             <div className="flex items-center gap-3 py-4 border-t border-border">
               <span className="text-sm text-text-secondary">分享：</span>
-              <button className="btn btn-outline h-8 px-3 text-xs">微信</button>
-              <button className="btn btn-outline h-8 px-3 text-xs">Facebook</button>
-              <button className="btn btn-outline h-8 px-3 text-xs">复制链接</button>
+              <button className={buttonVariants({ variant: 'outline', size: 'sm' })}>微信</button>
+              <button className={buttonVariants({ variant: 'outline', size: 'sm' })}>Facebook</button>
+              <button className={buttonVariants({ variant: 'outline', size: 'sm' })}>复制链接</button>
             </div>
 
             {/* Related Guides */}
@@ -181,8 +206,10 @@ export default async function NewsDetailPage({ params }: Props) {
                 <h2 className="text-lg font-bold mb-4">📚 相关生活指南</h2>
                 <div className="grid sm:grid-cols-3 gap-4">
                   {relatedGuides.map((guide) => (
-                    <Link key={guide.id} href={`/guides/${guide.slug}`} className="card p-4 block">
-                      <h3 className="font-medium text-sm line-clamp-2">{guide.title_zh}</h3>
+                    <Link key={guide.id} href={`/guides/${guide.slug}`} className="block">
+                      <Card className="p-4 h-full hover:shadow-md transition-shadow">
+                        <h3 className="font-medium text-sm line-clamp-2">{guide.title_zh}</h3>
+                      </Card>
                     </Link>
                   ))}
                 </div>
@@ -193,7 +220,7 @@ export default async function NewsDetailPage({ params }: Props) {
           {/* Sidebar */}
           <aside className="hidden lg:block w-80 flex-shrink-0 space-y-6 mt-8 lg:mt-0">
             {/* Newsletter */}
-            <div className="bg-bg-card rounded-xl border border-border p-5">
+            <Card className="bg-bg-card p-5">
               <h3 className="font-semibold text-sm mb-3">📬 订阅本地周报</h3>
               <p className="text-xs text-text-secondary mb-3">每周精选本地新闻、指南、活动</p>
               <div className="flex gap-2">
@@ -202,12 +229,12 @@ export default async function NewsDetailPage({ params }: Props) {
                   placeholder="输入邮箱"
                   className="flex-1 h-9 px-3 border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none"
                 />
-                <button className="btn btn-primary h-9 px-4 text-sm">订阅</button>
+                <button className={buttonVariants({ size: 'sm' })}>订阅</button>
               </div>
-            </div>
+            </Card>
           </aside>
         </div>
-      </div>
+      </PageContainer>
     </main>
   );
 }

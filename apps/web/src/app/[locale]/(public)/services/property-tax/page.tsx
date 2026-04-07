@@ -1,5 +1,7 @@
 import { Suspense } from 'react';
 import { Link } from '@/lib/i18n/routing';
+import { PageContainer } from '@/components/layout/page-shell';
+import { Card } from '@/components/ui/card';
 import { PropertyTaxClient } from './property-tax-client';
 import { ServiceFAQ } from '@/components/services/service-faq';
 import type { Metadata } from 'next';
@@ -36,7 +38,8 @@ const FAQ_ITEMS = [
 
 export default function PropertyTaxPage() {
   return (
-    <main className="max-w-4xl mx-auto px-4 py-8">
+    <main>
+      <PageContainer className="max-w-4xl py-8">
       {/* Breadcrumb */}
       <nav className="text-sm text-gray-400 mb-6">
         <Link href="/" className="hover:text-primary">首页</Link>
@@ -55,7 +58,8 @@ export default function PropertyTaxPage() {
       </div>
 
       {/* Guide Content (SEO) */}
-      <article className="bg-white border border-gray-200 rounded-2xl p-6 mb-8 prose prose-sm max-w-none text-gray-700">
+      <Card className="rounded-2xl p-6 mb-8">
+        <article className="prose prose-sm max-w-none text-gray-700">
         <h2 className="text-lg font-bold text-gray-900 mt-0">纽约房产税怎么算？</h2>
         <p>在纽约市拥有房产的业主每年需要缴纳房产税（Property Tax）。计算方式基于房产的<strong>评估值（Assessed Value）</strong>而非市场价值。评估值通常远低于市场价值，比例取决于税务等级。计算公式：<strong>年度房产税 = 评估值 × 税率</strong>。</p>
 
@@ -83,7 +87,8 @@ export default function PropertyTaxPage() {
 
         <h3 className="text-base font-bold text-gray-900">评估值太高怎么申诉？</h3>
         <p>可向税务审查委员会（Tax Commission）申诉，截止日期为每年3月。约40%的申诉获得下调，平均每年可节省$1,000-$5,000。需提供市场价值证据。</p>
-      </article>
+        </article>
+      </Card>
 
       {/* Search Tool */}
       <Suspense fallback={<div className="h-40 bg-gray-50 rounded-2xl animate-pulse" />}>
@@ -99,20 +104,26 @@ export default function PropertyTaxPage() {
       <section className="mb-8">
         <h2 className="text-lg font-bold text-gray-900 mb-4">相关资源</h2>
         <div className="grid sm:grid-cols-3 gap-3">
-          <Link href="/businesses" className="bg-white border border-gray-200 rounded-xl p-4 hover:border-primary/30 hover:shadow-sm transition group text-center">
+          <Link href="/businesses" className="block">
+            <Card className="rounded-xl p-4 hover:border-primary/30 hover:shadow-sm transition group text-center">
             <div className="text-2xl mb-2">🏪</div>
             <h3 className="text-sm font-bold text-gray-900 group-hover:text-primary mb-1">找地产经纪</h3>
             <p className="text-xs text-gray-500">浏览Baam认证地产经纪</p>
+            </Card>
           </Link>
-          <Link href="/ask" className="bg-white border border-gray-200 rounded-xl p-4 hover:border-primary/30 hover:shadow-sm transition group text-center">
+          <Link href="/ask" className="block">
+            <Card className="rounded-xl p-4 hover:border-primary/30 hover:shadow-sm transition group text-center">
             <div className="text-2xl mb-2">🤖</div>
             <h3 className="text-sm font-bold text-gray-900 group-hover:text-primary mb-1">问AI小邻</h3>
             <p className="text-xs text-gray-500">&ldquo;法拉盛房产税一般多少？&rdquo;</p>
+            </Card>
           </Link>
-          <Link href="/services/vehicle-violations" className="bg-white border border-gray-200 rounded-xl p-4 hover:border-primary/30 hover:shadow-sm transition group text-center">
+          <Link href="/services/vehicle-violations" className="block">
+            <Card className="rounded-xl p-4 hover:border-primary/30 hover:shadow-sm transition group text-center">
             <div className="text-2xl mb-2">🚗</div>
             <h3 className="text-sm font-bold text-gray-900 group-hover:text-primary mb-1">停车罚单查询</h3>
             <p className="text-xs text-gray-500">查看车辆违规记录</p>
+            </Card>
           </Link>
         </div>
       </section>
@@ -121,6 +132,7 @@ export default function PropertyTaxPage() {
       <div className="text-xs text-gray-400 leading-relaxed border-t border-gray-100 pt-6">
         <p>数据来源：NYC Department of Finance via NYC Open Data。税率为2025/26财年预估值，实际税额可能因减免和调整而不同。以NYC Finance官方税单为准。</p>
       </div>
+      </PageContainer>
     </main>
   );
 }

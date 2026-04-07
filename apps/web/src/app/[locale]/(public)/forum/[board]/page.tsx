@@ -1,8 +1,14 @@
 import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import { Link } from '@/lib/i18n/routing';
+import { PageContainer } from '@/components/layout/page-shell';
 import { Pagination } from '@/components/shared/pagination';
+import { Badge } from '@/components/ui/badge';
+import { buttonVariants } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 import type { Metadata } from 'next';
+import { getCurrentSite } from '@/lib/sites';
 
 interface Props {
   params: Promise<{ locale: string; board: string }>;
@@ -15,49 +21,70 @@ type AnyRow = Record<string, any>;
 const PAGE_SIZE = 20;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { board } = await params;
+  const { board, locale } = await params;
   const supabase = await createClient();
-  const { data } = await supabase
-    .from('categories')
-    .select('name_zh, name, description')
-    .eq('slug', board)
-    .eq('type', 'forum')
-    .single();
+  const siteScope = String(locale || '').toLowerCase().startsWith('en') ? 'en' : 'zh';
 
-  const boardData = data as AnyRow | null;
+  const { data: scopedData } = await supabase
+    .from('categories_forum')
+    .select('name_zh, name_en, description, slug')
+    .eq('slug', board)
+    .eq('site_scope', siteScope)
+    .single();
+  let boardData = scopedData as AnyRow | null;
+  if (!boardData && siteScope === 'en') {
+    const { data: zhData } = await supabase
+      .from('categories_forum')
+      .select('name_zh, name_en, description, slug')
+      .eq('slug', board)
+      .eq('site_scope', 'zh')
+      .single();
+    boardData = zhData as AnyRow | null;
+  }
   if (!boardData) return { title: 'Not Found' };
 
   return {
-    title: `${boardData.name_zh || boardData.name} · 社区论坛 · Baam`,
+    title: `${boardData.name_zh || boardData.name || boardData.name_en} · 社区论坛 · Baam`,
     description: boardData.description || '',
   };
 }
 
 export default async function ForumBoardPage({ params, searchParams }: Props) {
-  const { board } = await params;
+  const { board, locale } = await params;
   const sp = await searchParams;
   const currentPage = Math.max(1, parseInt(sp.page || '1', 10));
   const sortBy = sp.sort || 'latest_reply';
+  const siteScope = String(locale || '').toLowerCase().startsWith('en') ? 'en' : 'zh';
 
   const supabase = await createClient();
+  const site = await getCurrentSite();
 
   // Fetch board info
-  const { data: rawBoard, error: boardError } = await supabase
-    .from('categories')
+  const { data: rawScopedBoard } = await supabase
+    .from('categories_forum')
     .select('*')
     .eq('slug', board)
-    .eq('type', 'forum')
+    .eq('site_scope', siteScope)
     .single();
-
-  const boardData = rawBoard as AnyRow | null;
-  if (boardError || !boardData) notFound();
+  let boardData = rawScopedBoard as AnyRow | null;
+  if (!boardData && siteScope === 'en') {
+    const { data: rawZhBoard } = await supabase
+      .from('categories_forum')
+      .select('*')
+      .eq('slug', board)
+      .eq('site_scope', 'zh')
+      .single();
+    boardData = rawZhBoard as AnyRow | null;
+  }
+  if (!boardData) notFound();
 
   // Count total threads
   const { count } = await supabase
     .from('forum_threads')
     .select('id', { count: 'exact', head: true })
     .eq('board_id', boardData.id)
-    .eq('status', 'published');
+    .eq('status', 'published')
+    .eq('site_id', site.id);
 
   const totalPages = Math.ceil((count || 0) / PAGE_SIZE);
 
@@ -68,6 +95,7 @@ export default async function ForumBoardPage({ params, searchParams }: Props) {
     .select('*')
     .eq('board_id', boardData.id)
     .eq('status', 'published')
+    .eq('site_id', site.id)
     .order('is_pinned', { ascending: false });
 
   if (sortBy === 'newest') {
@@ -92,14 +120,14 @@ export default async function ForumBoardPage({ params, searchParams }: Props) {
 
   return (
     <main>
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <PageContainer className="py-6">
         {/* Breadcrumb */}
         <nav className="text-sm text-text-muted mb-4">
           <Link href="/" className="hover:text-primary">首页</Link>
           <span className="mx-2">&rsaquo;</span>
           <Link href="/forum" className="hover:text-primary">论坛</Link>
           <span className="mx-2">&rsaquo;</span>
-          <span className="text-text-secondary">{boardData.name_zh || boardData.name}</span>
+          <span className="text-text-secondary">{boardData.name_zh || boardData.name || boardData.name_en}</span>
         </nav>
 
         <div className="lg:flex gap-8">
@@ -107,8 +135,8 @@ export default async function ForumBoardPage({ params, searchParams }: Props) {
             {/* Board Header */}
             <div className="mb-6">
               <h1 className="text-2xl font-bold flex items-center gap-2">
-                <span>{boardData.emoji || '📋'}</span>
-                {boardData.name_zh || boardData.name}
+                <span>{boardData.emoji || boardData.icon || '📋'}</span>
+                {boardData.name_zh || boardData.name || boardData.name_en}
               </h1>
               {boardData.description && (
                 <p className="text-sm text-text-secondary mt-1">{boardData.description}</p>
@@ -121,11 +149,11 @@ export default async function ForumBoardPage({ params, searchParams }: Props) {
                 <Link
                   key={opt.key}
                   href={opt.key === 'latest_reply' ? `/forum/${board}` : `/forum/${board}?sort=${opt.key}`}
-                  className={`px-4 py-2 text-sm font-medium rounded-full transition-colors ${
+                  className={cn(buttonVariants({ size: 'sm' }), 'rounded-full', `${
                     sortBy === opt.key
                       ? 'bg-primary text-text-inverse'
                       : 'bg-border-light text-text-secondary hover:bg-gray-200'
-                  }`}
+                  }`)}
                 >
                   {opt.label}
                 </Link>
@@ -138,7 +166,7 @@ export default async function ForumBoardPage({ params, searchParams }: Props) {
                 <p className="text-4xl mb-4">💬</p>
                 <p className="text-text-secondary">该版块还没有帖子</p>
                 <p className="text-text-muted text-sm mt-1">成为第一个发帖的人吧</p>
-                <Link href="/forum/new" className="btn btn-primary mt-4 inline-block">发布新帖</Link>
+                <Link href="/forum/new" className={cn(buttonVariants(), 'mt-4 inline-block')}>发布新帖</Link>
               </div>
             ) : (
               <div className="space-y-3">
@@ -148,29 +176,31 @@ export default async function ForumBoardPage({ params, searchParams }: Props) {
                     <Link
                       key={thread.id}
                       href={`/forum/${board}/${thread.slug}`}
-                      className="card p-4 block cursor-pointer"
+                      className="block cursor-pointer"
                     >
-                      <div className="flex items-start gap-3">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            {thread.is_pinned && (
-                              <span className="badge badge-red text-xs">置顶</span>
-                            )}
-                            <h3 className="font-semibold text-sm line-clamp-1">
-                              {thread.title_zh || thread.title}
-                            </h3>
-                          </div>
-                          <div className="flex items-center gap-3 text-xs text-text-muted">
-                            <span>{thread.author_name || '匿名用户'}</span>
-                            <span>{timeAgo}</span>
-                            <span className="flex items-center gap-1">💬 {thread.reply_count || 0}</span>
-                            <span className="flex items-center gap-1">👀 {thread.view_count || 0}</span>
-                            {thread.ai_summary_zh && (
-                              <span className="text-primary" title="AI 速读可用">🤖</span>
-                            )}
+                      <Card className="p-4">
+                        <div className="flex items-start gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              {thread.is_pinned && (
+                                <Badge className="text-xs bg-red-100 text-red-700">置顶</Badge>
+                              )}
+                              <h3 className="font-semibold text-sm line-clamp-1">
+                                {thread.title_zh || thread.title}
+                              </h3>
+                            </div>
+                            <div className="flex items-center gap-3 text-xs text-text-muted">
+                              <span>{thread.author_name || '匿名用户'}</span>
+                              <span>{timeAgo}</span>
+                              <span className="flex items-center gap-1">💬 {thread.reply_count || 0}</span>
+                              <span className="flex items-center gap-1">👀 {thread.view_count || 0}</span>
+                              {thread.ai_summary_zh && (
+                                <span className="text-primary" title="AI 速读可用">🤖</span>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
+                      </Card>
                     </Link>
                   );
                 })}
@@ -187,7 +217,7 @@ export default async function ForumBoardPage({ params, searchParams }: Props) {
 
           {/* Sidebar */}
           <aside className="hidden lg:block w-80 flex-shrink-0 space-y-6 mt-8 lg:mt-0">
-            <div className="bg-bg-card rounded-xl border border-border p-5">
+            <Card className="bg-bg-card p-5">
               <h3 className="font-semibold text-sm mb-3">📜 版规</h3>
               <ul className="text-xs text-text-secondary space-y-2">
                 <li>1. 请遵守社区规范，文明发言</li>
@@ -195,19 +225,19 @@ export default async function ForumBoardPage({ params, searchParams }: Props) {
                 <li>3. 尊重他人隐私，不要人身攻击</li>
                 <li>4. 请使用正确的版块发帖</li>
               </ul>
-            </div>
-            <div className="bg-bg-card rounded-xl border border-border p-5">
+            </Card>
+            <Card className="bg-bg-card p-5">
               <h3 className="font-semibold text-sm mb-3">🏪 相关商家</h3>
               <p className="text-xs text-text-muted">商家推荐将在这里显示</p>
-            </div>
+            </Card>
           </aside>
         </div>
-      </div>
+      </PageContainer>
 
       {/* Floating New Post Button */}
       <Link
         href="/forum/new"
-        className="fab fixed bottom-6 right-6 w-14 h-14 bg-primary text-white rounded-full flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow text-2xl z-50"
+        className={cn(buttonVariants({ size: 'icon' }), 'fab fixed bottom-6 right-6 w-14 h-14 rounded-full shadow-lg hover:shadow-xl transition-shadow text-2xl z-50')}
         style={{ backgroundColor: 'var(--color-accent-orange, #f97316)' }}
       >
         ✏️

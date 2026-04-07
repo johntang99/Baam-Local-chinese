@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { Link } from '@/lib/i18n/routing';
 import { useChineseScript } from '@/lib/i18n/chinese-converter';
+import { PageContainer } from '@/components/layout/page-shell';
 
 export function Footer() {
   const t = useTranslations('footer');
@@ -11,7 +12,7 @@ export function Footer() {
 
   return (
     <footer className="bg-gray-900 text-gray-400 mt-12">
-      <div className="max-w-7xl mx-auto px-4 py-12">
+      <PageContainer className="py-12">
         <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-8">
           {/* Brand */}
           <div className="lg:col-span-2">
@@ -134,7 +135,7 @@ export function Footer() {
             <span>Instagram</span>
           </div>
         </div>
-      </div>
+      </PageContainer>
     </footer>
   );
 }

@@ -5,6 +5,8 @@ import { useTranslations } from 'next-intl';
 import { Link, usePathname } from '@/lib/i18n/routing';
 import { useChineseScript } from '@/lib/i18n/chinese-converter';
 import { createClient } from '@/lib/supabase/client';
+import { PageContainer } from '@/components/layout/page-shell';
+import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { AuthModal } from '@/components/shared/auth-modal';
 import type { User } from '@supabase/supabase-js';
@@ -52,7 +54,7 @@ export function Navbar() {
   return (
     <>
       <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4">
+        <PageContainer>
           <div className="flex items-center justify-between h-16">
             {/* Logo + Nav */}
             <div className="flex items-center gap-8">
@@ -65,7 +67,7 @@ export function Navbar() {
                 {navItems.map((item) => (
                   <Link
                     key={item.key} href={item.href}
-                    className={cn('px-3 py-2 text-sm font-medium rounded-md transition-colors',
+                    className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'h-auto py-2 rounded-md',
                       pathname.startsWith(item.href) ? 'text-primary bg-orange-50' : 'text-gray-600 hover:text-primary hover:bg-orange-50'
                     )}
                   >
@@ -81,7 +83,7 @@ export function Navbar() {
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
               </Link>
 
-              <button onClick={toggleScript} className="px-2 py-1 text-xs font-medium text-gray-500 border border-gray-300 rounded hover:bg-gray-100" title={script === 'simplified' ? '切换繁體' : '切换简体'}>
+              <button onClick={toggleScript} className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'h-auto py-1')} title={script === 'simplified' ? '切换繁體' : '切换简体'}>
                 {script === 'simplified' ? '繁' : '简'}
               </button>
 
@@ -116,7 +118,7 @@ export function Navbar() {
                   )}
                 </div>
               ) : (
-                <button onClick={() => setAuthOpen(true)} className="bg-primary text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-primary-dark transition-colors">
+                <button onClick={() => setAuthOpen(true)} className={buttonVariants()}>
                   {convert(t('loginOrRegister'))}
                 </button>
               )}
@@ -131,7 +133,7 @@ export function Navbar() {
               </button>
             </div>
           </div>
-        </div>
+        </PageContainer>
 
         {/* Mobile Menu */}
         {mobileOpen && (

@@ -1,7 +1,11 @@
 import { Link } from '@/lib/i18n/routing';
 import { createClient } from '@/lib/supabase/server';
+import { getCurrentSite } from '@/lib/sites';
 import { createClient as createDirectClient } from '@supabase/supabase-js';
 import { notFound } from 'next/navigation';
+import { PageContainer } from '@/components/layout/page-shell';
+import { Card } from '@/components/ui/card';
+import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { Metadata } from 'next';
 
@@ -106,6 +110,7 @@ function formatPhone(phone: string): string {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { camis } = await params;
   const data = await fetchRestaurantData(camis);
+  const site = await getCurrentSite();
   if (!data) return { title: 'Not Found' };
 
   const { restaurant, inspections } = data;
@@ -120,6 +125,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const { data: biz } = await supabase
       .from('businesses')
       .select('display_name_zh')
+      .eq('site_id', site.id)
       .ilike('display_name', `%${words}%`)
       .not('display_name_zh', 'is', null)
       .eq('status', 'active')
@@ -143,6 +149,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function RestaurantDetailPage({ params }: Props) {
   const { camis } = await params;
   const data = await fetchRestaurantData(camis);
+  const site = await getCurrentSite();
   if (!data) notFound();
 
   const { restaurant, inspections } = data;
@@ -165,6 +172,7 @@ export default async function RestaurantDetailPage({ params }: Props) {
       .from('businesses')
       .select('slug, display_name, display_name_zh, avg_rating, review_count, address_full')
       .or(`display_name.ilike.%${dbaWords}%,display_name_zh.ilike.%${dbaWords}%`)
+      .eq('site_id', site.id)
       .eq('status', 'active')
       .limit(3);
     // Pick best match — prefer one with Chinese name
@@ -178,7 +186,8 @@ export default async function RestaurantDetailPage({ params }: Props) {
   const chineseName = baamBusiness?.display_name_zh?.trim() || '';
 
   return (
-    <main className="max-w-4xl mx-auto px-4 py-8">
+    <main>
+      <PageContainer className="max-w-4xl py-8">
       {/* Breadcrumb */}
       <nav className="text-sm text-gray-400 mb-6">
         <Link href="/" className="hover:text-primary">首页</Link>
@@ -191,7 +200,7 @@ export default async function RestaurantDetailPage({ params }: Props) {
       </nav>
 
       {/* Restaurant Header */}
-      <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-6">
+      <Card className="rounded-2xl p-6 mb-6">
         <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
           {/* Grade Badge */}
           <div className="flex flex-col items-center flex-shrink-0">
@@ -237,30 +246,31 @@ export default async function RestaurantDetailPage({ params }: Props) {
             )}
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-        <div className="bg-white border border-gray-200 rounded-xl p-4 text-center">
+        <Card className="rounded-xl p-4 text-center">
           <div className="text-xl font-bold text-gray-900">{totalInspections}</div>
           <div className="text-xs text-gray-500">总检查次数</div>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-xl p-4 text-center">
+        </Card>
+        <Card className="rounded-xl p-4 text-center">
           <div className={cn('text-xl font-bold', gradeStyle.text)}>{latest?.score ?? '?'} ({latest?.grade || '?'}级)</div>
           <div className="text-xs text-gray-500">最近评分</div>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-xl p-4 text-center">
+        </Card>
+        <Card className="rounded-xl p-4 text-center">
           <div className={cn('text-xl font-bold', criticalCount > 0 ? 'text-red-600' : 'text-green-600')}>{criticalCount}</div>
           <div className="text-xs text-gray-500">关键违规</div>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-xl p-4 text-center">
+        </Card>
+        <Card className="rounded-xl p-4 text-center">
           <div className={cn('text-xl font-bold', nonCriticalCount > 0 ? 'text-yellow-600' : 'text-green-600')}>{nonCriticalCount}</div>
           <div className="text-xs text-gray-500">非关键违规</div>
-        </div>
+        </Card>
       </div>
 
       {/* Inspection Timeline */}
-      <section className="bg-white border border-gray-200 rounded-2xl p-6 mb-6">
+      <Card className="rounded-2xl p-6 mb-6">
+        <section>
         <h2 className="text-lg font-bold text-gray-900 mb-5">检查历史记录</h2>
         <div className="space-y-4">
           {inspections.map((inspection, i) => {
@@ -302,11 +312,13 @@ export default async function RestaurantDetailPage({ params }: Props) {
             );
           })}
         </div>
-      </section>
+        </section>
+      </Card>
 
       {/* Baam Business Cross-link */}
       {baamBusiness && (
-        <section className="bg-white border border-gray-200 rounded-2xl p-6 mb-6">
+        <Card className="rounded-2xl p-6 mb-6">
+          <section>
           <h2 className="text-base font-bold text-gray-900 mb-3">在 Baam 上查看这家餐厅</h2>
           <Link href={`/businesses/${baamBusiness.slug}`} className="flex items-center gap-3 p-3 border border-gray-200 rounded-xl hover:border-primary/30 hover:shadow-sm transition group">
             <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-xl flex-shrink-0">
@@ -326,22 +338,23 @@ export default async function RestaurantDetailPage({ params }: Props) {
             </div>
             <svg className="w-5 h-5 text-gray-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
           </Link>
-        </section>
+          </section>
+        </Card>
       )}
 
       {/* Write Post CTA */}
-      <section className="bg-orange-50 border border-orange-200 rounded-2xl p-5 mb-6 flex items-center justify-between">
+      <Card className="bg-orange-50 border-orange-200 rounded-2xl p-5 mb-6 flex items-center justify-between">
         <div>
           <p className="text-sm font-semibold text-gray-900">去过这家餐厅？分享你的体验</p>
           <p className="text-xs text-gray-500 mt-0.5">写一篇笔记帮助更多华人朋友</p>
         </div>
         <Link
           href={baamBusiness ? `/discover/new-post?business=${baamBusiness.slug}` : '/discover/new-post'}
-          className="px-4 py-2 bg-primary text-white text-sm font-semibold rounded-xl hover:bg-primary/90 transition flex-shrink-0"
+          className={cn(buttonVariants({ size: 'sm' }), 'flex-shrink-0')}
         >
           写笔记
         </Link>
-      </section>
+      </Card>
 
       {/* Disclaimer */}
       <div className="text-xs text-gray-400 leading-relaxed border-t border-gray-100 pt-6">
@@ -376,6 +389,7 @@ export default async function RestaurantDetailPage({ params }: Props) {
           }),
         }}
       />
+      </PageContainer>
     </main>
   );
 }

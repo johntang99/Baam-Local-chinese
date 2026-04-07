@@ -25,19 +25,25 @@ export default async function AdminDashboard({ searchParams }: Props) {
     { count: pendingJobCount },
   ] = await Promise.all([
     supabase.from('articles').select('*', { count: 'exact', head: true })
+      .eq('site_id', ctx.siteId)
       .eq('editorial_status', 'published')
       .in('region_id', ctx.regionIds),
     supabase.from('businesses').select('*', { count: 'exact', head: true })
+      .eq('site_id', ctx.siteId)
       .eq('is_active', true),
     supabase.from('forum_threads').select('*', { count: 'exact', head: true })
+      .eq('site_id', ctx.siteId)
       .eq('status', 'published')
       .in('region_id', ctx.regionIds),
     supabase.from('leads').select('*', { count: 'exact', head: true })
+      .eq('site_id', ctx.siteId)
       .eq('status', 'new'),
     supabase.from('events').select('*', { count: 'exact', head: true })
+      .eq('site_id', ctx.siteId)
       .eq('status', 'published')
       .in('region_id', ctx.regionIds),
     supabase.from('voice_posts').select('*', { count: 'exact', head: true })
+      .eq('site_id', ctx.siteId)
       .eq('status', 'published')
       .in('region_id', ctx.regionIds),
     supabase.from('ai_jobs').select('*', { count: 'exact', head: true })
@@ -48,6 +54,7 @@ export default async function AdminDashboard({ searchParams }: Props) {
   const { data: rawArticles } = await supabase
     .from('articles')
     .select('*')
+    .eq('site_id', ctx.siteId)
     .in('region_id', ctx.regionIds)
     .order('created_at', { ascending: false })
     .limit(5);
@@ -57,6 +64,7 @@ export default async function AdminDashboard({ searchParams }: Props) {
   const { data: rawLeads } = await supabase
     .from('leads')
     .select('*')
+    .eq('site_id', ctx.siteId)
     .order('created_at', { ascending: false })
     .limit(5);
   const recentLeads = (rawLeads || []) as AnyRow[];

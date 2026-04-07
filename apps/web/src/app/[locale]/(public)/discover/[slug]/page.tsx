@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { getCurrentSite } from '@/lib/sites';
 import { getCurrentUser } from '@/lib/auth';
 import { notFound } from 'next/navigation';
 import { Link } from '@/lib/i18n/routing';
@@ -8,6 +9,11 @@ import { RelatedDiscoverPosts } from '@/components/discover/related-posts';
 import { DiscoverCard } from '@/components/discover/discover-card';
 import { PostActions } from '@/components/discover/post-actions';
 import { LayoutToggle } from '@/components/discover/layout-toggle';
+import { PageContainer } from '@/components/layout/page-shell';
+import { Badge } from '@/components/ui/badge';
+import { buttonVariants } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 import { formatTimeAgo } from '@/lib/utils';
 import type { Metadata } from 'next';
 
@@ -23,11 +29,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const decodedSlug = decodeURIComponent(slug);
   const supabase = await createClient();
+  const site = await getCurrentSite();
 
   const { data: postData } = await supabase
     .from('voice_posts')
     .select('title, content, author_id')
     .eq('slug', decodedSlug)
+    .eq('site_id', site.id)
     .eq('status', 'published')
     .single();
 
@@ -58,6 +66,7 @@ export default async function DiscoverPostDetailPage({ params, searchParams }: P
   const isClassic = layout === 'classic';
 
   const supabase = await createClient();
+  const site = await getCurrentSite();
   const currentUser = await getCurrentUser().catch(() => null);
 
   const decodedSlug = decodeURIComponent(slug);
@@ -67,6 +76,7 @@ export default async function DiscoverPostDetailPage({ params, searchParams }: P
     .from('voice_posts')
     .select('*')
     .eq('slug', decodedSlug)
+    .eq('site_id', site.id)
     .in('status', ['published', 'pending_review'])
     .single();
 
@@ -88,6 +98,7 @@ export default async function DiscoverPostDetailPage({ params, searchParams }: P
     .from('voice_post_comments')
     .select('*, profiles:author_id(display_name, username, avatar_url)')
     .eq('post_id', post.id)
+    .eq('site_id', site.id)
     .order('created_at', { ascending: true });
 
   const comments = (rawComments || []) as AnyRow[];
@@ -107,6 +118,7 @@ export default async function DiscoverPostDetailPage({ params, searchParams }: P
     .from('voice_posts')
     .select('*')
     .eq('author_id', post.author_id)
+    .eq('site_id', site.id)
     .eq('status', 'published')
     .neq('id', post.id)
     .order('published_at', { ascending: false })
@@ -121,6 +133,7 @@ export default async function DiscoverPostDetailPage({ params, searchParams }: P
     const { data: rawRelated } = await supabase
       .from('voice_posts')
       .select('*, profiles!voice_posts_author_id_fkey(display_name)')
+      .eq('site_id', site.id)
       .eq('status', 'published')
       .neq('id', post.id)
       .neq('author_id', post.author_id)
@@ -136,6 +149,7 @@ export default async function DiscoverPostDetailPage({ params, searchParams }: P
     const { data: rawGuides } = await supabase
       .from('articles')
       .select('id, slug, title_zh, cover_image_url, view_count, category')
+      .eq('site_id', site.id)
       .eq('status', 'published')
       .eq('article_type', 'guide')
       .overlaps('tags', postTags)
@@ -160,7 +174,7 @@ export default async function DiscoverPostDetailPage({ params, searchParams }: P
     return (
       <main>
         <LayoutToggle />
-        <div className="max-w-4xl mx-auto px-4 py-6">
+        <PageContainer className="max-w-4xl py-6">
           {isPendingReview && (
             <div className="mb-4 p-3 bg-amber-50 border border-amber-200 text-amber-800 text-sm rounded-lg flex items-center gap-2">
               <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" /></svg>
@@ -203,7 +217,7 @@ export default async function DiscoverPostDetailPage({ params, searchParams }: P
                   <span className="font-semibold text-sm">匿名</span>
                 )}
                 {profile.is_verified && (
-                  <span className="badge badge-blue text-xs">已认证</span>
+                  <Badge className="text-xs bg-blue-100 text-blue-700">已认证</Badge>
                 )}
               </div>
               <p className="text-xs text-gray-400">
@@ -239,7 +253,7 @@ export default async function DiscoverPostDetailPage({ params, searchParams }: P
           <header className="mb-6">
             <div className="flex items-center gap-2 mb-3">
               {post.post_type && (
-                <span className="badge badge-purple text-xs">{post.post_type}</span>
+                <Badge className="text-xs bg-purple-100 text-purple-700">{post.post_type}</Badge>
               )}
               {post.location_text && (
                 <span className="text-xs text-gray-400 flex items-center gap-1">
@@ -265,7 +279,7 @@ export default async function DiscoverPostDetailPage({ params, searchParams }: P
                 <Link
                   key={tag}
                   href={`/discover?topic=${encodeURIComponent(tag)}`}
-                  className="text-xs text-orange-600 bg-orange-50 px-2.5 py-1 rounded-full hover:bg-orange-100"
+                  className={cn(buttonVariants({ variant: 'secondary', size: 'sm' }), 'h-auto py-1 rounded-full')}
                 >
                   #{tag}
                 </Link>
@@ -292,7 +306,8 @@ export default async function DiscoverPostDetailPage({ params, searchParams }: P
                   const biz = link.businesses as AnyRow;
                   if (!biz) return null;
                   return (
-                    <Link key={link.id} href={`/businesses/${biz.slug}`} className="card p-4 flex items-center gap-3 hover:shadow-md transition-shadow">
+                    <Link key={link.id} href={`/businesses/${biz.slug}`} className="block">
+                      <Card className="p-4 flex items-center gap-3 hover:shadow-md transition-shadow">
                       <div className="w-12 h-12 rounded-lg bg-orange-50 flex items-center justify-center text-xl">
                         {biz.display_name_zh?.[0] || biz.display_name?.[0] || '🏪'}
                       </div>
@@ -301,6 +316,7 @@ export default async function DiscoverPostDetailPage({ params, searchParams }: P
                         {biz.short_desc_zh && <p className="text-xs text-gray-400 truncate">{biz.short_desc_zh}</p>}
                       </div>
                       <svg className="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                      </Card>
                     </Link>
                   );
                 })}
@@ -316,7 +332,7 @@ export default async function DiscoverPostDetailPage({ params, searchParams }: P
                 {comments.map((comment) => {
                   const commentAuthor = comment.profiles?.display_name || '匿名用户';
                   return (
-                    <div key={comment.id} className="card p-4">
+                    <Card key={comment.id} className="p-4">
                       <div className="flex items-center gap-2 mb-2">
                         <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs flex-shrink-0">
                           {commentAuthor[0]}
@@ -329,7 +345,7 @@ export default async function DiscoverPostDetailPage({ params, searchParams }: P
                         )}
                       </div>
                       <p className="text-sm text-gray-800 pl-9">{comment.content}</p>
-                    </div>
+                    </Card>
                   );
                 })}
               </div>
@@ -351,7 +367,7 @@ export default async function DiscoverPostDetailPage({ params, searchParams }: P
               </div>
             </section>
           )}
-        </div>
+        </PageContainer>
       </main>
     );
   }

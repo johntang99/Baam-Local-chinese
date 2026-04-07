@@ -1,8 +1,14 @@
 import { createClient } from '@/lib/supabase/server';
+import { getCurrentSite } from '@/lib/sites';
 import { notFound } from 'next/navigation';
 import { Link } from '@/lib/i18n/routing';
 import { DiscoverCard } from '@/components/discover/discover-card';
 import { MasonryGrid } from '@/components/discover/masonry-grid';
+import { PageContainer } from '@/components/layout/page-shell';
+import { Badge } from '@/components/ui/badge';
+import { buttonVariants } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 import type { Metadata } from 'next';
 
 interface Props {
@@ -49,6 +55,7 @@ export default async function DiscoverVoiceProfilePage({ params, searchParams }:
   const sp = await searchParams;
   const activeTab = sp.tab || 'all';
   const supabase = await createClient();
+  const site = await getCurrentSite();
 
   // Fetch profile
   const { data, error } = await supabase
@@ -75,6 +82,7 @@ export default async function DiscoverVoiceProfilePage({ params, searchParams }:
     .from('voice_posts')
     .select('*')
     .eq('author_id', profile.id)
+    .eq('site_id', site.id)
     .eq('status', 'published');
 
   if (activeTab === 'notes') {
@@ -114,7 +122,7 @@ export default async function DiscoverVoiceProfilePage({ params, searchParams }:
         <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'20\' height=\'20\' viewBox=\'0 0 20 20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23fff\' fill-opacity=\'0.3\'%3E%3Ccircle cx=\'1\' cy=\'1\' r=\'1\'/%3E%3C/g%3E%3C/svg%3E")' }} />
       </div>
 
-      <div className="max-w-7xl mx-auto px-4">
+      <PageContainer>
         {/* Profile Identity */}
         <div className="-mt-14 mb-6">
           <div className="flex items-end gap-4">
@@ -132,9 +140,9 @@ export default async function DiscoverVoiceProfilePage({ params, searchParams }:
                   </svg>
                 )}
                 {profile.profile_type && profile.profile_type !== 'user' && (
-                  <span className="bg-orange-100 text-orange-700 text-xs font-medium px-2 py-0.5 rounded-full">
+                  <Badge className="bg-orange-100 text-orange-700 text-xs font-medium">
                     {profileTypeLabels[profile.profile_type] || profile.profile_type}
-                  </span>
+                  </Badge>
                 )}
               </div>
               {profile.headline && (
@@ -172,19 +180,19 @@ export default async function DiscoverVoiceProfilePage({ params, searchParams }:
           <div className="flex items-center gap-3 mt-4">
             {isOwner ? (
               <>
-                <Link href="/discover/new-post" className="btn btn-primary h-9 px-5 text-sm flex items-center gap-1.5">
+                <Link href="/discover/new-post" className={cn(buttonVariants({ size: 'sm' }), 'h-9 px-5 text-sm flex items-center gap-1.5')}>
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
                   发布笔记
                 </Link>
-                <Link href="/settings" className="h-9 px-4 border border-gray-300 rounded-lg flex items-center gap-1.5 text-sm text-gray-600 hover:bg-gray-50">
+                <Link href="/settings" className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'h-9 px-4 flex items-center gap-1.5 text-sm')}>
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                   编辑资料
                 </Link>
               </>
             ) : (
               <>
-                <button className="btn btn-primary h-9 px-6 text-sm">关注</button>
-                <button className="h-9 w-9 border border-gray-300 rounded-lg flex items-center justify-center text-gray-500 hover:bg-gray-50">
+                <button className={cn(buttonVariants({ size: 'sm' }), 'h-9 px-6 text-sm')}>关注</button>
+                <button className={cn(buttonVariants({ variant: 'outline', size: 'icon' }), 'h-9 w-9')}>
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
                   </svg>
@@ -201,11 +209,13 @@ export default async function DiscoverVoiceProfilePage({ params, searchParams }:
             {linkedBusiness && (
               <section className="mb-8">
                 <h2 className="text-lg font-bold mb-3">关联商家</h2>
-                <Link href={`/businesses/${linkedBusiness.slug}`} className="card p-4 block">
+                <Link href={`/businesses/${linkedBusiness.slug}`} className="block">
+                  <Card className="p-4">
                   <h3 className="font-semibold text-sm">{linkedBusiness.display_name}</h3>
                   {linkedBusiness.category && (
-                    <span className="badge badge-gray text-xs mt-1">{linkedBusiness.category}</span>
+                    <Badge variant="muted" className="text-xs mt-1">{linkedBusiness.category}</Badge>
                   )}
+                  </Card>
                 </Link>
               </section>
             )}
@@ -221,11 +231,11 @@ export default async function DiscoverVoiceProfilePage({ params, searchParams }:
                   <Link
                     key={tab.key}
                     href={tab.key === 'all' ? `/discover/voices/${username}` : `/discover/voices/${username}?tab=${tab.key}`}
-                    className={`px-4 py-2 text-sm font-medium rounded-full transition-colors ${
+                    className={cn(buttonVariants({ size: 'sm' }), 'rounded-full', `${
                       activeTab === tab.key
                         ? 'bg-gray-900 text-white'
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
+                    }`)}
                   >
                     {tab.label}
                   </Link>
@@ -249,7 +259,7 @@ export default async function DiscoverVoiceProfilePage({ params, searchParams }:
           <aside className="hidden lg:block w-80 flex-shrink-0 space-y-6 mt-8 lg:mt-0">
             {/* Recommended Voices */}
             {recommended.length > 0 && (
-              <div className="bg-white rounded-xl border border-gray-200 p-5">
+              <Card className="rounded-xl p-5">
                 <h3 className="font-semibold text-sm mb-3">推荐达人</h3>
                 <div className="space-y-3">
                   {recommended.map((v) => (
@@ -264,17 +274,17 @@ export default async function DiscoverVoiceProfilePage({ params, searchParams }:
                     </Link>
                   ))}
                 </div>
-              </div>
+              </Card>
             )}
 
             {/* Related Guides placeholder */}
-            <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <Card className="rounded-xl p-5">
               <h3 className="font-semibold text-sm mb-3">相关指南</h3>
               <p className="text-xs text-gray-400">即将上线</p>
-            </div>
+            </Card>
           </aside>
         </div>
-      </div>
+      </PageContainer>
     </main>
   );
 }

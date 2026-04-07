@@ -1,4 +1,6 @@
 import { Link } from '@/lib/i18n/routing';
+import { PageContainer } from '@/components/layout/page-shell';
+import { Card } from '@/components/ui/card';
 import { ServiceFAQ } from '@/components/services/service-faq';
 import type { Metadata } from 'next';
 
@@ -29,7 +31,8 @@ const FAQ_ITEMS = [
 
 export default function DrivingRecordGuidePage() {
   return (
-    <main className="max-w-3xl mx-auto px-4 py-8">
+    <main>
+      <PageContainer className="max-w-3xl py-8">
       {/* Breadcrumb */}
       <nav className="text-sm text-gray-400 mb-6">
         <Link href="/" className="hover:text-primary">首页</Link>
@@ -48,7 +51,7 @@ export default function DrivingRecordGuidePage() {
       </div>
 
       {/* Why You Need This */}
-      <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 mb-8">
+      <Card className="bg-amber-50 border-amber-200 p-5 mb-8">
         <h2 className="text-sm font-bold text-amber-900 mb-2 flex items-center gap-2">
           <span>⚠️</span> 为什么需要查看完整驾驶记录？
         </h2>
@@ -57,10 +60,10 @@ export default function DrivingRecordGuidePage() {
           如果你收到的是<strong>警察现场开具的交通罚单</strong>（如闯红灯、闯停车标志、超速、不让行人等），
           这些属于<strong>移动违规（Moving Violations）</strong>，不在NYC Open Data中，需要通过NYS DMV查看。
         </p>
-      </div>
+      </Card>
 
       {/* Coverage Comparison */}
-      <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-8">
+      <Card className="rounded-2xl p-6 mb-8">
         <h2 className="text-lg font-bold text-gray-900 mb-4">两种查询方式对比</h2>
         <div className="overflow-x-auto">
           <table className="w-full text-sm border-collapse">
@@ -83,10 +86,10 @@ export default function DrivingRecordGuidePage() {
             </tbody>
           </table>
         </div>
-      </div>
+      </Card>
 
       {/* Step by Step Guide */}
-      <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-8">
+      <Card className="rounded-2xl p-6 mb-8">
         <h2 className="text-lg font-bold text-gray-900 mb-6">网上查询步骤（$7，最方便）</h2>
 
         <div className="space-y-6">
@@ -163,10 +166,10 @@ export default function DrivingRecordGuidePage() {
             </div>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Understanding Your Record */}
-      <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-8">
+      <Card className="rounded-2xl p-6 mb-8">
         <h2 className="text-lg font-bold text-gray-900 mb-4">如何看懂驾驶记录</h2>
 
         <div className="space-y-4">
@@ -210,7 +213,7 @@ export default function DrivingRecordGuidePage() {
             </ul>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* In-Person Alternative */}
       <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-8">
@@ -233,16 +236,16 @@ export default function DrivingRecordGuidePage() {
       </div>
 
       {/* CTA */}
-      <div className="bg-gradient-to-br from-primary to-orange-600 rounded-2xl p-6 text-center text-white mb-8">
+      <Card className="bg-gradient-to-br from-primary to-orange-600 rounded-2xl p-6 text-center text-white mb-8 border-primary/40">
         <h3 className="text-lg font-bold mb-2">有交通罚单需要帮助？</h3>
         <p className="text-sm text-white/80 mb-4">交通违规可能影响驾照扣分和保险费率。咨询专业律师了解申诉选项。</p>
         <Link href="/businesses" className="inline-flex px-6 py-2.5 bg-white text-primary font-bold rounded-xl hover:bg-gray-50 transition">
           找交通律师
         </Link>
-      </div>
+      </Card>
 
       {/* Quick Links */}
-      <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-8">
+      <Card className="rounded-2xl p-6 mb-8">
         <h2 className="text-sm font-bold text-gray-900 mb-3">官方链接</h2>
         <div className="space-y-2">
           <a href="https://my.dmv.ny.gov/" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-primary hover:underline">
@@ -258,7 +261,7 @@ export default function DrivingRecordGuidePage() {
             <span>🔗</span> 缴纳或申诉TVB罚单
           </a>
         </div>
-      </div>
+      </Card>
 
       {/* FAQ */}
       <ServiceFAQ items={FAQ_ITEMS} />
@@ -282,6 +285,7 @@ export default function DrivingRecordGuidePage() {
       <div className="text-xs text-gray-400 leading-relaxed border-t border-gray-100 pt-6">
         <p>本指南仅供参考。NYS DMV可能随时更新流程和费用。如有疑问请直接联系DMV客服热线：(518) 486-9786。</p>
       </div>
+      </PageContainer>
     </main>
   );
 }

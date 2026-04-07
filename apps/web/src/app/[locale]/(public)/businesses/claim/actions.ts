@@ -1,12 +1,14 @@
 'use server';
 
 import { getCurrentUser } from '@/lib/auth';
+import { getCurrentSite } from '@/lib/sites';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 
 export async function submitBusinessClaim(formData: FormData) {
   const user = await getCurrentUser();
   if (!user) return { error: 'UNAUTHORIZED' };
+  const site = await getCurrentSite();
 
   const displayName = (formData.get('display_name') as string)?.trim();
   const categoryId = formData.get('category_id') as string;
@@ -45,6 +47,7 @@ export async function submitBusinessClaim(formData: FormData) {
       verification_status: 'pending',
       claimed_by_user_id: user.id,
       claimed_at: new Date().toISOString(),
+      site_id: site.id,
       is_active: false, // Not visible until approved
     })
     .select('id')

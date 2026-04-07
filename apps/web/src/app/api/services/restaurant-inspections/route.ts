@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { getSiteByHost } from '@/lib/sites';
 
 const SOCRATA_ENDPOINT = 'https://data.cityofnewyork.us/resource/43nn-pn8j.json';
 
@@ -51,6 +52,8 @@ export async function GET(request: Request) {
   const query = searchParams.get('q')?.trim();
   const camis = searchParams.get('camis')?.trim();
   const boro = searchParams.get('boro')?.trim();
+  const host = request.headers.get('host');
+  const site = await getSiteByHost(host);
 
   if (!query && !camis) {
     return NextResponse.json({ error: 'q or camis parameter required' }, { status: 400 });
@@ -134,6 +137,7 @@ export async function GET(request: Request) {
         .from('businesses')
         .select('display_name, display_name_zh')
         .or(`display_name_zh.ilike.%${query}%,display_name.ilike.%${query}%`)
+        .eq('site_id', site?.id ?? '')
         .eq('status', 'active')
         .limit(20);
 
@@ -164,6 +168,7 @@ export async function GET(request: Request) {
         .from('businesses')
         .select('display_name, display_name_zh')
         .ilike('display_name', `%${query}%`)
+        .eq('site_id', site?.id ?? '')
         .not('display_name_zh', 'is', null)
         .eq('status', 'active')
         .limit(30);

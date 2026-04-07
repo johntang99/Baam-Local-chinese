@@ -1,9 +1,17 @@
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { getCurrentSite } from '@/lib/sites';
+import { decodeRouteSlug } from '@/lib/slug';
 import { notFound } from 'next/navigation';
 import { Link } from '@/lib/i18n/routing';
+import { PageContainer } from '@/components/layout/page-shell';
+import { pickBusinessDisplayName } from '@/lib/business-name';
 import { LeadForm } from '@/components/shared/lead-form';
 import { NewsletterForm } from '@/components/shared/newsletter-form';
+import { Badge } from '@/components/ui/badge';
+import { buttonVariants } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { Metadata } from 'next';
@@ -16,18 +24,21 @@ interface Props {
 type AnyRow = Record<string, any>;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug } = await params;
+  const { slug: rawSlug } = await params;
+  const slug = decodeRouteSlug(rawSlug);
   const supabase = await createClient();
+  const site = await getCurrentSite();
   const { data } = await supabase
     .from('businesses')
     .select('name_zh, name, display_name_zh, display_name, description_zh, short_desc_zh, logo_url, cover_image_url')
     .eq('slug', slug)
+    .eq('site_id', site.id)
     .single();
 
   const biz = data as AnyRow | null;
   if (!biz) return { title: 'Not Found' };
 
-  const name = biz.display_name_zh || biz.name_zh || biz.display_name || biz.name || '';
+  const name = pickBusinessDisplayName(biz, '');
   const desc = biz.short_desc_zh || biz.description_zh || '';
 
   return {
@@ -59,8 +70,10 @@ function getYouTubeId(url: string): string | null {
 }
 
 export default async function BusinessDetailPage({ params }: Props) {
-  const { slug } = await params;
+  const { slug: rawSlug } = await params;
+  const slug = decodeRouteSlug(rawSlug);
   const supabase = await createClient();
+  const site = await getCurrentSite();
 
   // Fetch business with location and categories
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -68,13 +81,14 @@ export default async function BusinessDetailPage({ params }: Props) {
     .from('businesses')
     .select('*, business_locations(address_line1, address_line2, city, state, zip_code, latitude, longitude, hours_json), business_categories(categories(name_zh, slug))')
     .eq('slug', slug)
+    .eq('site_id', site.id)
     .eq('is_active', true)
     .single();
 
   const biz = data as AnyRow | null;
   if (error || !biz) notFound();
 
-  const name = biz.display_name_zh || biz.name_zh || biz.display_name || biz.name;
+  const name = pickBusinessDisplayName(biz);
   // Prefer full description, fallback to short, then AI summary
   const fullDesc = biz.full_desc_zh || '';
   const shortDesc = biz.short_desc_zh || biz.ai_summary_zh || biz.short_desc_en || '';
@@ -193,7 +207,7 @@ export default async function BusinessDetailPage({ params }: Props) {
   return (
     <main>
       {/* Breadcrumb */}
-      <div className="max-w-7xl mx-auto px-4 py-3">
+      <PageContainer className="py-3">
         <nav className="flex items-center gap-2 text-sm text-text-muted">
           <Link href="/" className="hover:text-primary">首页</Link>
           <span>/</span>
@@ -207,10 +221,10 @@ export default async function BusinessDetailPage({ params }: Props) {
           <span>/</span>
           <span className="text-text-secondary">{name}</span>
         </nav>
-      </div>
+      </PageContainer>
 
       {/* Hero / Cover Image */}
-      <section className="max-w-7xl mx-auto px-4">
+      <PageContainer>
         <div className="relative rounded-xl overflow-hidden">
           {coverPhoto ? (
             <div className="relative w-full" style={{ aspectRatio: '16/9' }}>
@@ -239,10 +253,10 @@ export default async function BusinessDetailPage({ params }: Props) {
             </span>
           </div>
         </div>
-      </section>
+      </PageContainer>
 
       {/* Business Header */}
-      <section className="max-w-7xl mx-auto px-4 pt-14 sm:pt-16 pb-6">
+      <PageContainer className="pt-14 sm:pt-16 pb-6">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
             {/* Name + Verified */}
@@ -257,7 +271,7 @@ export default async function BusinessDetailPage({ params }: Props) {
             {/* Core info row */}
             <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-sm">
               {categories.map((cat: string) => (
-                <span key={cat} className="badge badge-blue">{cat}</span>
+                <Badge key={cat} className="text-xs bg-blue-100 text-blue-700">{cat}</Badge>
               ))}
               <div className="flex items-center gap-1">
                 <span className="text-yellow-500">{renderStars(biz.avg_rating || 0)}</span>
@@ -298,15 +312,15 @@ export default async function BusinessDetailPage({ params }: Props) {
             )}
           </div>
         </div>
-      </section>
+      </PageContainer>
 
       {/* CTA Buttons — click-to-action */}
-      <section className="max-w-7xl mx-auto px-4 pb-6">
+      <PageContainer className="pb-6">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {biz.phone && (
             <a
               href={`tel:${biz.phone.replace(/[^+\d]/g, '')}`}
-              className="flex items-center justify-center gap-2 h-11 bg-primary text-text-inverse text-sm font-medium rounded-lg hover:opacity-90 transition"
+              className={cn(buttonVariants(), 'h-11')}
             >
               <span>📞</span> {biz.phone}
             </a>
@@ -316,7 +330,7 @@ export default async function BusinessDetailPage({ params }: Props) {
               href={mapUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 h-11 bg-bg-card border border-border text-sm font-medium rounded-lg hover:bg-border-light transition"
+              className={cn(buttonVariants({ variant: 'outline' }), 'h-11')}
             >
               <span>📍</span> 查看地图
             </a>
@@ -324,7 +338,7 @@ export default async function BusinessDetailPage({ params }: Props) {
           {biz.email && (
             <a
               href={`mailto:${biz.email}`}
-              className="flex items-center justify-center gap-2 h-11 bg-bg-card border border-border text-sm font-medium rounded-lg hover:bg-border-light transition"
+              className={cn(buttonVariants({ variant: 'outline' }), 'h-11')}
             >
               <span>📧</span> 发送邮件
             </a>
@@ -334,16 +348,16 @@ export default async function BusinessDetailPage({ params }: Props) {
               href={biz.website_url || biz.website}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 h-11 bg-bg-card border border-border text-sm font-medium rounded-lg hover:bg-border-light transition"
+              className={cn(buttonVariants({ variant: 'outline' }), 'h-11')}
             >
               <span>🌐</span> 访问网站
             </a>
           )}
         </div>
-      </section>
+      </PageContainer>
 
       {/* Main Content + Sidebar */}
-      <div className="max-w-7xl mx-auto px-4 pb-16">
+      <PageContainer className="pb-16">
         <div className="lg:flex lg:gap-10">
 
           {/* Main Content Column */}
@@ -356,12 +370,12 @@ export default async function BusinessDetailPage({ params }: Props) {
 
             {/* AI Description */}
             {description && (
-              <div className="ai-summary-card mb-8">
+              <Card className="ai-summary-card mb-8">
                 <h3 className="font-semibold text-sm mb-2">关于{name}</h3>
                 <div className="text-sm leading-relaxed prose prose-sm max-w-none [&_p]:mb-3 [&_h2]:text-base [&_h2]:font-semibold [&_h2]:mt-4 [&_h2]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_li]:mb-1 [&_a]:text-primary [&_a]:underline">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>{description}</ReactMarkdown>
                 </div>
-              </div>
+              </Card>
             )}
 
             {/* Website Link Preview — FB-style card */}
@@ -417,12 +431,9 @@ export default async function BusinessDetailPage({ params }: Props) {
                   {businessArticles.map((article) => {
                     const domain = (article.source_url || '').replace(/^https?:\/\/(www\.)?/, '').replace(/\/.*$/, '');
                     return (
-                      <Link
-                        key={article.id}
-                        href={`/guides/${article.slug}`}
-                        className="card overflow-hidden block hover:border-primary/30 transition-colors group"
-                      >
-                        <div className="flex">
+                      <Link key={article.id} href={`/guides/${article.slug}`} className="block group">
+                        <Card className="overflow-hidden hover:border-primary/30 transition-colors">
+                          <div className="flex">
                           {article.cover_image_url && (
                             <div className="w-28 sm:w-36 flex-shrink-0">
                               <img src={article.cover_image_url} alt="" className="w-full h-full object-cover" />
@@ -440,7 +451,8 @@ export default async function BusinessDetailPage({ params }: Props) {
                               {article.ai_summary_zh || article.summary_zh || ''}
                             </p>
                           </div>
-                        </div>
+                          </div>
+                        </Card>
                       </Link>
                     );
                   })}
@@ -520,7 +532,7 @@ export default async function BusinessDetailPage({ params }: Props) {
             )}
 
             {/* Rating Distribution */}
-            <div className="card p-5 mb-6">
+            <Card className="p-5 mb-6">
               <div className="flex flex-col sm:flex-row sm:items-center gap-6">
                 <div className="text-center sm:text-left flex-shrink-0">
                   <div className="text-5xl font-bold">{biz.avg_rating?.toFixed(1) || '—'}</div>
@@ -528,10 +540,10 @@ export default async function BusinessDetailPage({ params }: Props) {
                   <div className="text-sm text-text-muted mt-1">{biz.review_count || 0} 条评价</div>
                 </div>
               </div>
-            </div>
+            </Card>
 
             {/* Write Review CTA */}
-            <div className="card p-5 mb-6 bg-gradient-to-r from-primary/5 to-orange-50 border-primary/20">
+            <Card className="p-5 mb-6 bg-gradient-to-r from-primary/5 to-orange-50 border-primary/20">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-semibold text-sm">去过这家店？</p>
@@ -544,7 +556,7 @@ export default async function BusinessDetailPage({ params }: Props) {
                   写评价
                 </a>
               </div>
-            </div>
+            </Card>
 
             {/* User Reviews (our platform) */}
             {userReviews.length > 0 && (
@@ -557,7 +569,7 @@ export default async function BusinessDetailPage({ params }: Props) {
                   {userReviews.map((review) => {
                     const authorName = review.profiles?.display_name || review.title || '匿名用户';
                     return (
-                      <div key={review.id} className="card p-5">
+                      <Card key={review.id} className="p-5">
                         <div className="flex items-start gap-3 mb-3">
                           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/20 to-orange-200 flex items-center justify-center text-sm font-bold text-primary flex-shrink-0">
                             {authorName.charAt(0)}
@@ -573,7 +585,7 @@ export default async function BusinessDetailPage({ params }: Props) {
                           </div>
                         </div>
                         <p className="text-sm text-text-secondary leading-relaxed">{review.body || ''}</p>
-                      </div>
+                      </Card>
                     );
                   })}
                 </div>
@@ -592,7 +604,7 @@ export default async function BusinessDetailPage({ params }: Props) {
                     const authorName = review.google_author_name || review.title || 'Google User';
                     const publishDate = review.google_publish_time || review.created_at;
                     return (
-                      <div key={review.id} className="card p-5">
+                      <Card key={review.id} className="p-5">
                         <div className="flex items-start gap-3 mb-3">
                           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center text-sm font-bold text-blue-600 flex-shrink-0">
                             {authorName.charAt(0)}
@@ -611,7 +623,7 @@ export default async function BusinessDetailPage({ params }: Props) {
                           </div>
                         </div>
                         <p className="text-sm text-text-secondary leading-relaxed">{review.body || ''}</p>
-                      </div>
+                      </Card>
                     );
                   })}
                 </div>
@@ -621,13 +633,13 @@ export default async function BusinessDetailPage({ params }: Props) {
 
             {/* No reviews at all */}
             {reviews.length === 0 && (
-              <div className="card p-8 text-center mb-6">
+              <Card className="p-8 text-center mb-6">
                 <p className="text-text-muted text-sm">暂无评价，成为第一个评价的人吧！</p>
-              </div>
+              </Card>
             )}
 
             {/* Write Review Form */}
-            <div id="write-review" className="card p-6 mb-6">
+            <Card id="write-review" className="p-6 mb-6">
               <h3 className="font-semibold mb-4">写评价</h3>
               <form action={`/zh/businesses/${biz.slug}/review`} method="GET">
                 <div className="space-y-4">
@@ -658,7 +670,7 @@ export default async function BusinessDetailPage({ params }: Props) {
                   </button>
                 </div>
               </form>
-            </div>
+            </Card>
 
             </div>
             {/* ===== FAQ Section ===== */}
@@ -675,7 +687,7 @@ export default async function BusinessDetailPage({ params }: Props) {
 
                 <div className="space-y-3 mb-6">
                   {faq.map((item, idx) => (
-                    <details key={idx} className="card overflow-hidden group">
+                    <details key={idx} className="overflow-hidden group rounded-xl border border-gray-200 bg-white shadow-sm">
                       <summary className="flex items-center justify-between p-5 text-left cursor-pointer hover:bg-border-light/50 transition list-none [&::-webkit-details-marker]:hidden">
                         <span className="font-medium text-sm pr-4">{item.q}</span>
                         <svg className="w-5 h-5 text-text-muted flex-shrink-0 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -717,7 +729,7 @@ export default async function BusinessDetailPage({ params }: Props) {
             {/* Two-column: Contact Info (left) + Hours (right) */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
               {/* Left: Contact Details */}
-              <div className="card p-5">
+              <Card className="p-5">
                 <h3 className="font-semibold text-base mb-4">联系信息</h3>
                 <div className="space-y-4">
                   {fullAddress && (
@@ -805,10 +817,10 @@ export default async function BusinessDetailPage({ params }: Props) {
                     </div>
                   )}
                 </div>
-              </div>
+              </Card>
 
               {/* Right: Business Hours */}
-              <div className="card p-5">
+              <Card className="p-5">
                 <h3 className="font-semibold text-base mb-4 flex items-center gap-2">
                   <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -834,7 +846,7 @@ export default async function BusinessDetailPage({ params }: Props) {
                 ) : (
                   <p className="text-sm text-text-muted">营业时间信息即将更新</p>
                 )}
-              </div>
+              </Card>
             </div>
 
             </div>
@@ -887,12 +899,14 @@ export default async function BusinessDetailPage({ params }: Props) {
                 <h2 className="text-xl font-bold mb-5">📚 相关生活指南</h2>
                 <div className="grid sm:grid-cols-2 gap-4">
                   {relatedGuides.map((guide) => (
-                    <Link key={guide.id} href={`/guides/${guide.slug}`} className="card p-4 block hover:border-primary/30 transition-colors group">
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-50 text-green-600 font-medium">生活指南</span>
-                      <h3 className="font-medium text-sm line-clamp-2 mt-1 group-hover:text-primary transition-colors">{guide.title_zh || guide.title_en}</h3>
-                      {(guide.ai_summary_zh || guide.summary_zh) && (
-                        <p className="text-xs text-text-secondary mt-1 line-clamp-2">{guide.ai_summary_zh || guide.summary_zh}</p>
-                      )}
+                    <Link key={guide.id} href={`/guides/${guide.slug}`} className="block group">
+                      <Card className="p-4 hover:border-primary/30 transition-colors">
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-50 text-green-600 font-medium">生活指南</span>
+                        <h3 className="font-medium text-sm line-clamp-2 mt-1 group-hover:text-primary transition-colors">{guide.title_zh || guide.title_en}</h3>
+                        {(guide.ai_summary_zh || guide.summary_zh) && (
+                          <p className="text-xs text-text-secondary mt-1 line-clamp-2">{guide.ai_summary_zh || guide.summary_zh}</p>
+                        )}
+                      </Card>
                     </Link>
                   ))}
                 </div>
@@ -904,22 +918,22 @@ export default async function BusinessDetailPage({ params }: Props) {
           <div className="lg:w-80 flex-shrink-0 space-y-8 mt-8 lg:mt-8">
 
             {/* Lead Capture Form */}
-            <div className="lead-capture sticky top-20" id="lead-form">
+            <Card className="lead-capture sticky top-20 p-5" id="lead-form">
               <h3 className="font-bold text-base mb-1">咨询这家商家</h3>
               <p className="text-xs text-text-muted mb-4">填写信息，商家将尽快与您联系</p>
               <LeadForm businessId={biz.id} sourceType="business_page" />
-            </div>
+            </Card>
 
             {/* Newsletter */}
-            <div className="bg-bg-card rounded-xl border border-border p-5">
+            <Card className="bg-bg-card p-5">
               <h3 className="font-semibold text-sm mb-3">📬 订阅本地周报</h3>
               <p className="text-xs text-text-secondary mb-3">每周精选本地新闻、指南、活动</p>
               <NewsletterForm source="business_detail" />
-            </div>
+            </Card>
           </div>
 
         </div>
-      </div>
+      </PageContainer>
     </main>
   );
 }

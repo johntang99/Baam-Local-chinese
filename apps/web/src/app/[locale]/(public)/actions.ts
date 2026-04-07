@@ -2,6 +2,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getCurrentUser } from '@/lib/auth';
+import { getCurrentSite } from '@/lib/sites';
 import { revalidatePath } from 'next/cache';
 import { moderateDiscoverPost } from '@/lib/ai/moderate-post';
 
@@ -70,11 +71,12 @@ export async function createForumThread(formData: FormData) {
     : [];
 
   const supabase = createAdminClient();
+  const site = await getCurrentSite();
 
   // Get board slug for redirect
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: board } = await (supabase as any)
-    .from('categories')
+    .from('categories_forum')
     .select('slug')
     .eq('id', boardId)
     .single();
@@ -91,6 +93,7 @@ export async function createForumThread(formData: FormData) {
       author_id: user.id,
       author_name: user.displayName,
       region_id: user.regionId,
+      site_id: site.id,
       language: 'zh',
       status: 'published',
       ai_tags: tags,
@@ -124,6 +127,7 @@ export async function createForumReply(formData: FormData) {
   }
 
   const supabase = createAdminClient();
+  const site = await getCurrentSite();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase as any)
@@ -133,6 +137,7 @@ export async function createForumReply(formData: FormData) {
       author_id: user.id,
       author_name: user.displayName,
       body,
+      site_id: site.id,
       status: 'published',
     });
 
@@ -145,7 +150,8 @@ export async function createForumReply(formData: FormData) {
   await (supabase as any)
     .from('forum_threads')
     .update({ last_replied_at: new Date().toISOString() })
-    .eq('id', threadId);
+    .eq('id', threadId)
+    .eq('site_id', site.id);
 
   revalidatePath(`/forum`);
   return { success: true };
@@ -179,6 +185,7 @@ export async function createVoicePost(formData: FormData) {
     : [];
 
   const supabase = createAdminClient();
+  const site = await getCurrentSite();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: post, error } = await (supabase as any)
@@ -193,6 +200,7 @@ export async function createVoicePost(formData: FormData) {
       visibility: 'public',
       status: 'published',
       region_id: user.regionId,
+      site_id: site.id,
       language: 'zh',
       topic_tags: tags,
     })
@@ -250,6 +258,7 @@ export async function createDiscoverPost(formData: FormData) {
     : [];
 
   const supabase = createAdminClient();
+  const site = await getCurrentSite();
 
   // AI moderation check
   const moderation = await moderateDiscoverPost(title || '', content || '');
@@ -271,6 +280,7 @@ export async function createDiscoverPost(formData: FormData) {
       ai_spam_score: moderation.score,
       moderation_reason: moderation.reason,
       region_id: user.regionId,
+      site_id: site.id,
       language: 'zh',
       topic_tags: tags,
       cover_images: coverImages.length > 0 ? coverImages : null,
@@ -327,12 +337,14 @@ export async function searchBusinesses(query: string) {
   if (!query || query.length < 1) return { businesses: [] };
 
   const supabase = createAdminClient();
+  const site = await getCurrentSite();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data } = await (supabase as any)
     .from('businesses')
     .select('id, slug, display_name, display_name_zh, short_desc_zh, address_line1')
     .or(`display_name.ilike.%${query}%,display_name_zh.ilike.%${query}%`)
+    .eq('site_id', site.id)
     .eq('status', 'active')
     .limit(8);
 
@@ -349,6 +361,7 @@ export async function deleteDiscoverPost(formData: FormData) {
   if (!postId) return { error: '缺少帖子ID' };
 
   const supabase = createAdminClient();
+  const site = await getCurrentSite();
 
   // Verify ownership
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -356,6 +369,7 @@ export async function deleteDiscoverPost(formData: FormData) {
     .from('voice_posts')
     .select('id, author_id')
     .eq('id', postId)
+    .eq('site_id', site.id)
     .single();
 
   if (!post || post.author_id !== user.id) {
@@ -373,7 +387,8 @@ export async function deleteDiscoverPost(formData: FormData) {
   const { error } = await (supabase as any)
     .from('voice_posts')
     .delete()
-    .eq('id', postId);
+    .eq('id', postId)
+    .eq('site_id', site.id);
 
   if (error) return { error: '删除失败：' + error.message };
 
@@ -468,6 +483,7 @@ export async function createVoiceComment(formData: FormData) {
   if (!postId || !content) return { error: '请输入评论内容' };
 
   const supabase = createAdminClient();
+  const site = await getCurrentSite();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase as any)
@@ -475,6 +491,7 @@ export async function createVoiceComment(formData: FormData) {
     .insert({
       post_id: postId,
       author_id: user.id,
+      site_id: site.id,
       content,
       status: 'approved',
     });
@@ -501,6 +518,7 @@ export async function submitLead(formData: FormData) {
 
   const user = await getCurrentUser().catch(() => null);
   const supabase = createAdminClient();
+  const site = await getCurrentSite();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase as any)
@@ -508,6 +526,7 @@ export async function submitLead(formData: FormData) {
     .insert({
       business_id: businessId || null,
       source_type: sourceType,
+      site_id: site.id,
       source_article_id: formData.get('source_article_id') || null,
       user_id: user?.id || null,
       contact_name: name || null,

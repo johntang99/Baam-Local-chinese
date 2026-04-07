@@ -1,28 +1,70 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { CategoryTree } from './CategoryTree';
+import { ContentCategoryTable } from './ContentCategoryTable';
+import Link from 'next/link';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyRow = Record<string, any>;
 
-export default async function AdminSettingsPage() {
+interface Props {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
+
+const TABS = [
+  { key: 'regions', label: '地区管理' },
+  { key: 'business', label: '商家分类' },
+  { key: 'guides', label: 'Guide 分类' },
+  { key: 'news', label: 'News 分类' },
+  { key: 'forum', label: 'Forum 分类' },
+  { key: 'discover', label: 'Discover 分类' },
+] as const;
+
+function toSiteScopeRows(rows: AnyRow[], siteScope: 'zh' | 'en') {
+  return rows
+    .filter((row) => {
+      const scope = String(row.site_scope || '').toLowerCase();
+      return scope ? scope === siteScope : siteScope === 'zh';
+    })
+    .sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0));
+}
+
+export default async function AdminSettingsPage({ searchParams }: Props) {
+  const params = await searchParams;
+  const activeTabParam = typeof params.tab === 'string' ? params.tab : '';
+  const activeTab = TABS.some((t) => t.key === activeTabParam) ? activeTabParam : 'regions';
+
   const supabase = createAdminClient();
 
-  const [{ data: rawRegions }, { data: rawCategories }, { data: rawBusinessCategories }] = await Promise.all([
+  const [
+    { data: rawRegions },
+    { data: rawBusinessCategories },
+    { data: rawGuideRows },
+    { data: rawNewsRows },
+    { data: rawForumRows },
+    { data: rawDiscoverRows },
+  ] = await Promise.all([
     supabase.from('regions').select('*').order('slug'),
-    supabase.from('categories').select('*').order('type').order('sort_order'),
-    supabase.from('categories').select('*').eq('type', 'business').order('sort_order'),
+    supabase.from('categories').select('*').eq('type', 'business').eq('site_scope', 'zh').order('sort_order'),
+    supabase.from('categories_guide').select('*').order('sort_order'),
+    supabase.from('categories_news').select('*').order('sort_order'),
+    supabase.from('categories_forum').select('*').order('sort_order'),
+    supabase.from('categories_discover').select('*').order('sort_order'),
   ]);
   const regions = (rawRegions || []) as AnyRow[];
-  const categories = (rawCategories || []) as AnyRow[];
   const businessCategories = (rawBusinessCategories || []) as AnyRow[];
+  const guideRows = (rawGuideRows || []) as AnyRow[];
+  const newsRows = (rawNewsRows || []) as AnyRow[];
+  const forumRows = (rawForumRows || []) as AnyRow[];
+  const discoverRows = (rawDiscoverRows || []) as AnyRow[];
 
-  // Group categories by type
-  const categoryGroups: Record<string, AnyRow[]> = {};
-  for (const cat of categories) {
-    const type = cat.type || 'other';
-    if (!categoryGroups[type]) categoryGroups[type] = [];
-    categoryGroups[type].push(cat);
-  }
+  const guideZhCategories = toSiteScopeRows(guideRows, 'zh');
+  const guideEnCategories = toSiteScopeRows(guideRows, 'en');
+  const newsZhCategories = toSiteScopeRows(newsRows, 'zh');
+  const newsEnCategories = toSiteScopeRows(newsRows, 'en');
+  const forumZhCategories = toSiteScopeRows(forumRows, 'zh');
+  const forumEnCategories = toSiteScopeRows(forumRows, 'en');
+  const discoverZhCategories = toSiteScopeRows(discoverRows, 'zh');
+  const discoverEnCategories = toSiteScopeRows(discoverRows, 'en');
 
   return (
     <div>
@@ -34,9 +76,27 @@ export default async function AdminSettingsPage() {
         </div>
       </div>
 
+      <div className="px-6 pt-4">
+        <div className="flex flex-wrap gap-2">
+          {TABS.map((tab) => (
+            <Link
+              key={tab.key}
+              href={`/admin/settings?tab=${tab.key}`}
+              className={`px-3 py-1.5 text-sm rounded-md border transition-colors ${
+                activeTab === tab.key
+                  ? 'border-primary text-primary bg-primary/5'
+                  : 'border-border text-text-muted hover:text-text-primary'
+              }`}
+            >
+              {tab.label}
+            </Link>
+          ))}
+        </div>
+      </div>
+
       <div className="p-6 space-y-8">
-        {/* Section 1: Regions */}
-        <section>
+        {activeTab === 'regions' && (
+          <section>
           <h2 className="text-lg font-semibold mb-4">地区管理</h2>
           <div className="card overflow-hidden">
             <div className="overflow-x-auto">
@@ -74,98 +134,94 @@ export default async function AdminSettingsPage() {
               </table>
             </div>
           </div>
-        </section>
+          </section>
+        )}
 
-        {/* Section 2: Business Category Tree Management */}
-        <section>
-          <CategoryTree categories={businessCategories} />
-        </section>
+        {activeTab === 'business' && (
+          <section>
+            <CategoryTree categories={businessCategories} />
+          </section>
+        )}
 
-        {/* Section 3: All Categories (by type) */}
-        <section>
-          <h2 className="text-lg font-semibold mb-4">分类管理</h2>
-          {Object.keys(categoryGroups).length === 0 ? (
-            <div className="card p-6 text-center text-text-muted">暂无分类</div>
-          ) : (
-            <div className="space-y-4">
-              {Object.entries(categoryGroups).map(([type, cats]) => (
-                <div key={type} className="card overflow-hidden">
-                  <div className="px-4 py-3 bg-bg-page border-b border-border">
-                    <h3 className="text-sm font-semibold text-text-secondary uppercase">{type}</h3>
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className="data-table w-full">
-                      <thead>
-                        <tr>
-                          <th>中文名</th>
-                          <th>英文名</th>
-                          <th>类型</th>
-                          <th>排序</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {cats.map((cat) => (
-                          <tr key={cat.id}>
-                            <td className="font-medium">{cat.name_zh || '—'}</td>
-                            <td className="text-text-secondary">{cat.name_en || '—'}</td>
-                            <td>{cat.type || '—'}</td>
-                            <td>{cat.sort_order ?? '—'}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
+        {activeTab === 'guides' && (
+          <section className="space-y-4">
+            <h2 className="text-lg font-semibold">Guide 分类</h2>
+            <p className="text-sm text-text-muted">
+              当前为双表管理：Chinese Site 与 English Site 分开维护，避免互相污染。
+            </p>
+            <ContentCategoryTable
+              title="Chinese Site Guide 分类"
+              tableName="categories_guide"
+              siteScope="zh"
+              categoryType="article"
+              categories={guideZhCategories}
+            />
+            <ContentCategoryTable
+              title="English Site Guide 分类"
+              tableName="categories_guide"
+              siteScope="en"
+              categoryType="article"
+              categories={guideEnCategories}
+            />
+          </section>
+        )}
 
-        {/* Section 4: System Parameters */}
-        <section>
-          <h2 className="text-lg font-semibold mb-4">系统参数</h2>
-          <div className="card p-6">
-            <div className="grid gap-6 max-w-xl">
-              <div>
-                <label className="block text-sm font-medium mb-1">默认地区</label>
-                <select className="w-full border border-border rounded-lg px-3 py-2 bg-bg-card text-text-primary" disabled>
-                  <option>melbourne</option>
-                </select>
-                <p className="text-xs text-text-muted mt-1">新用户注册时的默认地区</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">默认语言</label>
-                <select className="w-full border border-border rounded-lg px-3 py-2 bg-bg-card text-text-primary" disabled>
-                  <option>zh-CN</option>
-                  <option>en</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">AI模型</label>
-                <input
-                  type="text"
-                  className="w-full border border-border rounded-lg px-3 py-2 bg-bg-card text-text-primary"
-                  defaultValue="gpt-4o-mini"
-                  disabled
-                />
-                <p className="text-xs text-text-muted mt-1">当前用于内容生成的AI模型</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">维护模式</label>
-                <div className="flex items-center gap-2">
-                  <input type="checkbox" disabled className="rounded" />
-                  <span className="text-sm text-text-secondary">启用维护模式（前端将显示维护页面）</span>
-                </div>
-              </div>
-              <div>
-                <button className="btn btn-primary h-9 px-6 text-sm" disabled>
-                  保存设置
-                </button>
-                <p className="text-xs text-text-muted mt-2">设置功能即将上线</p>
-              </div>
-            </div>
-          </div>
-        </section>
+        {activeTab === 'news' && (
+          <section className="space-y-4">
+            <h2 className="text-lg font-semibold">News 分类</h2>
+            <ContentCategoryTable
+              title="Chinese Site News 分类"
+              tableName="categories_news"
+              siteScope="zh"
+              categories={newsZhCategories}
+            />
+            <ContentCategoryTable
+              title="English Site News 分类"
+              tableName="categories_news"
+              siteScope="en"
+              categories={newsEnCategories}
+            />
+          </section>
+        )}
+
+        {activeTab === 'forum' && (
+          <section className="space-y-4">
+            <h2 className="text-lg font-semibold">Forum 分类</h2>
+            <ContentCategoryTable
+              title="Chinese Site Forum 分类"
+              tableName="categories_forum"
+              siteScope="zh"
+              categoryType="forum"
+              categories={forumZhCategories}
+            />
+            <ContentCategoryTable
+              title="English Site Forum 分类"
+              tableName="categories_forum"
+              siteScope="en"
+              categoryType="forum"
+              categories={forumEnCategories}
+            />
+          </section>
+        )}
+
+        {activeTab === 'discover' && (
+          <section className="space-y-4">
+            <h2 className="text-lg font-semibold">Discover 分类</h2>
+            <ContentCategoryTable
+              title="Chinese Site Discover 分类"
+              tableName="categories_discover"
+              siteScope="zh"
+              categories={discoverZhCategories}
+            />
+            <ContentCategoryTable
+              title="English Site Discover 分类"
+              tableName="categories_discover"
+              siteScope="en"
+              categories={discoverEnCategories}
+            />
+          </section>
+        )}
+
       </div>
     </div>
   );

@@ -1,4 +1,6 @@
 import { AskChat } from './chat';
+import { PageContainer } from '@/components/layout/page-shell';
+import { Card } from '@/components/ui/card';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -16,9 +18,9 @@ export default async function AskPage({ searchParams }: Props) {
 
   return (
     <main>
-      <div className="max-w-3xl mx-auto px-4 py-8">
+      <PageContainer className="max-w-3xl py-8">
         {/* Header */}
-        <div className="text-center mb-8">
+        <Card className="text-center mb-8 p-6 sm:p-8 bg-gradient-to-br from-primary/5 to-orange-50 border-primary/20">
           <div className="w-16 h-16 bg-gradient-to-br from-primary to-orange-500 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4">
             🤖
           </div>
@@ -26,11 +28,11 @@ export default async function AskPage({ searchParams }: Props) {
           <p className="text-text-secondary text-sm">
             问我任何纽约本地生活问题 — 找医生、租房、报税、美食、活动
           </p>
-        </div>
+        </Card>
 
         {/* Chat Interface */}
         <AskChat initialQuery={initialQuery} />
-      </div>
+      </PageContainer>
     </main>
   );
 }

@@ -1,5 +1,6 @@
 import { getCurrentUser } from '@/lib/auth';
 import { redirect } from 'next/navigation';
+import { PageContainer } from '@/components/layout/page-shell';
 import { SettingsForm } from './form';
 import type { Metadata } from 'next';
 import { createClient } from '@/lib/supabase/server';
@@ -27,10 +28,10 @@ export default async function SettingsPage() {
 
   return (
     <main>
-      <div className="max-w-2xl mx-auto px-4 py-8">
+      <PageContainer className="max-w-2xl py-8">
         <h1 className="text-2xl font-bold mb-6">个人设置</h1>
         <SettingsForm profile={profile} userEmail={user.email} />
-      </div>
+      </PageContainer>
     </main>
   );
 }

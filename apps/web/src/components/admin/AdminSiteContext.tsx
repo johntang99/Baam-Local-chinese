@@ -6,7 +6,8 @@ import { getStoredSite, setStoredSite } from '@/lib/admin-site-store';
 // Also set a cookie so server components can read the selection
 function setCookie(site: { siteSlug: string; locale: string }) {
   if (typeof document === 'undefined') return;
-  document.cookie = `baam-admin-site=${JSON.stringify(site)};path=/admin;max-age=31536000;SameSite=Lax`;
+  const encoded = encodeURIComponent(JSON.stringify(site));
+  document.cookie = `baam-admin-site=${encoded};path=/admin;max-age=31536000;SameSite=Lax`;
 }
 import { createClient } from '@/lib/supabase/client';
 

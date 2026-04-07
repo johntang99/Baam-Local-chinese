@@ -1,7 +1,14 @@
 import { createClient } from '@/lib/supabase/server';
+import { getCurrentSite } from '@/lib/sites';
 import { getTranslations } from 'next-intl/server';
 import { Link } from '@/lib/i18n/routing';
+import { PageContainer, SectionBlock, SectionHeader } from '@/components/layout/page-shell';
 import { NewsletterForm } from '@/components/shared/newsletter-form';
+import { Badge } from '@/components/ui/badge';
+import { buttonVariants } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
+import { pickBusinessDisplayName } from '@/lib/business-name';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyRow = Record<string, any>;
@@ -77,27 +84,71 @@ function timeAgo(dateStr: string | null): string {
   return new Date(dateStr).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
 }
 
-export default async function HomePage() {
+interface Props {
+  params: Promise<{ locale: string }>;
+}
+
+export default async function HomePage({ params }: Props) {
+  const { locale } = await params;
+  const siteScope = String(locale || '').toLowerCase().startsWith('en') ? 'en' : 'zh';
   const t = await getTranslations();
   const supabase = await createClient();
+  const site = await getCurrentSite();
+  const isEnglishSite = siteScope === 'en';
+
+  let newsQuery = supabase
+    .from('articles')
+    .select('*')
+    .eq('site_id', site.id)
+    .in('content_vertical', ['news_alert', 'news_brief', 'news_explainer', 'news_roundup', 'news_community'])
+    .eq('editorial_status', 'published')
+    .order('published_at', { ascending: false })
+    .limit(3);
+  let guidesQuery = supabase
+    .from('articles')
+    .select('*')
+    .eq('site_id', site.id)
+    .in('content_vertical', ['guide_howto', 'guide_checklist', 'guide_bestof', 'guide_comparison', 'guide_scenario'])
+    .eq('editorial_status', 'published')
+    .order('view_count', { ascending: false })
+    .limit(4);
+  let alertsQuery = supabase
+    .from('articles')
+    .select('*')
+    .eq('site_id', site.id)
+    .eq('content_vertical', 'news_alert')
+    .eq('editorial_status', 'published')
+    .order('published_at', { ascending: false })
+    .limit(1);
+
+  // Prevent cross-language bleed on homepage sections.
+  if (isEnglishSite) {
+    newsQuery = newsQuery.not('title_en', 'is', null);
+    guidesQuery = guidesQuery.not('title_en', 'is', null);
+    alertsQuery = alertsQuery.not('title_en', 'is', null);
+  } else {
+    newsQuery = newsQuery.not('title_zh', 'is', null);
+    guidesQuery = guidesQuery.not('title_zh', 'is', null);
+    alertsQuery = alertsQuery.not('title_zh', 'is', null);
+  }
 
   // Parallel queries
   const [
     { data: rNews }, { data: rGuides }, { data: rBiz },
     { data: rThreads }, { data: rEvents }, { data: rVoices },
-    { data: rAlerts }, { data: rCategories }, { data: rBoards },
+    { data: rAlerts }, { data: rCategories }, { data: rBoardsScoped },
     { data: rDiscoverPosts },
   ] = await Promise.all([
-    supabase.from('articles').select('*').in('content_vertical', ['news_alert','news_brief','news_explainer','news_roundup','news_community']).eq('editorial_status', 'published').order('published_at', { ascending: false }).limit(3),
-    supabase.from('articles').select('*').in('content_vertical', ['guide_howto','guide_checklist','guide_bestof','guide_comparison','guide_scenario']).eq('editorial_status', 'published').order('view_count', { ascending: false }).limit(4),
-    supabase.from('businesses').select('*').eq('is_active', true).eq('status', 'active').order('is_featured', { ascending: false }).order('avg_rating', { ascending: false }).limit(6),
-    supabase.from('forum_threads').select('*').eq('status', 'published').order('reply_count', { ascending: false }).limit(5),
-    supabase.from('events').select('*').eq('status', 'published').order('start_at', { ascending: true }).limit(4),
+    newsQuery,
+    guidesQuery,
+    supabase.from('businesses').select('*').eq('site_id', site.id).eq('is_active', true).eq('status', 'active').order('is_featured', { ascending: false }).order('total_score', { ascending: false, nullsFirst: false }).limit(6),
+    supabase.from('forum_threads').select('*').eq('site_id', site.id).eq('status', 'published').order('reply_count', { ascending: false }).limit(5),
+    supabase.from('events').select('*').eq('site_id', site.id).eq('status', 'published').order('start_at', { ascending: true }).limit(4),
     supabase.from('profiles').select('*').in('profile_type', ['creator','expert','professional','community_leader','business_owner']).order('follower_count', { ascending: false }).limit(4),
-    supabase.from('articles').select('*').eq('content_vertical', 'news_alert').eq('editorial_status', 'published').order('published_at', { ascending: false }).limit(1),
-    supabase.from('categories').select('id, slug, name_zh').eq('type', 'article'),
-    supabase.from('categories').select('id, slug, name_zh').eq('type', 'forum'),
-    supabase.from('voice_posts').select('*, profiles!voice_posts_author_id_fkey(display_name, username)').eq('status', 'published').eq('visibility', 'public').order('published_at', { ascending: false }).limit(6),
+    alertsQuery,
+    supabase.from('categories_guide').select('id, slug, name_zh').eq('site_scope', siteScope),
+    supabase.from('categories_forum').select('id, slug, name_zh, name_en').eq('site_scope', siteScope),
+    supabase.from('voice_posts').select('*, profiles!voice_posts_author_id_fkey(display_name, username)').eq('site_id', site.id).eq('status', 'published').eq('visibility', 'public').order('published_at', { ascending: false }).limit(6),
   ]);
 
   const news = (rNews || []) as AnyRow[];
@@ -108,7 +159,14 @@ export default async function HomePage() {
   const voices = (rVoices || []) as AnyRow[];
   const alerts = (rAlerts || []) as AnyRow[];
   const cats = (rCategories || []) as AnyRow[];
-  const boards = (rBoards || []) as AnyRow[];
+  let boards = (rBoardsScoped || []) as AnyRow[];
+  if (boards.length === 0 && siteScope === 'en') {
+    const { data: rBoardsZh } = await supabase
+      .from('categories_forum')
+      .select('id, slug, name_zh, name_en')
+      .eq('site_scope', 'zh');
+    boards = (rBoardsZh || []) as AnyRow[];
+  }
   const discoverPosts = (rDiscoverPosts || []) as AnyRow[];
 
   // Maps
@@ -123,92 +181,115 @@ export default async function HomePage() {
       {alerts.length > 0 && (
         <div className="bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-2.5 text-sm flex items-center gap-2">
           <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          <span className="flex-1"><strong>紧急提醒：</strong>{alerts[0].title_zh}</span>
+          <span className="flex-1"><strong>紧急提醒：</strong>{isEnglishSite ? (alerts[0].title_en || alerts[0].title_zh) : (alerts[0].title_zh || alerts[0].title_en)}</span>
           <Link href={`/news/${alerts[0].slug}`} className="text-white/80 hover:text-white underline text-xs ml-2">详情 →</Link>
         </div>
       )}
 
       {/* Hero */}
       <section className="bg-gradient-to-br from-primary to-orange-600 text-white py-8 sm:py-10">
-        <div className="max-w-3xl mx-auto px-4 text-center">
+        <PageContainer className="max-w-3xl text-center">
           <h1 className="text-2xl sm:text-3xl font-bold mb-2">{t('home.heroTitle')}</h1>
           <p className="text-orange-100 mb-5 text-sm sm:text-base">{t('home.heroSubtitle')}</p>
           <form action="/zh/ask" className="relative max-w-2xl mx-auto">
             <input type="text" name="q" placeholder="问我任何本地问题... 例如「法拉盛中文牙医推荐」" className="w-full h-12 pl-5 pr-14 rounded-xl bg-white text-gray-900 text-sm shadow-lg border-0 focus:ring-2 focus:ring-orange-300 placeholder:text-gray-400" />
-            <button type="submit" className="absolute right-1 top-1 w-10 h-10 bg-primary text-white rounded-lg flex items-center justify-center hover:bg-primary-dark">
+            <button type="submit" className={cn(buttonVariants(), 'absolute right-1 top-1 w-10 h-10 px-0')}>
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
             </button>
           </form>
           <div className="flex flex-wrap justify-center gap-2 mt-5">
             {['中文家庭医生', '报税服务', '驾照路考', '周末活动', '租房'].map(tag => (
-              <Link key={tag} href={`/ask?q=${encodeURIComponent(tag)}`} className="px-3 py-1 bg-white/20 text-white/90 text-sm rounded-full cursor-pointer hover:bg-white/30">{tag}</Link>
+              <Link key={tag} href={`/ask?q=${encodeURIComponent(tag)}`} className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'bg-white/20 text-white/90 hover:bg-white/30 hover:text-white rounded-full')}>
+                {tag}
+              </Link>
             ))}
           </div>
-        </div>
+        </PageContainer>
       </section>
 
-      <div className="max-w-7xl mx-auto px-4 py-8 space-y-12">
+      <PageContainer className="py-8 space-y-12">
 
         {/* ===== TODAY'S NEWS ===== */}
         {news.length > 0 && (
-          <section>
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-xl font-bold flex items-center gap-2">📰 {t('home.todayNews')}</h2>
-              <Link href="/news" className="text-sm text-primary font-medium hover:underline">{t('home.viewAll')} →</Link>
-            </div>
+          <SectionBlock>
+            <SectionHeader
+              title={<><span>📰</span> {t('home.todayNews')}</>}
+              right={<Link href="/news" className="text-sm text-primary font-medium hover:underline">{t('home.viewAll')} →</Link>}
+            />
             <div className="grid md:grid-cols-3 gap-5">
               {news.map((a) => {
                 const badge = verticalBadge[a.content_vertical] || { label: '新闻', cls: 'bg-gray-100 text-gray-600' };
+                const newsTitle = isEnglishSite ? (a.title_en || a.title_zh) : (a.title_zh || a.title_en);
+                const newsSummary = isEnglishSite
+                  ? (a.ai_summary_en || a.summary_en || a.ai_summary_zh || a.summary_zh)
+                  : (a.ai_summary_zh || a.summary_zh || a.ai_summary_en || a.summary_en);
                 return (
-                  <Link key={a.id} href={`/news/${a.slug}`} className="card p-5 block">
+                  <Link key={a.id} href={`/news/${a.slug}`} className="block">
+                    <Card className="p-5 h-full hover:shadow-md transition-shadow">
                     <div className="flex items-center gap-2 mb-3">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${badge.cls}`}>{badge.label}</span>
+                      <Badge className={cn('text-xs', badge.cls)}>{badge.label}</Badge>
                       <span className="text-xs text-text-muted">{timeAgo(a.published_at)}</span>
                     </div>
-                    <h3 className="font-semibold text-base mb-2 line-clamp-2">{a.title_zh || a.title_en}</h3>
-                    <p className="text-sm text-text-secondary line-clamp-2">{a.ai_summary_zh || a.summary_zh}</p>
+                    <h3 className="font-semibold text-base mb-2 line-clamp-2">{newsTitle}</h3>
+                    <p className="text-sm text-text-secondary line-clamp-2">{newsSummary}</p>
                     {a.source_name && (
                       <div className="flex items-center gap-2 mt-3">
-                        <span className="text-xs text-text-muted bg-gray-100 px-2 py-0.5 rounded">{a.source_type === 'official_gov' ? 'A类来源' : '来源'}</span>
+                        <Badge variant="muted" className="text-xs">{a.source_type === 'official_gov' ? 'A类来源' : '来源'}</Badge>
                         <span className="text-xs text-text-muted">{a.source_name}</span>
                       </div>
                     )}
+                    </Card>
                   </Link>
                 );
               })}
             </div>
-          </section>
+          </SectionBlock>
         )}
 
         {/* ===== HOT GUIDES ===== */}
         {guides.length > 0 && (
-          <section>
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-xl font-bold flex items-center gap-2">📚 {t('home.hotGuides')}</h2>
-              <Link href="/guides" className="text-sm text-primary font-medium hover:underline">{t('home.viewAll')} →</Link>
-            </div>
+          <SectionBlock>
+            <SectionHeader
+              title={<><span>📚</span> {t('home.hotGuides')}</>}
+              right={<Link href="/guides" className="text-sm text-primary font-medium hover:underline">{t('home.viewAll')} →</Link>}
+            />
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
               {guides.map((g, i) => {
                 const gBadge = guideBadge[g.content_vertical] || { label: '指南', cls: 'bg-gray-100 text-gray-600' };
                 const catName = g.category_id ? (catNameMap[g.category_id] || '') : '';
                 const gradient = guideGradients[i % guideGradients.length];
                 const emoji = guideEmojis[g.content_vertical] || '📚';
+                const guideTitle = isEnglishSite ? (g.title_en || g.title_zh) : (g.title_zh || g.title_en);
+                const guideBody = isEnglishSite ? (g.body_en || g.body_zh || '') : (g.body_zh || g.body_en || '');
                 return (
-                  <Link key={g.id} href={`/guides/${g.slug}`} className="card block cursor-pointer">
-                    <div className={`h-40 bg-gradient-to-br ${gradient} flex items-center justify-center text-4xl`}>{emoji}</div>
-                    <div className="p-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${gBadge.cls}`}>{gBadge.label}</span>
-                        {catName && <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">{catName}</span>}
+                  <Link key={g.id} href={`/guides/${g.slug}`} className="block cursor-pointer">
+                    <Card className="overflow-hidden h-full hover:shadow-md transition-shadow">
+                      {g.cover_image_url ? (
+                        <div className="h-40 overflow-hidden">
+                          <img
+                            src={g.cover_image_url}
+                            alt={guideTitle || 'Guide cover'}
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                          />
+                        </div>
+                      ) : (
+                        <div className={`h-40 bg-gradient-to-br ${gradient} flex items-center justify-center text-4xl`}>{emoji}</div>
+                      )}
+                      <div className="p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Badge className={cn('text-xs', gBadge.cls)}>{gBadge.label}</Badge>
+                          {catName && <Badge variant="muted" className="text-xs">{catName}</Badge>}
+                        </div>
+                        <h3 className="font-semibold text-sm line-clamp-2 mb-1">{guideTitle}</h3>
+                        <p className="text-xs text-text-muted">适合：{(g.audience_types || ['所有人']).join(' · ')} · {Math.ceil((guideBody.length || 500) / 400)}分钟阅读</p>
                       </div>
-                      <h3 className="font-semibold text-sm line-clamp-2 mb-1">{g.title_zh || g.title_en}</h3>
-                      <p className="text-xs text-text-muted">适合：{(g.audience_types || ['所有人']).join(' · ')} · {Math.ceil((g.body_zh?.length || 500) / 400)}分钟阅读</p>
-                    </div>
+                    </Card>
                   </Link>
                 );
               })}
             </div>
-          </section>
+          </SectionBlock>
         )}
 
         {/* ===== DISCOVER (replaces Local Voices) ===== */}
@@ -260,21 +341,23 @@ export default async function HomePage() {
                 const emoji = ['🎆', '📚', '🎨', '🏃'][i % 4];
                 const startDate = e.start_at ? new Date(e.start_at) : null;
                 return (
-                  <Link key={e.id} href={`/events/${e.slug}`} className="card block cursor-pointer">
-                    <div className={`h-36 bg-gradient-to-br ${gradient} flex items-center justify-center text-3xl`}>{emoji}</div>
-                    <div className="p-4">
-                      {startDate && (
-                        <p className="text-xs text-primary font-medium mb-1">
-                          {startDate.toLocaleDateString('zh-CN', { month: 'long', day: 'numeric' })}
-                          {' '}
-                          {['周日','周一','周二','周三','周四','周五','周六'][startDate.getDay()]}
-                          {' · '}
-                          {startDate.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: true })}
-                        </p>
-                      )}
-                      <h3 className="font-semibold text-sm mb-1 line-clamp-2">{e.title_zh}</h3>
-                      <p className="text-xs text-text-muted">{e.venue_name} · {e.is_free ? '免费' : e.ticket_price || '付费'}</p>
-                    </div>
+                  <Link key={e.id} href={`/events/${e.slug}`} className="block cursor-pointer">
+                    <Card className="overflow-hidden h-full hover:shadow-md transition-shadow">
+                      <div className={`h-36 bg-gradient-to-br ${gradient} flex items-center justify-center text-3xl`}>{emoji}</div>
+                      <div className="p-4">
+                        {startDate && (
+                          <p className="text-xs text-primary font-medium mb-1">
+                            {startDate.toLocaleDateString('zh-CN', { month: 'long', day: 'numeric' })}
+                            {' '}
+                            {['周日','周一','周二','周三','周四','周五','周六'][startDate.getDay()]}
+                            {' · '}
+                            {startDate.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                          </p>
+                        )}
+                        <h3 className="font-semibold text-sm mb-1 line-clamp-2">{e.title_zh}</h3>
+                        <p className="text-xs text-text-muted">{e.venue_name} · {e.is_free ? '免费' : e.ticket_price || '付费'}</p>
+                      </div>
+                    </Card>
                   </Link>
                 );
               })}
@@ -290,18 +373,21 @@ export default async function HomePage() {
               <Link href="/businesses" className="text-sm text-primary font-medium hover:underline">{t('home.browseDirectory')} →</Link>
             </div>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {businesses.map((biz) => (
-                <Link key={biz.id} href={`/businesses/${biz.slug}`} className={`card p-5 block ${biz.is_featured ? 'border-2 border-primary relative' : ''}`}>
+              {businesses.map((biz) => {
+                const bizName = pickBusinessDisplayName(biz, '商家');
+                return (
+                <Link key={biz.id} href={`/businesses/${biz.slug}`} className="block">
+                  <Card className={cn('p-5 h-full hover:shadow-md transition-shadow', biz.is_featured ? 'border-2 border-primary relative' : '')}>
                   {biz.is_featured && (
                     <span className="absolute top-3 right-0 bg-primary text-white text-xs font-semibold px-3 py-1 rounded-l-md">推荐</span>
                   )}
                   <div className="flex items-start gap-4">
                     <div className="w-14 h-14 rounded-lg bg-gradient-to-br from-blue-200 to-blue-300 flex-shrink-0 flex items-center justify-center text-xl">
-                      {(biz.display_name_zh || biz.display_name)?.charAt(0)}
+                      {bizName.charAt(0)}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-sm truncate">{biz.display_name_zh || biz.display_name}</h3>
+                        <h3 className="font-semibold text-sm truncate">{bizName}</h3>
                         {biz.verification_status === 'verified' && (
                           <svg className="w-4 h-4 text-blue-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>
                         )}
@@ -315,15 +401,17 @@ export default async function HomePage() {
                       {biz.ai_tags && (biz.ai_tags as string[]).length > 0 && (
                         <div className="flex flex-wrap gap-1.5 mt-2">
                           {(biz.ai_tags as string[]).slice(0, 3).map((tag: string) => (
-                            <span key={tag} className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full">{tag}</span>
+                            <Badge key={tag} className="text-xs bg-blue-50 text-blue-600">{tag}</Badge>
                           ))}
                         </div>
                       )}
                       <p className="text-xs text-text-muted mt-2">{biz.short_desc_zh || ''}</p>
                     </div>
                   </div>
+                  </Card>
                 </Link>
-              ))}
+                );
+              })}
             </div>
           </section>
         )}
@@ -335,7 +423,7 @@ export default async function HomePage() {
               <h2 className="text-xl font-bold flex items-center gap-2">💬 {t('home.forumHotThreads')}</h2>
               <Link href="/forum" className="text-sm text-primary font-medium hover:underline">{t('home.enterForum')} →</Link>
             </div>
-            <div className="bg-bg-card rounded-xl border border-border divide-y divide-border-light">
+            <Card className="bg-bg-card divide-y divide-border-light">
               {threads.map((thread) => {
                 const board = boardMap[thread.board_id];
                 const bSlug = board?.slug || '';
@@ -346,7 +434,7 @@ export default async function HomePage() {
                   <Link key={thread.id} href={`/forum/${bSlug}/${thread.slug}`} className="flex items-center gap-4 p-4 hover:bg-gray-50 transition block">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        {bName && <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${bCls}`}>{bName}</span>}
+                        {bName && <Badge className={cn('text-xs', bCls)}>{bName}</Badge>}
                         {isHot && <span className="text-xs text-red-500 font-medium">🔥 热帖</span>}
                       </div>
                       <h3 className="text-sm font-medium truncate">{thread.title}</h3>
@@ -361,19 +449,19 @@ export default async function HomePage() {
                   </Link>
                 );
               })}
-            </div>
+            </Card>
           </section>
         )}
 
         {/* ===== NEWSLETTER ===== */}
-        <section className="bg-bg-card rounded-xl border border-border p-8 text-center">
+        <Card className="bg-bg-card p-8 text-center">
           <h2 className="text-xl font-bold mb-2">📬 {t('home.newsletter.title')}</h2>
           <p className="text-sm text-text-secondary mb-5">{t('home.newsletter.subtitle')}</p>
           <NewsletterForm source="homepage" className="max-w-md mx-auto" />
           <p className="text-xs text-text-muted mt-3">{t('home.newsletter.subscriberCount', { count: '1,200' })}</p>
-        </section>
+        </Card>
 
-      </div>
+      </PageContainer>
     </main>
   );
 }

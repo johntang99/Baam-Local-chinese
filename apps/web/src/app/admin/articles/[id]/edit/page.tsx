@@ -16,6 +16,7 @@ export default async function EditArticlePage({ params, searchParams }: Props) {
   const ctx = await getAdminSiteContext(sp);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = createAdminClient() as any;
+  const siteScope = String(ctx.locale || '').toLowerCase().startsWith('en') ? 'en' : 'zh';
 
   // Build site params string for links
   const siteParamsObj = new URLSearchParams();
@@ -27,6 +28,7 @@ export default async function EditArticlePage({ params, searchParams }: Props) {
     .from('articles')
     .select('*')
     .eq('id', id)
+    .eq('site_id', ctx.siteId)
     .single();
 
   if (!article) {
@@ -42,12 +44,12 @@ export default async function EditArticlePage({ params, searchParams }: Props) {
   }
 
   // Fetch categories for article type
-  const { data: rawCategories } = await supabase
-    .from('categories')
-    .select('id, name_zh, name, slug, type')
-    .eq('type', 'article')
+  const { data: rawGuideCategories } = await supabase
+    .from('categories_guide')
+    .select('id, name_zh, name_en, slug, sort_order, site_scope')
+    .eq('site_scope', siteScope)
     .order('sort_order', { ascending: true });
-  const categories = (rawCategories || []) as AnyRow[];
+  const categories = (rawGuideCategories || []) as AnyRow[];
 
   // Fetch regions for this site
   const { data: rawRegions } = await supabase
@@ -60,6 +62,7 @@ export default async function EditArticlePage({ params, searchParams }: Props) {
   const { data: rawBusinesses } = await supabase
     .from('businesses')
     .select('id, display_name, display_name_zh, slug')
+    .eq('site_id', ctx.siteId)
     .eq('is_active', true)
     .order('display_name', { ascending: true });
   const businesses = (rawBusinesses || []) as AnyRow[];

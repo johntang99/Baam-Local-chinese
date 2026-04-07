@@ -39,6 +39,7 @@ export default async function NewBusinessPage({ searchParams }: Props) {
     .from('categories')
     .select('id, name_zh, name_en, slug, type, parent_id')
     .eq('type', 'business')
+    .eq('site_scope', 'zh')
     .order('sort_order', { ascending: true });
   const categories = (rawCategories || []) as AnyRow[];
   const categoryTree = buildCategoryTree(categories);
@@ -55,6 +56,7 @@ export default async function NewBusinessPage({ searchParams }: Props) {
       categoryTree={categoryTree}
       selectedCategoryIds={[]}
       isNew={true}
+      siteId={ctx.siteId}
       siteParams={siteParamsObj.toString()}
     />
   );

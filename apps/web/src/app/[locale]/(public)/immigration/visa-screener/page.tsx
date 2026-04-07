@@ -1,4 +1,6 @@
 import { Link } from '@/lib/i18n/routing';
+import { PageContainer } from '@/components/layout/page-shell';
+import { Card } from '@/components/ui/card';
 import { ScreenerClient } from './screener-client';
 import { ServiceFAQ } from '@/components/services/service-faq';
 import type { Metadata } from 'next';
@@ -35,7 +37,8 @@ const FAQ_ITEMS = [
 
 export default function VisaScreenerPage() {
   return (
-    <main className="max-w-3xl mx-auto px-4 py-8">
+    <main>
+      <PageContainer className="max-w-3xl py-8">
       {/* Breadcrumb */}
       <nav className="text-sm text-gray-400 mb-6">
         <Link href="/" className="hover:text-primary">首页</Link>
@@ -60,11 +63,13 @@ export default function VisaScreenerPage() {
       </div>
 
       {/* Guide Content (SEO) */}
-      <article className="bg-white border border-gray-200 rounded-2xl p-6 mb-8 prose prose-sm max-w-none text-gray-700">
+      <Card className="p-6 mb-8 rounded-2xl">
+        <article className="prose prose-sm max-w-none text-gray-700">
         <h2 className="text-lg font-bold text-gray-900 mt-0">美国签证和移民类别简介</h2>
         <p>美国的签证和移民体系主要分为<strong>非移民签证</strong>（H-1B工作签证、L-1跨国调派、O-1杰出人才、F-1学生签证等）和<strong>移民签证/绿卡</strong>（EB类职业移民、家庭移民等）。对于中国大陆出生的申请人，大部分类别都存在排期等待。</p>
         <p>本评估工具通过AI分析你的个人情况（目标、学历、工作经验、家庭关系等），帮助你初步了解可能适合的签证类别，并提供下一步行动建议。</p>
-      </article>
+        </article>
+      </Card>
 
       {/* Screener Tool */}
       <ScreenerClient />
@@ -78,20 +83,26 @@ export default function VisaScreenerPage() {
       <section className="mb-8">
         <h2 className="text-lg font-bold text-gray-900 mb-4">相关资源</h2>
         <div className="grid sm:grid-cols-3 gap-3">
-          <Link href="/ask" className="bg-white border border-gray-200 rounded-xl p-4 hover:border-primary/30 hover:shadow-sm transition group text-center">
+          <Link href="/ask" className="block">
+            <Card className="rounded-xl p-4 hover:border-primary/30 hover:shadow-sm transition group text-center">
             <div className="text-2xl mb-2">🤖</div>
             <h3 className="text-sm font-bold text-gray-900 group-hover:text-primary mb-1">问AI小邻</h3>
             <p className="text-xs text-gray-500">&ldquo;H1B转绿卡需要多久？&rdquo;</p>
+            </Card>
           </Link>
-          <Link href="/services/property-tax" className="bg-white border border-gray-200 rounded-xl p-4 hover:border-primary/30 hover:shadow-sm transition group text-center">
+          <Link href="/services/property-tax" className="block">
+            <Card className="rounded-xl p-4 hover:border-primary/30 hover:shadow-sm transition group text-center">
             <div className="text-2xl mb-2">🏠</div>
             <h3 className="text-sm font-bold text-gray-900 group-hover:text-primary mb-1">房产税查询</h3>
             <p className="text-xs text-gray-500">纽约州房产评估值和税额</p>
+            </Card>
           </Link>
-          <Link href="/businesses" className="bg-white border border-gray-200 rounded-xl p-4 hover:border-primary/30 hover:shadow-sm transition group text-center">
+          <Link href="/businesses" className="block">
+            <Card className="rounded-xl p-4 hover:border-primary/30 hover:shadow-sm transition group text-center">
             <div className="text-2xl mb-2">⚖️</div>
             <h3 className="text-sm font-bold text-gray-900 group-hover:text-primary mb-1">找移民律师</h3>
             <p className="text-xs text-gray-500">Baam认证移民律师目录</p>
+            </Card>
           </Link>
         </div>
       </section>
@@ -100,6 +111,7 @@ export default function VisaScreenerPage() {
       <div className="text-xs text-gray-400 leading-relaxed border-t border-gray-100 pt-6">
         <p>本工具由AI驱动，评估结果仅供参考。移民法律复杂且经常变化，具体资格和申请策略需要由持牌移民律师根据您的详细情况来判断。Baam不对评估结果的准确性承担责任。</p>
       </div>
+      </PageContainer>
     </main>
   );
 }

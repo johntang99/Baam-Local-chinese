@@ -2,10 +2,13 @@ import { createClient } from '@/lib/supabase/server';
 import { getCurrentUser } from '@/lib/auth';
 import { notFound } from 'next/navigation';
 import { Link } from '@/lib/i18n/routing';
+import { PageContainer } from '@/components/layout/page-shell';
 import { ForumReplyForm } from '@/components/shared/forum-reply-form';
+import { Card } from '@/components/ui/card';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { Metadata } from 'next';
+import { getCurrentSite } from '@/lib/sites';
 
 interface Props {
   params: Promise<{ locale: string; board: string; thread: string }>;
@@ -17,10 +20,12 @@ type AnyRow = Record<string, any>;
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { thread } = await params;
   const supabase = await createClient();
+  const site = await getCurrentSite();
   const { data } = await supabase
     .from('forum_threads')
     .select('title_zh, title, ai_summary_zh, cover_image_url')
     .eq('slug', thread)
+    .eq('site_id', site.id)
     .single();
 
   const threadData = data as AnyRow | null;
@@ -39,35 +44,47 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ForumThreadPage({ params }: Props) {
-  const { board, thread } = await params;
+  const { board, thread, locale } = await params;
   const supabase = await createClient();
+  const site = await getCurrentSite();
   const user = await getCurrentUser();
+  const siteScope = String(locale || '').toLowerCase().startsWith('en') ? 'en' : 'zh';
 
   // Fetch thread
   const { data: rawThread, error: threadError } = await supabase
     .from('forum_threads')
     .select('*')
     .eq('slug', thread)
+    .eq('site_id', site.id)
     .single();
 
   const threadData = rawThread as AnyRow | null;
   if (threadError || !threadData) notFound();
 
   // Fetch board info for breadcrumb
-  const { data: rawBoard } = await supabase
-    .from('categories')
-    .select('name_zh, name, slug')
+  const { data: rawScopedBoard } = await supabase
+    .from('categories_forum')
+    .select('name_zh, name_en, slug')
     .eq('slug', board)
-    .eq('type', 'forum')
+    .eq('site_scope', siteScope)
     .single();
-
-  const boardData = rawBoard as AnyRow | null;
+  let boardData = rawScopedBoard as AnyRow | null;
+  if (!boardData && siteScope === 'en') {
+    const { data: rawZhBoard } = await supabase
+      .from('categories_forum')
+      .select('name_zh, name_en, slug')
+      .eq('slug', board)
+      .eq('site_scope', 'zh')
+      .single();
+    boardData = rawZhBoard as AnyRow | null;
+  }
 
   // Fetch replies
   const { data: rawReplies } = await supabase
     .from('forum_replies')
     .select('*')
     .eq('thread_id', threadData.id)
+    .eq('site_id', site.id)
     .order('created_at', { ascending: true });
 
   const replies = (rawReplies || []) as AnyRow[];
@@ -78,6 +95,7 @@ export default async function ForumThreadPage({ params }: Props) {
     .select('id, slug, title_zh, title, reply_count')
     .eq('board_id', threadData.board_id)
     .eq('status', 'published')
+    .eq('site_id', site.id)
     .neq('id', threadData.id)
     .order('reply_count', { ascending: false })
     .limit(3);
@@ -86,14 +104,14 @@ export default async function ForumThreadPage({ params }: Props) {
 
   const title = threadData.title_zh || threadData.title;
   const body = threadData.body_zh || threadData.body;
-  const boardName = boardData?.name_zh || boardData?.name || '论坛';
+  const boardName = boardData?.name_zh || boardData?.name || boardData?.name_en || '论坛';
   const showAiSummary = (threadData.reply_count || 0) > 10 && threadData.ai_summary_zh;
   const aiMerchantIds = threadData.ai_merchant_ids as string[] | null;
   const hasAiMerchant = threadData.ai_intent === 'recommendation_request' && aiMerchantIds && aiMerchantIds.length > 0;
 
   return (
     <main>
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <PageContainer className="py-6">
         {/* Breadcrumb */}
         <nav className="text-sm text-text-muted mb-4">
           <Link href="/" className="hover:text-primary">首页</Link>
@@ -173,7 +191,7 @@ export default async function ForumThreadPage({ params }: Props) {
               ) : (
                 <div className="space-y-4">
                   {replies.map((reply, index) => (
-                    <div key={reply.id} className="card p-4">
+                    <Card key={reply.id} className="p-4">
                       <div className="flex items-start gap-3">
                         <div className="w-8 h-8 rounded-full bg-border-light flex items-center justify-center text-text-muted text-sm flex-shrink-0">
                           👤
@@ -198,7 +216,7 @@ export default async function ForumThreadPage({ params }: Props) {
                           </div>
                         </div>
                       </div>
-                    </div>
+                    </Card>
                   ))}
                 </div>
               )}
@@ -215,9 +233,11 @@ export default async function ForumThreadPage({ params }: Props) {
                 <h2 className="text-lg font-bold mb-4">📌 相关帖子</h2>
                 <div className="grid sm:grid-cols-3 gap-4">
                   {relatedThreads.map((related) => (
-                    <Link key={related.id} href={`/forum/${board}/${related.slug}`} className="card p-4 block">
-                      <h3 className="font-medium text-sm line-clamp-2">{related.title_zh || related.title}</h3>
-                      <span className="text-xs text-text-muted mt-1 block">💬 {related.reply_count || 0}</span>
+                    <Link key={related.id} href={`/forum/${board}/${related.slug}`} className="block">
+                      <Card className="p-4 h-full hover:shadow-md transition-shadow">
+                        <h3 className="font-medium text-sm line-clamp-2">{related.title_zh || related.title}</h3>
+                        <span className="text-xs text-text-muted mt-1 block">💬 {related.reply_count || 0}</span>
+                      </Card>
                     </Link>
                   ))}
                 </div>
@@ -228,7 +248,7 @@ export default async function ForumThreadPage({ params }: Props) {
           {/* Sidebar */}
           <aside className="hidden lg:block w-80 flex-shrink-0 space-y-6 mt-8 lg:mt-0">
             {/* Thread Stats */}
-            <div className="bg-bg-card rounded-xl border border-border p-5">
+            <Card className="bg-bg-card p-5">
               <h3 className="font-semibold text-sm mb-3">帖子信息</h3>
               <div className="space-y-2 text-xs text-text-secondary">
                 <div className="flex justify-between">
@@ -248,10 +268,10 @@ export default async function ForumThreadPage({ params }: Props) {
                   </div>
                 )}
               </div>
-            </div>
+            </Card>
           </aside>
         </div>
-      </div>
+      </PageContainer>
     </main>
   );
 }

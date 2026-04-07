@@ -1,7 +1,13 @@
 import { createClient } from '@/lib/supabase/server';
 import { Link } from '@/lib/i18n/routing';
 import { Pagination } from '@/components/shared/pagination';
+import { PageContainer } from '@/components/layout/page-shell';
+import { Badge } from '@/components/ui/badge';
+import { buttonVariants } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 import type { Metadata } from 'next';
+import { getCurrentSite } from '@/lib/sites';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyRow = Record<string, any>;
@@ -39,12 +45,14 @@ export default async function ClassifiedsListPage({ searchParams }: Props) {
   const activeCat = sp.cat || '';
 
   const supabase = await createClient();
+  const site = await getCurrentSite();
 
   // Count
   let countQuery = (supabase as any)
     .from('classifieds')
     .select('id', { count: 'exact', head: true })
-    .eq('status', 'active');
+    .eq('status', 'active')
+    .eq('site_id', site.id);
   if (activeCat) countQuery = countQuery.eq('category', activeCat);
 
   const { count } = await countQuery;
@@ -55,7 +63,8 @@ export default async function ClassifiedsListPage({ searchParams }: Props) {
   let dataQuery = (supabase as any)
     .from('classifieds')
     .select('*')
-    .eq('status', 'active');
+    .eq('status', 'active')
+    .eq('site_id', site.id);
   if (activeCat) dataQuery = dataQuery.eq('category', activeCat);
 
   const { data: rawItems } = await dataQuery
@@ -70,10 +79,10 @@ export default async function ClassifiedsListPage({ searchParams }: Props) {
 
   return (
     <main>
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <PageContainer className="py-6">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold">分类信息</h1>
-          <Link href="/classifieds/new" className="btn btn-primary h-9 px-4 text-sm">发布信息</Link>
+          <Link href="/classifieds/new" className={cn(buttonVariants({ size: 'sm' }), 'h-9 px-4 text-sm')}>发布信息</Link>
         </div>
 
         {/* Category Tabs */}
@@ -82,11 +91,11 @@ export default async function ClassifiedsListPage({ searchParams }: Props) {
             <Link
               key={tab.key}
               href={tab.key ? `/classifieds?cat=${tab.key}` : '/classifieds'}
-              className={`px-4 py-2 text-sm font-medium rounded-full transition-colors whitespace-nowrap ${
+              className={cn(buttonVariants({ size: 'sm' }), 'rounded-full whitespace-nowrap', `${
                 activeCat === tab.key
                   ? 'bg-primary text-text-inverse'
                   : 'bg-border-light text-text-secondary hover:bg-gray-200'
-              }`}
+              }`)}
             >
               {tab.label}
             </Link>
@@ -106,12 +115,13 @@ export default async function ClassifiedsListPage({ searchParams }: Props) {
               const timeAgo = formatTimeAgo(item.created_at);
               const catLabel = categoryLabels[item.category] || '其他';
               return (
-                <Link key={item.id} href={`/classifieds/${item.slug}`} className="card p-4 block">
+                <Link key={item.id} href={`/classifieds/${item.slug}`} className="block">
+                  <Card className="p-4">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        {item.is_featured && <span className="badge badge-red text-xs">置顶</span>}
-                        <span className="badge badge-gray text-xs">{catLabel}</span>
+                        {item.is_featured && <Badge className="text-xs bg-red-100 text-red-700">置顶</Badge>}
+                        <Badge variant="muted" className="text-xs">{catLabel}</Badge>
                         <span className="text-xs text-text-muted">{timeAgo}</span>
                       </div>
                       <h3 className="font-semibold text-sm line-clamp-1 mb-1">{item.title}</h3>
@@ -123,6 +133,7 @@ export default async function ClassifiedsListPage({ searchParams }: Props) {
                       <span className="text-sm font-bold text-primary flex-shrink-0">{item.price_text}</span>
                     )}
                   </div>
+                  </Card>
                 </Link>
               );
             })}
@@ -135,7 +146,7 @@ export default async function ClassifiedsListPage({ searchParams }: Props) {
           basePath="/classifieds"
           searchParams={preservedParams}
         />
-      </div>
+      </PageContainer>
     </main>
   );
 }

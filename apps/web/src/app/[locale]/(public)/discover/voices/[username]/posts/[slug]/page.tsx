@@ -1,9 +1,13 @@
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUser } from '@/lib/auth';
+import { getCurrentSite } from '@/lib/sites';
 import { notFound } from 'next/navigation';
 import { Link } from '@/lib/i18n/routing';
 import { FollowButton, LikeButton, CommentForm } from '@/components/shared/social-actions';
 import { DiscoverCard } from '@/components/discover/discover-card';
+import { PageContainer } from '@/components/layout/page-shell';
+import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
 import { formatTimeAgo } from '@/lib/utils';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -19,6 +23,7 @@ type AnyRow = Record<string, any>;
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { username, slug } = await params;
   const supabase = await createClient();
+  const site = await getCurrentSite();
 
   const { data: profileData } = await supabase
     .from('profiles')
@@ -34,6 +39,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     .select('title, content')
     .eq('slug', slug)
     .eq('author_id', profile.id)
+    .eq('site_id', site.id)
     .single();
 
   const post = postData as AnyRow | null;
@@ -52,6 +58,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function DiscoverPostDetailPage({ params }: Props) {
   const { username, slug } = await params;
   const supabase = await createClient();
+  const site = await getCurrentSite();
   const currentUser = await getCurrentUser().catch(() => null);
 
   // Fetch author profile
@@ -70,6 +77,7 @@ export default async function DiscoverPostDetailPage({ params }: Props) {
     .select('*')
     .eq('slug', slug)
     .eq('author_id', profile.id)
+    .eq('site_id', site.id)
     .eq('status', 'published')
     .single();
 
@@ -81,6 +89,7 @@ export default async function DiscoverPostDetailPage({ params }: Props) {
     .from('voice_post_comments')
     .select('*')
     .eq('post_id', post.id)
+    .eq('site_id', site.id)
     .order('created_at', { ascending: true });
 
   const comments = (rawComments || []) as AnyRow[];
@@ -100,6 +109,7 @@ export default async function DiscoverPostDetailPage({ params }: Props) {
     .from('voice_posts')
     .select('*')
     .eq('author_id', profile.id)
+    .eq('site_id', site.id)
     .eq('status', 'published')
     .neq('id', post.id)
     .order('published_at', { ascending: false })
@@ -112,7 +122,7 @@ export default async function DiscoverPostDetailPage({ params }: Props) {
 
   return (
     <main>
-      <div className="max-w-4xl mx-auto px-4 py-6">
+      <PageContainer className="max-w-4xl py-6">
         {/* Breadcrumb */}
         <nav className="text-sm text-gray-400 mb-4">
           <Link href="/discover" className="hover:text-primary">发现</Link>
@@ -137,7 +147,7 @@ export default async function DiscoverPostDetailPage({ params }: Props) {
                 {profile.display_name || username}
               </Link>
               {profile.is_verified && (
-                <span className="badge badge-blue text-xs">已认证</span>
+                <Badge className="text-xs bg-blue-100 text-blue-700">已认证</Badge>
               )}
             </div>
             <p className="text-xs text-gray-400">
@@ -171,7 +181,7 @@ export default async function DiscoverPostDetailPage({ params }: Props) {
         <header className="mb-6">
           <div className="flex items-center gap-2 mb-3">
             {post.post_type && (
-              <span className="badge badge-purple text-xs">{post.post_type}</span>
+              <Badge className="text-xs bg-purple-100 text-purple-700">{post.post_type}</Badge>
             )}
             {post.location_text && (
               <span className="text-xs text-gray-400 flex items-center gap-1">
@@ -224,7 +234,8 @@ export default async function DiscoverPostDetailPage({ params }: Props) {
                 const biz = link.businesses as AnyRow;
                 if (!biz) return null;
                 return (
-                  <Link key={link.id} href={`/businesses/${biz.slug}`} className="card p-4 flex items-center gap-3 hover:shadow-md transition-shadow">
+                  <Link key={link.id} href={`/businesses/${biz.slug}`} className="block">
+                    <Card className="p-4 flex items-center gap-3 hover:shadow-md transition-shadow">
                     <div className="w-12 h-12 rounded-lg bg-orange-50 flex items-center justify-center text-xl">
                       {biz.display_name_zh?.[0] || biz.display_name?.[0] || '🏪'}
                     </div>
@@ -233,6 +244,7 @@ export default async function DiscoverPostDetailPage({ params }: Props) {
                       {biz.short_desc_zh && <p className="text-xs text-gray-400 truncate">{biz.short_desc_zh}</p>}
                     </div>
                     <svg className="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                    </Card>
                   </Link>
                 );
               })}
@@ -246,7 +258,7 @@ export default async function DiscoverPostDetailPage({ params }: Props) {
           {comments.length > 0 && (
             <div className="space-y-4 mb-4">
               {comments.map((comment) => (
-                <div key={comment.id} className="card p-4">
+                <Card key={comment.id} className="p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs flex-shrink-0">
                       {(comment.author_name || '?')[0]}
@@ -259,7 +271,7 @@ export default async function DiscoverPostDetailPage({ params }: Props) {
                     )}
                   </div>
                   <p className="text-sm text-gray-800 pl-9">{comment.content}</p>
-                </div>
+                </Card>
               ))}
             </div>
           )}
@@ -277,7 +289,7 @@ export default async function DiscoverPostDetailPage({ params }: Props) {
             </div>
           </section>
         )}
-      </div>
+      </PageContainer>
     </main>
   );
 }

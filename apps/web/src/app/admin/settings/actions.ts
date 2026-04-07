@@ -6,6 +6,17 @@ import { revalidatePath } from 'next/cache';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = () => createAdminClient() as any;
 const reval = () => revalidatePath('/admin/settings');
+const CONTENT_CATEGORY_TABLES = new Set([
+  'categories_guide',
+  'categories_news',
+  'categories_forum',
+  'categories_discover',
+]);
+
+function resolveContentTable(tableName: string): string | null {
+  const normalized = (tableName || '').trim();
+  return CONTENT_CATEGORY_TABLES.has(normalized) ? normalized : null;
+}
 
 // ============================================================
 // CATEGORY CRUD
@@ -32,6 +43,7 @@ export async function addCategory(formData: FormData) {
     icon: icon || null,
     sort_order: isNaN(sort_order) ? 0 : sort_order,
     search_terms,
+    site_scope: 'zh',
   });
   if (error) return { error: error.message };
   reval();
@@ -70,6 +82,100 @@ export async function deleteCategory(categoryId: string) {
   // Delete children first (if any), then the category itself
   await db().from('categories').delete().eq('parent_id', categoryId);
   const { error } = await db().from('categories').delete().eq('id', categoryId);
+  if (error) return { error: error.message };
+  reval();
+  return { success: true };
+}
+
+// ============================================================
+// LIGHTWEIGHT CATEGORY UPDATE (for non-business tables)
+// ============================================================
+
+export async function updateCategoryBasic(categoryId: string, formData: FormData) {
+  const requestedTable = (formData.get('table_name') as string) || '';
+  const tableName = resolveContentTable(requestedTable);
+  const slug = (formData.get('slug') as string)?.trim();
+  const name_en = (formData.get('name_en') as string)?.trim();
+  const name_zh = (formData.get('name_zh') as string)?.trim();
+  const icon = (formData.get('icon') as string)?.trim();
+  const sort_order = parseInt((formData.get('sort_order') as string) || '0', 10);
+  const is_active = (formData.get('is_active') as string) === 'true';
+
+  if (!slug || !name_en) {
+    return { error: 'Slug and English name are required' };
+  }
+  if (!tableName) return { error: 'Invalid category table' };
+
+  const updates: Record<string, unknown> = {
+    slug,
+    name_en,
+    name_zh: name_zh || null,
+    icon: icon || null,
+    sort_order: isNaN(sort_order) ? 0 : sort_order,
+    is_active,
+  };
+  if (tableName) {
+    const site_scope = ((formData.get('site_scope') as string) || '').trim().toLowerCase();
+    if (site_scope === 'zh' || site_scope === 'en') {
+      updates.site_scope = site_scope;
+    }
+  }
+
+  const { error } = await db()
+    .from(tableName)
+    .update({
+      ...updates,
+    })
+    .eq('id', categoryId);
+  if (error) return { error: error.message };
+  reval();
+  return { success: true };
+}
+
+export async function addCategoryBasic(formData: FormData) {
+  const requestedTable = (formData.get('table_name') as string) || '';
+  const tableName = resolveContentTable(requestedTable);
+  const slug = (formData.get('slug') as string)?.trim();
+  const name_en = (formData.get('name_en') as string)?.trim();
+  const name_zh = (formData.get('name_zh') as string)?.trim();
+  const icon = (formData.get('icon') as string)?.trim();
+  const sort_order = parseInt((formData.get('sort_order') as string) || '0', 10);
+  const is_active = (formData.get('is_active') as string) !== 'false';
+  const site_scope = ((formData.get('site_scope') as string) || '').trim().toLowerCase();
+
+  if (!slug || !name_en) {
+    return { error: 'Slug and English name are required' };
+  }
+  if (!tableName) return { error: 'Invalid category table' };
+
+  const payload: Record<string, unknown> = {
+    slug,
+    name_en,
+    name_zh: name_zh || null,
+    icon: icon || null,
+    sort_order: isNaN(sort_order) ? 0 : sort_order,
+    is_active,
+  };
+  payload.site_scope = site_scope === 'en' ? 'en' : 'zh';
+
+  const { error } = await db()
+    .from(tableName)
+    .insert({
+      ...payload,
+    });
+  if (error) return { error: error.message };
+  reval();
+  return { success: true };
+}
+
+export async function deleteCategoryBasic(categoryId: string, formData: FormData) {
+  const requestedTable = (formData.get('table_name') as string) || '';
+  const tableName = resolveContentTable(requestedTable);
+  if (!tableName) return { error: 'Invalid category table' };
+  const { error } = await db()
+    .from(tableName)
+    .delete()
+    .eq('id', categoryId);
   if (error) return { error: error.message };
   reval();
   return { success: true };

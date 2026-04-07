@@ -262,10 +262,16 @@ export function AskChat({ initialQuery }: AskChatProps) {
                   <span className="text-xs font-medium text-primary">小邻</span>
                 </div>
               )}
-              <div className="text-sm leading-relaxed prose prose-sm max-w-none [&_h2]:text-base [&_h2]:font-bold [&_h2]:mt-3 [&_h2]:mb-2 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:mt-2 [&_h3]:mb-1 [&_p]:mb-2 [&_ul]:list-disc [&_ul]:pl-4 [&_ul]:mb-2 [&_ol]:list-decimal [&_ol]:pl-4 [&_ol]:mb-2 [&_li]:mb-0.5 [&_strong]:font-semibold [&_hr]:my-3 [&_hr]:border-border [&_table]:w-full [&_table]:text-xs [&_table]:border-collapse [&_table]:my-3 [&_th]:bg-bg-page [&_th]:px-2 [&_th]:py-1.5 [&_th]:text-left [&_th]:font-semibold [&_th]:border [&_th]:border-border [&_td]:px-2 [&_td]:py-1.5 [&_td]:border [&_td]:border-border [&_tr:hover]:bg-bg-page/50">
+              <div className="text-sm leading-relaxed prose prose-sm max-w-none [&_h2]:text-base [&_h2]:font-bold [&_h2]:mt-3 [&_h2]:mb-2 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:mt-2 [&_h3]:mb-1 [&_p]:mb-2 [&_ul]:list-disc [&_ul]:pl-4 [&_ul]:mb-2 [&_ol]:list-decimal [&_ol]:pl-4 [&_ol]:mb-2 [&_li]:mb-0.5 [&_strong]:font-semibold [&_hr]:my-3 [&_hr]:border-border [&_table]:w-full [&_table]:text-xs [&_table]:border-collapse [&_table]:my-3 [&_table]:rounded-lg [&_table]:overflow-hidden [&_table]:border [&_table]:border-border [&_thead]:bg-bg-page [&_th]:px-3 [&_th]:py-2 [&_th]:text-left [&_th]:font-semibold [&_th]:text-text-secondary [&_th]:border-b [&_th]:border-border [&_th]:text-[11px] [&_th]:uppercase [&_th]:tracking-wider [&_td]:px-3 [&_td]:py-2 [&_td]:border-b [&_td]:border-border/50 [&_td]:align-top [&_tr:last-child_td]:border-b-0 [&_tr:hover]:bg-primary/5 [&_tbody_tr:nth-child(even)]:bg-bg-page/30">
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
                   components={{
+                    // Wrap tables in scrollable container for mobile
+                    table: ({ children, ...props }) => (
+                      <div className="overflow-x-auto -mx-1 px-1">
+                        <table {...props}>{children}</table>
+                      </div>
+                    ),
                     // Make phone numbers click-to-call
                     td: ({ children, ...props }) => {
                       const text = String(children);

@@ -21,6 +21,7 @@ export default async function AdminForumPage({ searchParams }: Props) {
   const ctx = await getAdminSiteContext(params);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase = createAdminClient() as any;
+  const siteScope = String(ctx.locale || '').toLowerCase().startsWith('en') ? 'en' : 'zh';
 
   // Resolve tab
   const tab = typeof params.tab === 'string' ? params.tab : 'pending';
@@ -48,19 +49,20 @@ export default async function AdminForumPage({ searchParams }: Props) {
   const { count: pendingCount } = await supabase
     .from('forum_threads')
     .select('*', { count: 'exact', head: true })
+    .eq('site_id', ctx.siteId)
     .in('region_id', ctx.regionIds)
     .or('status.eq.pending,ai_spam_score.gt.0.7');
 
   // Fetch board/category names for display
   const { data: rawBoards } = await supabase
-    .from('categories')
-    .select('id, name_zh, name, slug, description, type')
-    .eq('type', 'forum')
+    .from('categories_forum')
+    .select('id, name_zh, name_en, slug, description, site_scope')
+    .eq('site_scope', siteScope)
     .order('sort_order', { ascending: true });
   const boards = (rawBoards || []) as AnyRow[];
   const boardNameMap: Record<string, string> = {};
   boards.forEach((b: AnyRow) => {
-    boardNameMap[b.id] = b.name_zh || b.name || b.slug;
+    boardNameMap[b.id] = b.name_zh || b.name_en || b.slug;
   });
 
   // Fetch data based on tab
@@ -72,6 +74,7 @@ export default async function AdminForumPage({ searchParams }: Props) {
     const { data: rawPending } = await supabase
       .from('forum_threads')
       .select('*')
+      .eq('site_id', ctx.siteId)
       .in('region_id', ctx.regionIds)
       .or('status.eq.pending,ai_spam_score.gt.0.7')
       .order('created_at', { ascending: false })
@@ -83,6 +86,7 @@ export default async function AdminForumPage({ searchParams }: Props) {
     const { data: rawAll, count } = await supabase
       .from('forum_threads')
       .select('*', { count: 'exact' })
+      .eq('site_id', ctx.siteId)
       .in('region_id', ctx.regionIds)
       .order('created_at', { ascending: false })
       .range(from, from + pageSize - 1);
@@ -100,6 +104,7 @@ export default async function AdminForumPage({ searchParams }: Props) {
         .from('forum_threads')
         .select('*', { count: 'exact', head: true })
         .eq('board_id', board.id)
+        .eq('site_id', ctx.siteId)
         .in('region_id', ctx.regionIds);
       boardPostCounts[board.id] = count ?? 0;
     }
@@ -177,7 +182,7 @@ export default async function AdminForumPage({ searchParams }: Props) {
             {boards.length === 0 ? (
               <div className="bg-bg-card border border-border rounded-xl p-12 text-center">
                 <p className="text-text-muted">暂无论坛版块</p>
-                <p className="text-sm text-text-muted mt-1">在分类管理中添加type为forum的分类作为版块</p>
+                <p className="text-sm text-text-muted mt-1">请在系统设置的 Forum 分类中添加版块</p>
               </div>
             ) : (
               <div className="bg-bg-card border border-border rounded-xl overflow-hidden">
@@ -193,7 +198,7 @@ export default async function AdminForumPage({ searchParams }: Props) {
                   <tbody>
                     {boards.map((board) => (
                       <tr key={board.id}>
-                        <td className="text-sm font-medium">{board.name_zh || board.name || board.slug}</td>
+                        <td className="text-sm font-medium">{board.name_zh || board.name_en || board.slug}</td>
                         <td className="text-sm text-text-muted max-w-xs truncate">{board.description || '--'}</td>
                         <td className="text-sm">{boardPostCounts[board.id] ?? 0}</td>
                         <td className="text-xs text-text-muted">{board.slug || '--'}</td>

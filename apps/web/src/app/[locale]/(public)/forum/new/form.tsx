@@ -3,6 +3,9 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createForumThread } from '@/app/[locale]/(public)/actions';
+import { Card } from '@/components/ui/card';
+import { buttonVariants } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyRow = Record<string, any>;
@@ -19,11 +22,11 @@ export function ForumNewPostForm({ boards, isLoggedIn }: ForumNewPostFormProps) 
 
   if (!isLoggedIn) {
     return (
-      <div className="card p-8 text-center">
+      <Card className="p-8 text-center">
         <p className="text-4xl mb-4">🔒</p>
         <p className="text-text-secondary mb-2">请先登录后再发帖</p>
         <p className="text-sm text-text-muted">点击右上角「登录/注册」按钮</p>
-      </div>
+      </Card>
     );
   }
 
@@ -51,7 +54,8 @@ export function ForumNewPostForm({ boards, isLoggedIn }: ForumNewPostFormProps) 
   };
 
   return (
-    <form action={handleSubmit} className="card p-6 space-y-5">
+    <Card className="p-6">
+      <form action={handleSubmit} className="space-y-5">
       {error && (
         <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg">{error}</div>
       )}
@@ -122,10 +126,11 @@ export function ForumNewPostForm({ boards, isLoggedIn }: ForumNewPostFormProps) 
 
       {/* Action Buttons */}
       <div className="flex items-center gap-3 pt-2">
-        <button type="submit" disabled={loading} className="btn btn-primary px-6 disabled:opacity-50">
+        <button type="submit" disabled={loading} className={cn(buttonVariants(), 'px-6 disabled:opacity-50')}>
           {loading ? '发布中...' : '发布帖子'}
         </button>
       </div>
-    </form>
+      </form>
+    </Card>
   );
 }

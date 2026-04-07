@@ -1,11 +1,16 @@
 import { createClient } from '@/lib/supabase/server';
 import { Link } from '@/lib/i18n/routing';
+import { PageContainer } from '@/components/layout/page-shell';
 import { DiscoverCard } from '@/components/discover/discover-card';
 import { MasonryGrid } from '@/components/discover/masonry-grid';
 import { DiscoverTabs } from '@/components/discover/discover-tabs';
 import { TrendingTopics, TrendingSidebar, WeeklyPicks } from '@/components/discover/trending-topics';
 import { Pagination } from '@/components/shared/pagination';
+import { buttonVariants } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 import type { Metadata } from 'next';
+import { getCurrentSite } from '@/lib/sites';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyRow = Record<string, any>;
@@ -44,6 +49,7 @@ export default async function DiscoverPage({ searchParams }: Props) {
   const topicFilter = sp.topic || null;
 
   const supabase = await createClient();
+  const site = await getCurrentSite();
 
   // Fetch trending topics
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -60,7 +66,8 @@ export default async function DiscoverPage({ searchParams }: Props) {
     .from('voice_posts')
     .select('*, profiles!voice_posts_author_id_fkey(id, username, display_name, avatar_url, is_verified, profile_type)', { count: 'exact' })
     .eq('status', 'published')
-    .eq('visibility', 'public');
+    .eq('visibility', 'public')
+    .eq('site_id', site.id);
 
   // Tab filters
   if (activeTab === 'notes') {
@@ -121,6 +128,7 @@ export default async function DiscoverPage({ searchParams }: Props) {
     .select('id, slug, title, cover_images, cover_image_url, like_count, save_count')
     .eq('status', 'published')
     .eq('visibility', 'public')
+    .eq('site_id', site.id)
     .order('like_count', { ascending: false })
     .limit(3);
 
@@ -140,7 +148,7 @@ export default async function DiscoverPage({ searchParams }: Props) {
     <main className="bg-gray-50 min-h-screen">
       {/* ===== Sticky Search + Trending Bar ===== */}
       <div className="bg-white border-b border-gray-100 sticky top-16 z-40">
-        <div className="max-w-7xl mx-auto px-4 py-3">
+        <PageContainer className="py-3">
           <div className="relative max-w-xl mb-3">
             <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -150,22 +158,22 @@ export default async function DiscoverPage({ searchParams }: Props) {
             </Link>
           </div>
           <TrendingTopics topics={topics} />
-        </div>
+        </PageContainer>
       </div>
 
       {/* ===== Tabs ===== */}
       <div className="bg-white border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4">
+        <PageContainer>
           <div className="py-2">
             <DiscoverTabs />
           </div>
-        </div>
+        </PageContainer>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <PageContainer className="py-6">
         {/* Active Topic Banner */}
         {activeTopic && (
-          <div className="mb-6 p-4 bg-orange-50 rounded-xl flex items-center justify-between">
+          <Card className="mb-6 p-4 bg-orange-50 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="text-xl">{activeTopic.icon_emoji}</span>
               <div>
@@ -176,7 +184,7 @@ export default async function DiscoverPage({ searchParams }: Props) {
             <Link href="/discover" className="text-xs text-gray-500 hover:text-primary">
               清除筛选 ×
             </Link>
-          </div>
+          </Card>
         )}
 
         <div className="lg:flex lg:gap-8">
@@ -223,7 +231,7 @@ export default async function DiscoverPage({ searchParams }: Props) {
 
             {/* Recommended Creators */}
             {creators.length > 0 && (
-              <div className="bg-white border border-gray-200 rounded-[14px] p-5">
+              <Card className="p-5 rounded-[14px]">
                 <h3 className="font-bold text-base mb-4 flex items-center gap-2">
                   <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -240,7 +248,7 @@ export default async function DiscoverPage({ searchParams }: Props) {
                         <p className="text-sm font-semibold text-gray-900 group-hover:text-primary transition">{c.display_name}</p>
                         <p className="text-xs text-gray-400">{c.headline || `${formatFollowers(c.follower_count || 0)}粉丝`}</p>
                       </div>
-                      <button className="px-3 py-1 text-xs font-medium text-primary border border-primary rounded-full hover:bg-primary hover:text-white transition flex-shrink-0">
+                      <button className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'rounded-full flex-shrink-0')}>
                         关注
                       </button>
                     </Link>
@@ -249,19 +257,19 @@ export default async function DiscoverPage({ searchParams }: Props) {
                 <Link href="/discover/voices" className="block text-center text-sm text-primary font-medium mt-4 hover:underline">
                   查看更多创作者 &rarr;
                 </Link>
-              </div>
+              </Card>
             )}
 
             {/* Weekly Picks */}
             <WeeklyPicks posts={weeklyPicks} />
           </aside>
         </div>
-      </div>
+      </PageContainer>
 
       {/* ===== FAB: Create Post ===== */}
       <Link
         href="/discover/new-post"
-        className="fixed bottom-6 right-6 w-14 h-14 rounded-full shadow-lg hover:shadow-xl flex items-center justify-center transition-all hover:scale-105 z-40 text-white"
+        className={cn(buttonVariants({ size: 'icon' }), 'fixed bottom-6 right-6 w-14 h-14 rounded-full shadow-lg hover:shadow-xl flex items-center justify-center transition-all hover:scale-105 z-40 text-white')}
         style={{ background: 'linear-gradient(135deg, #F97316, #EA580C)' }}
         title="发布笔记"
       >

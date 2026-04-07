@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin';
+import { getAdminSiteContext } from '@/lib/admin-context';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
@@ -8,11 +9,13 @@ export async function GET(request: NextRequest) {
   }
 
   const supabase = createAdminClient();
+  const ctx = await getAdminSiteContext();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
     .from('articles')
     .select('ai_summary_zh, ai_summary_en, ai_tags')
     .eq('id', id)
+    .eq('site_id', ctx.siteId)
     .single();
 
   if (error || !data) {

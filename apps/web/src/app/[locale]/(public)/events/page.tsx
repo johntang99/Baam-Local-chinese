@@ -1,8 +1,14 @@
 import { createClient } from '@/lib/supabase/server';
 import { getTranslations } from 'next-intl/server';
 import { Link } from '@/lib/i18n/routing';
+import { PageContainer } from '@/components/layout/page-shell';
 import { Pagination } from '@/components/shared/pagination';
+import { Badge } from '@/components/ui/badge';
+import { buttonVariants } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 import type { Metadata } from 'next';
+import { getCurrentSite } from '@/lib/sites';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyRow = Record<string, any>;
@@ -34,6 +40,7 @@ export default async function EventsListPage({ searchParams }: Props) {
   const priceFilter = sp.price || '';
 
   const supabase = await createClient();
+  const site = await getCurrentSite();
   const t = await getTranslations();
 
   const now = new Date();
@@ -45,7 +52,8 @@ export default async function EventsListPage({ searchParams }: Props) {
   let countQuery = supabase
     .from('events')
     .select('id', { count: 'exact', head: true })
-    .eq('status', 'published');
+    .eq('status', 'published')
+    .eq('site_id', site.id);
 
   if (period === 'week') {
     countQuery = countQuery.gte('start_at', now.toISOString()).lte('start_at', weekEnd.toISOString());
@@ -63,7 +71,8 @@ export default async function EventsListPage({ searchParams }: Props) {
   let dataQuery = supabase
     .from('events')
     .select('*')
-    .eq('status', 'published');
+    .eq('status', 'published')
+    .eq('site_id', site.id);
 
   if (period === 'week') {
     dataQuery = dataQuery.gte('start_at', now.toISOString()).lte('start_at', weekEnd.toISOString());
@@ -86,7 +95,7 @@ export default async function EventsListPage({ searchParams }: Props) {
 
   return (
     <main>
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <PageContainer className="py-6">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold">本地活动</h1>
         </div>
@@ -104,11 +113,11 @@ export default async function EventsListPage({ searchParams }: Props) {
                 <Link
                   key={tab.key}
                   href={href}
-                  className={`px-4 py-2 text-sm font-medium rounded-full transition-colors ${
+                  className={cn(buttonVariants({ size: 'sm' }), 'rounded-full', `${
                     period === tab.key
                       ? 'bg-primary text-text-inverse'
                       : 'bg-border-light text-text-secondary hover:bg-gray-200'
-                  }`}
+                  }`)}
                 >
                   {tab.label}
                 </Link>
@@ -130,11 +139,11 @@ export default async function EventsListPage({ searchParams }: Props) {
                 <Link
                   key={opt.key}
                   href={href}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${
+                  className={cn(buttonVariants({ size: 'sm', variant: 'secondary' }), 'h-auto py-1.5 rounded-full', `${
                     priceFilter === opt.key
                       ? 'bg-primary/10 text-primary'
                       : 'bg-border-light text-text-secondary hover:bg-gray-200'
-                  }`}
+                  }`)}
                 >
                   {opt.label}
                 </Link>
@@ -162,25 +171,27 @@ export default async function EventsListPage({ searchParams }: Props) {
               const isFree = event.is_free || event.price === 0;
 
               return (
-                <Link key={event.id} href={`/events/${event.slug}`} className="card block overflow-hidden">
-                  <div className="h-32 bg-gradient-to-br from-primary/30 to-primary/5 relative">
-                    <div className="absolute top-3 left-3 bg-white rounded-lg shadow-sm px-2 py-1 text-center">
-                      <p className="text-xs text-text-muted leading-tight">{month}</p>
-                      <p className="text-lg font-bold leading-tight">{day}</p>
+                <Link key={event.id} href={`/events/${event.slug}`} className="block">
+                  <Card className="overflow-hidden h-full hover:shadow-md transition-shadow">
+                    <div className="h-32 bg-gradient-to-br from-primary/30 to-primary/5 relative">
+                      <div className="absolute top-3 left-3 bg-white rounded-lg shadow-sm px-2 py-1 text-center">
+                        <p className="text-xs text-text-muted leading-tight">{month}</p>
+                        <p className="text-lg font-bold leading-tight">{day}</p>
+                      </div>
+                      <div className="absolute top-3 right-3">
+                        <Badge className={cn('text-xs', isFree ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700')}>
+                          {isFree ? '免费' : '付费'}
+                        </Badge>
+                      </div>
                     </div>
-                    <div className="absolute top-3 right-3">
-                      <span className={`badge ${isFree ? 'badge-green' : 'badge-purple'} text-xs`}>
-                        {isFree ? '免费' : '付费'}
-                      </span>
+                    <div className="p-4">
+                      <h3 className="font-semibold text-sm line-clamp-2 mb-2">{event.title_zh || event.title_en || event.title}</h3>
+                      <div className="space-y-1 text-xs text-text-muted">
+                        {timeStr && <p>{timeStr}</p>}
+                        {(event.venue_name || event.venue) && <p>{event.venue_name || event.venue}</p>}
+                      </div>
                     </div>
-                  </div>
-                  <div className="p-4">
-                    <h3 className="font-semibold text-sm line-clamp-2 mb-2">{event.title_zh || event.title_en || event.title}</h3>
-                    <div className="space-y-1 text-xs text-text-muted">
-                      {timeStr && <p>{timeStr}</p>}
-                      {(event.venue_name || event.venue) && <p>{event.venue_name || event.venue}</p>}
-                    </div>
-                  </div>
+                  </Card>
                 </Link>
               );
             })}
@@ -193,7 +204,7 @@ export default async function EventsListPage({ searchParams }: Props) {
           basePath="/events"
           searchParams={preservedParams}
         />
-      </div>
+      </PageContainer>
     </main>
   );
 }

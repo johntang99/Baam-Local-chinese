@@ -1,4 +1,6 @@
 import { Link } from '@/lib/i18n/routing';
+import { PageContainer } from '@/components/layout/page-shell';
+import { Card } from '@/components/ui/card';
 import { ViolationLookup } from './violation-lookup';
 import type { Metadata } from 'next';
 
@@ -9,7 +11,8 @@ export const metadata: Metadata = {
 
 export default function VehicleViolationsPage() {
   return (
-    <main className="max-w-4xl mx-auto px-4 py-8">
+    <main>
+      <PageContainer className="max-w-4xl py-8">
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-3">
@@ -27,7 +30,7 @@ export default function VehicleViolationsPage() {
       <ViolationLookup />
 
       {/* Coverage Notice */}
-      <div className="mt-8 bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800">
+      <Card className="mt-8 bg-blue-50 border-blue-200 p-4 text-sm text-blue-800">
         <p className="font-semibold mb-1">本工具查询范围：</p>
         <ul className="list-disc list-inside space-y-0.5 text-xs">
           <li>NYC停车罚单（咪表过期、消防栓、扫街、双排停车等）</li>
@@ -37,7 +40,7 @@ export default function VehicleViolationsPage() {
         <Link href="/services/vehicle-violations/guide" className="inline-flex items-center gap-1 mt-2 text-xs font-semibold text-primary hover:underline">
           📋 如何查看完整驾驶违规记录（包括警察罚单和扣分）→
         </Link>
-      </div>
+      </Card>
 
       {/* Disclaimer */}
       <div className="mt-4 text-xs text-gray-400 leading-relaxed border-t border-gray-100 pt-6">
@@ -53,6 +56,7 @@ export default function VehicleViolationsPage() {
         </p>
         <p>本服务免费提供，Baam 不对查询结果的准确性承担责任。</p>
       </div>
+      </PageContainer>
     </main>
   );
 }

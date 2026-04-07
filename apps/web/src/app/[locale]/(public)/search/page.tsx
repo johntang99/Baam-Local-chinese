@@ -1,6 +1,12 @@
 import { createClient } from '@/lib/supabase/server';
+import { getCurrentSite } from '@/lib/sites';
 import { getTranslations } from 'next-intl/server';
 import { Link } from '@/lib/i18n/routing';
+import { PageContainer } from '@/components/layout/page-shell';
+import { Badge } from '@/components/ui/badge';
+import { buttonVariants } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 import type { Metadata } from 'next';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -32,6 +38,7 @@ export default async function SearchPage({ searchParams }: Props) {
   const query = sp.q?.trim() || '';
   const activeTab = sp.tab || 'all';
   const supabase = await createClient();
+  const site = await getCurrentSite();
   const t = await getTranslations();
 
   // Results containers
@@ -55,6 +62,7 @@ export default async function SearchPage({ searchParams }: Props) {
         supabase
           .from('businesses')
           .select('*')
+          .eq('site_id', site.id)
           .eq('status', 'active')
           .or(`display_name.ilike.${searchPattern},display_name_zh.ilike.${searchPattern},short_desc_zh.ilike.${searchPattern},ai_summary_zh.ilike.${searchPattern}`)
           .order('is_featured', { ascending: false })
@@ -68,6 +76,7 @@ export default async function SearchPage({ searchParams }: Props) {
         supabase
           .from('articles')
           .select('*')
+          .eq('site_id', site.id)
           .eq('editorial_status', 'published')
           .in('content_vertical', ['news_alert', 'news_brief', 'news_explainer', 'news_roundup', 'news_community'])
           .or(`title_zh.ilike.${searchPattern},title_en.ilike.${searchPattern},ai_summary_zh.ilike.${searchPattern}`)
@@ -82,6 +91,7 @@ export default async function SearchPage({ searchParams }: Props) {
         supabase
           .from('articles')
           .select('*')
+          .eq('site_id', site.id)
           .eq('editorial_status', 'published')
           .in('content_vertical', ['guide_howto', 'guide_checklist', 'guide_bestof', 'guide_comparison', 'guide_neighborhood', 'guide_seasonal', 'guide_resource', 'guide_scenario'])
           .or(`title_zh.ilike.${searchPattern},title_en.ilike.${searchPattern},ai_summary_zh.ilike.${searchPattern}`)
@@ -96,6 +106,7 @@ export default async function SearchPage({ searchParams }: Props) {
         supabase
           .from('forum_threads')
           .select('*')
+          .eq('site_id', site.id)
           .eq('status', 'published')
           .or(`title.ilike.${searchPattern},body.ilike.${searchPattern},ai_summary_zh.ilike.${searchPattern}`)
           .order('reply_count', { ascending: false })
@@ -122,6 +133,7 @@ export default async function SearchPage({ searchParams }: Props) {
         supabase
           .from('events')
           .select('*')
+          .eq('site_id', site.id)
           .eq('status', 'published')
           .or(`title_zh.ilike.${searchPattern},title_en.ilike.${searchPattern},summary_zh.ilike.${searchPattern},venue_name.ilike.${searchPattern}`)
           .order('start_at', { ascending: true })
@@ -167,7 +179,7 @@ export default async function SearchPage({ searchParams }: Props) {
 
   return (
     <main>
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <PageContainer className="py-6">
         {/* Search Header */}
         <div className="mb-6">
           <h1 className="text-2xl font-bold mb-4">搜索</h1>
@@ -181,7 +193,7 @@ export default async function SearchPage({ searchParams }: Props) {
                 placeholder="搜索商家、新闻、指南、达人..."
                 className="flex-1 h-11 px-4 border border-border rounded-xl text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none"
               />
-              <button type="submit" className="btn btn-primary h-11 px-6 text-sm">搜索</button>
+              <button type="submit" className={cn(buttonVariants(), 'h-11 px-6 text-sm')}>搜索</button>
             </div>
           </form>
         </div>
@@ -197,11 +209,11 @@ export default async function SearchPage({ searchParams }: Props) {
                 <Link
                   key={tab.key}
                   href={href}
-                  className={`px-4 py-2 text-sm font-medium rounded-full transition-colors whitespace-nowrap ${
+                  className={cn(buttonVariants({ size: 'sm' }), 'rounded-full whitespace-nowrap', `${
                     activeTab === tab.key
                       ? 'bg-primary text-text-inverse'
                       : 'bg-border-light text-text-secondary hover:bg-gray-200'
-                  }`}
+                  }`)}
                 >
                   {tab.label}
                   {query && count > 0 && <span className="ml-1 text-xs opacity-75">({count})</span>}
@@ -225,7 +237,7 @@ export default async function SearchPage({ searchParams }: Props) {
                   <Link
                     key={term}
                     href={`/search?q=${encodeURIComponent(term)}`}
-                    className="px-3 py-1.5 text-sm bg-border-light text-text-secondary rounded-full hover:bg-primary/10 hover:text-primary transition"
+                    className={cn(buttonVariants({ variant: 'secondary', size: 'sm' }), 'h-auto py-1.5 rounded-full')}
                   >
                     {term}
                   </Link>
@@ -261,7 +273,8 @@ export default async function SearchPage({ searchParams }: Props) {
                 </div>
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {businesses.map((biz) => (
-                    <Link key={biz.id} href={`/businesses/${biz.slug}`} className="card p-4 block">
+                    <Link key={biz.id} href={`/businesses/${biz.slug}`} className="block">
+                      <Card className="p-4 h-full">
                       <div className="flex items-center gap-3 mb-2">
                         <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-lg flex-shrink-0">🏢</div>
                         <div className="min-w-0">
@@ -276,6 +289,7 @@ export default async function SearchPage({ searchParams }: Props) {
                         </div>
                       )}
                       {biz.short_desc_zh && <p className="text-xs text-text-muted line-clamp-2">{biz.short_desc_zh}</p>}
+                      </Card>
                     </Link>
                   ))}
                 </div>
@@ -293,12 +307,14 @@ export default async function SearchPage({ searchParams }: Props) {
                 </div>
                 <div className="space-y-3">
                   {news.map((article) => (
-                    <Link key={article.id} href={`/news/${article.slug}`} className="card p-4 block">
+                    <Link key={article.id} href={`/news/${article.slug}`} className="block">
+                      <Card className="p-4">
                       <h3 className="font-semibold text-sm mb-1 line-clamp-2">{article.title_zh || article.title_en}</h3>
                       {(article.ai_summary_zh || article.summary_zh) && (
                         <p className="text-xs text-text-secondary line-clamp-2">{article.ai_summary_zh || article.summary_zh}</p>
                       )}
                       <span className="text-xs text-text-muted mt-1 block">{article.source_name || ''}</span>
+                      </Card>
                     </Link>
                   ))}
                 </div>
@@ -316,7 +332,8 @@ export default async function SearchPage({ searchParams }: Props) {
                 </div>
                 <div className="space-y-3">
                   {guides.map((guide) => (
-                    <Link key={guide.id} href={`/guides/${guide.slug}`} className="card p-4 block">
+                    <Link key={guide.id} href={`/guides/${guide.slug}`} className="block">
+                      <Card className="p-4">
                       <h3 className="font-semibold text-sm mb-1 line-clamp-2">{guide.title_zh || guide.title_en}</h3>
                       {(guide.ai_summary_zh || guide.summary_zh) && (
                         <p className="text-xs text-text-secondary line-clamp-2">{guide.ai_summary_zh || guide.summary_zh}</p>
@@ -324,10 +341,11 @@ export default async function SearchPage({ searchParams }: Props) {
                       {guide.audience_tags && Array.isArray(guide.audience_tags) && (
                         <div className="flex gap-1 mt-1">
                           {guide.audience_tags.slice(0, 3).map((tag: string) => (
-                            <span key={tag} className="text-xs bg-green-50 text-green-700 px-1.5 py-0.5 rounded">{tag}</span>
+                            <Badge key={tag} className="text-xs bg-green-50 text-green-700">{tag}</Badge>
                           ))}
                         </div>
                       )}
+                      </Card>
                     </Link>
                   ))}
                 </div>
@@ -345,13 +363,15 @@ export default async function SearchPage({ searchParams }: Props) {
                 </div>
                 <div className="space-y-3">
                   {threads.map((thread) => (
-                    <Link key={thread.id} href={`/forum/${thread.board_slug || 'general'}/${thread.slug}`} className="card p-4 block">
+                    <Link key={thread.id} href={`/forum/${thread.board_slug || 'general'}/${thread.slug}`} className="block">
+                      <Card className="p-4">
                       <h3 className="font-semibold text-sm mb-1 line-clamp-1">{thread.title_zh || thread.title}</h3>
                       <div className="flex items-center gap-3 text-xs text-text-muted">
                         <span>{thread.author_name || '匿名'}</span>
                         <span>💬 {thread.reply_count || 0}</span>
                         <span>👀 {thread.view_count || 0}</span>
                       </div>
+                      </Card>
                     </Link>
                   ))}
                 </div>
@@ -369,7 +389,8 @@ export default async function SearchPage({ searchParams }: Props) {
                 </div>
                 <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   {voices.map((voice) => (
-                    <Link key={voice.id} href={`/voices/${voice.username}`} className="card p-4 block">
+                    <Link key={voice.id} href={`/voices/${voice.username}`} className="block">
+                      <Card className="p-4 h-full">
                       <div className="flex items-center gap-3 mb-2">
                         <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-lg">
                           {voice.display_name?.[0] || '?'}
@@ -381,6 +402,7 @@ export default async function SearchPage({ searchParams }: Props) {
                       </div>
                       {voice.headline && <p className="text-xs text-text-secondary line-clamp-2">{voice.headline}</p>}
                       <span className="text-xs text-text-muted mt-1 block">{voice.follower_count || 0} 关注者</span>
+                      </Card>
                     </Link>
                   ))}
                 </div>
@@ -401,13 +423,15 @@ export default async function SearchPage({ searchParams }: Props) {
                     const startDate = event.start_at ? new Date(event.start_at) : null;
                     const dateStr = startDate ? startDate.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' }) : '';
                     return (
-                      <Link key={event.id} href={`/events/${event.slug}`} className="card p-4 block">
+                      <Link key={event.id} href={`/events/${event.slug}`} className="block">
+                        <Card className="p-4">
                         <h3 className="font-semibold text-sm mb-1 line-clamp-2">{event.title_zh || event.title_en || event.title}</h3>
                         <div className="flex items-center gap-2 text-xs text-text-muted">
                           {dateStr && <span>📅 {dateStr}</span>}
                           {event.venue_name && <span>📍 {event.venue_name}</span>}
-                          {event.is_free && <span className="badge badge-green text-xs">免费</span>}
+                          {event.is_free && <Badge className="text-xs bg-green-100 text-green-700">免费</Badge>}
                         </div>
+                        </Card>
                       </Link>
                     );
                   })}
@@ -416,7 +440,7 @@ export default async function SearchPage({ searchParams }: Props) {
             )}
           </div>
         )}
-      </div>
+      </PageContainer>
     </main>
   );
 }

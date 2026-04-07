@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { submitBusinessClaim } from './actions';
+import { buttonVariants } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyRow = Record<string, any>;
@@ -23,7 +25,7 @@ export function ClaimForm({ categories }: ClaimFormProps) {
         <p className="text-4xl mb-4">🎉</p>
         <h3 className="text-lg font-bold mb-2">申请已提交！</h3>
         <p className="text-sm text-text-secondary mb-4">我们将在 1-3 个工作日内审核您的申请，届时会通过邮件通知您。</p>
-        <button onClick={() => router.push('/zh/businesses')} className="btn btn-primary h-10 px-6 text-sm">
+        <button onClick={() => router.push('/zh/businesses')} className={cn(buttonVariants({ size: 'sm' }), 'h-10 px-6 text-sm')}>
           浏览商家目录
         </button>
       </div>
@@ -95,7 +97,7 @@ export function ClaimForm({ categories }: ClaimFormProps) {
         />
       </div>
 
-      <button type="submit" disabled={loading} className="btn btn-primary w-full h-12 text-base font-semibold disabled:opacity-50">
+      <button type="submit" disabled={loading} className={cn(buttonVariants(), 'w-full h-12 text-base font-semibold disabled:opacity-50')}>
         {loading ? '提交中...' : '提交入驻申请'}
       </button>
     </form>

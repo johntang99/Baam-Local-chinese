@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentUser } from '@/lib/auth';
+import { getCurrentSite } from '@/lib/sites';
 import { redirect } from 'next/navigation';
 import { Link } from '@/lib/i18n/routing';
 import type { Metadata } from 'next';
@@ -14,6 +15,7 @@ export const metadata: Metadata = {
 export default async function BusinessDashboardPage() {
   const user = await getCurrentUser().catch(() => null);
   if (!user) redirect('/zh?auth=required&redirect=/dashboard/business');
+  const site = await getCurrentSite();
 
   const supabase = await createClient();
 
@@ -23,6 +25,7 @@ export default async function BusinessDashboardPage() {
     .from('businesses')
     .select('*')
     .eq('claimed_by_user_id', user.id)
+    .eq('site_id', site.id)
     .order('created_at', { ascending: false });
 
   const businesses = (bizData || []) as AnyRow[];
@@ -58,6 +61,7 @@ export default async function BusinessDashboardPage() {
       .from('leads')
       .select('id', { count: 'exact', head: true })
       .eq('business_id', biz.id)
+      .eq('site_id', site.id)
       .eq('status', 'new'),
   ]);
 
@@ -70,6 +74,7 @@ export default async function BusinessDashboardPage() {
     .from('leads')
     .select('id, contact_name, contact_phone, message, status, created_at')
     .eq('business_id', biz.id)
+    .eq('site_id', site.id)
     .order('created_at', { ascending: false })
     .limit(5);
 

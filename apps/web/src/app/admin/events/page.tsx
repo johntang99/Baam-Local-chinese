@@ -49,6 +49,7 @@ export default async function AdminEventsPage({ searchParams }: Props) {
   let query = supabase
     .from('events')
     .select('*', { count: 'exact' })
+    .eq('site_id', ctx.siteId)
     .in('region_id', ctx.regionIds)
     .order('start_at', { ascending: false });
 

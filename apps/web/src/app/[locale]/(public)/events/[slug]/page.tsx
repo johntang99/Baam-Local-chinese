@@ -1,7 +1,13 @@
 import { createClient } from '@/lib/supabase/server';
 import { notFound } from 'next/navigation';
 import { Link } from '@/lib/i18n/routing';
+import { PageContainer } from '@/components/layout/page-shell';
+import { Badge } from '@/components/ui/badge';
+import { buttonVariants } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 import type { Metadata } from 'next';
+import { getCurrentSite } from '@/lib/sites';
 
 interface Props {
   params: Promise<{ locale: string; slug: string }>;
@@ -13,10 +19,12 @@ type AnyRow = Record<string, any>;
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const supabase = await createClient();
+  const site = await getCurrentSite();
   const { data } = await supabase
     .from('events')
     .select('title, description, cover_image_url')
     .eq('slug', slug)
+    .eq('site_id', site.id)
     .single();
 
   const event = data as AnyRow | null;
@@ -38,6 +46,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function EventDetailPage({ params }: Props) {
   const { slug } = await params;
   const supabase = await createClient();
+  const site = await getCurrentSite();
 
   // Fetch event
   const { data, error } = await supabase
@@ -45,6 +54,7 @@ export default async function EventDetailPage({ params }: Props) {
     .select('*')
     .eq('slug', slug)
     .eq('status', 'published')
+    .eq('site_id', site.id)
     .single();
 
   const event = data as AnyRow | null;
@@ -71,6 +81,7 @@ export default async function EventDetailPage({ params }: Props) {
     .from('events')
     .select('*')
     .eq('status', 'published')
+    .eq('site_id', site.id)
     .neq('id', event.id)
     .order('start_at', { ascending: true })
     .limit(3);
@@ -82,7 +93,7 @@ export default async function EventDetailPage({ params }: Props) {
       {/* Cover gradient */}
       <div className="h-48 bg-gradient-to-br from-primary/30 to-primary/5" />
 
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <PageContainer className="py-6">
         {/* Breadcrumb */}
         <nav className="text-sm text-text-muted mb-4">
           <Link href="/" className="hover:text-primary">首页</Link>
@@ -98,9 +109,9 @@ export default async function EventDetailPage({ params }: Props) {
             {/* Header */}
             <header className="mb-6">
               <div className="flex items-center gap-2 mb-3">
-                <span className={`badge ${isFree ? 'badge-green' : 'badge-purple'} text-xs`}>
+                <Badge className={cn('text-xs', isFree ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700')}>
                   {isFree ? '免费' : '付费'}
-                </span>
+                </Badge>
               </div>
               <h1 className="text-2xl sm:text-3xl font-bold leading-tight mb-4">{event.title_zh || event.title_en || event.title}</h1>
 
@@ -154,22 +165,22 @@ export default async function EventDetailPage({ params }: Props) {
             {/* Share */}
             <div className="flex items-center gap-3 py-4 border-t border-border">
               <span className="text-sm text-text-secondary">分享：</span>
-              <button className="btn btn-outline h-8 px-3 text-xs">微信</button>
-              <button className="btn btn-outline h-8 px-3 text-xs">Facebook</button>
-              <button className="btn btn-outline h-8 px-3 text-xs">复制链接</button>
+              <button className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'h-8 px-3 text-xs')}>微信</button>
+              <button className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'h-8 px-3 text-xs')}>Facebook</button>
+              <button className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'h-8 px-3 text-xs')}>复制链接</button>
             </div>
           </div>
 
           {/* Sidebar */}
           <aside className="hidden lg:block w-80 flex-shrink-0 space-y-6 mt-8 lg:mt-0">
             {/* RSVP card placeholder */}
-            <div className="bg-bg-card rounded-xl border border-border p-5">
+            <Card className="bg-bg-card p-5">
               <h3 className="font-semibold text-sm mb-3">参加活动</h3>
               <p className="text-xs text-text-secondary mb-3">
                 {isFree ? '免费活动，欢迎参加' : `票价：$${event.price || '--'}`}
               </p>
-              <button className="btn btn-primary w-full h-9 text-sm">报名参加</button>
-            </div>
+              <button className={cn(buttonVariants({ size: 'sm' }), 'w-full')}>报名参加</button>
+            </Card>
           </aside>
         </div>
 
@@ -187,28 +198,30 @@ export default async function EventDetailPage({ params }: Props) {
                 const evtFree = evt.is_free || evt.price === 0;
 
                 return (
-                  <Link key={evt.id} href={`/events/${evt.slug}`} className="card block overflow-hidden">
-                    <div className="h-24 bg-gradient-to-br from-primary/20 to-primary/5 relative">
-                      <div className="absolute top-2 left-2 bg-white rounded-lg shadow-sm px-2 py-1 text-center">
-                        <p className="text-xs text-text-muted leading-tight">{evtMonth}</p>
-                        <p className="text-base font-bold leading-tight">{evtDay}</p>
+                  <Link key={evt.id} href={`/events/${evt.slug}`} className="block">
+                    <Card className="overflow-hidden h-full hover:shadow-md transition-shadow">
+                      <div className="h-24 bg-gradient-to-br from-primary/20 to-primary/5 relative">
+                        <div className="absolute top-2 left-2 bg-white rounded-lg shadow-sm px-2 py-1 text-center">
+                          <p className="text-xs text-text-muted leading-tight">{evtMonth}</p>
+                          <p className="text-base font-bold leading-tight">{evtDay}</p>
+                        </div>
+                        <div className="absolute top-2 right-2">
+                          <Badge className={cn('text-xs', evtFree ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700')}>
+                            {evtFree ? '免费' : '付费'}
+                          </Badge>
+                        </div>
                       </div>
-                      <div className="absolute top-2 right-2">
-                        <span className={`badge ${evtFree ? 'badge-green' : 'badge-purple'} text-xs`}>
-                          {evtFree ? '免费' : '付费'}
-                        </span>
+                      <div className="p-3">
+                        <h3 className="font-medium text-sm line-clamp-2">{evt.title}</h3>
                       </div>
-                    </div>
-                    <div className="p-3">
-                      <h3 className="font-medium text-sm line-clamp-2">{evt.title}</h3>
-                    </div>
+                    </Card>
                   </Link>
                 );
               })}
             </div>
           </section>
         )}
-      </div>
+      </PageContainer>
     </main>
   );
 }

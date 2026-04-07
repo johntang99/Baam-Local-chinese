@@ -75,6 +75,8 @@ async function syncBusinessCategories(supabase: ReturnType<typeof db>, businessI
 export async function createBusiness(formData: FormData) {
   const supabase = db();
   const fields = extractBusinessFields(formData);
+  const siteId = (formData.get('site_id') as string) || '';
+  if (!siteId) return { id: null, error: 'Missing site_id' };
   const slug = generateSlug(fields.display_name || 'business');
   const categoryIds = parseCategoryIds(formData);
 
@@ -83,6 +85,7 @@ export async function createBusiness(formData: FormData) {
     .insert({
       ...fields,
       slug,
+      site_id: siteId,
     })
     .select('id')
     .single();
@@ -101,7 +104,7 @@ export async function createBusiness(formData: FormData) {
   return { id: data?.id, error: null };
 }
 
-export async function updateBusiness(bizId: string, formData: FormData) {
+export async function updateBusiness(bizId: string, siteId: string, formData: FormData) {
   const supabase = db();
   const fields = extractBusinessFields(formData);
   const categoryIds = parseCategoryIds(formData);
@@ -109,7 +112,8 @@ export async function updateBusiness(bizId: string, formData: FormData) {
   const { error } = await supabase
     .from('businesses')
     .update(fields)
-    .eq('id', bizId);
+    .eq('id', bizId)
+    .eq('site_id', siteId);
 
   if (error) {
     revalidatePath('/admin/businesses');
@@ -123,13 +127,14 @@ export async function updateBusiness(bizId: string, formData: FormData) {
   return { error: null };
 }
 
-export async function deleteBusiness(bizId: string) {
+export async function deleteBusiness(bizId: string, siteId: string) {
   const supabase = db();
 
   const { error } = await supabase
     .from('businesses')
     .delete()
-    .eq('id', bizId);
+    .eq('id', bizId)
+    .eq('site_id', siteId);
 
   revalidatePath('/admin/businesses');
 
@@ -139,18 +144,31 @@ export async function deleteBusiness(bizId: string) {
   return { error: null };
 }
 
-export async function approveClaim(claimId: string) {
-  const supabase = db();
-
-  // Get the claim to find the business_id
+async function ensureClaimInSite(supabase: ReturnType<typeof db>, claimId: string, siteId: string) {
   const { data: claim } = await supabase
     .from('business_claim_requests')
     .select('business_id')
     .eq('id', claimId)
     .single();
 
+  if (!claim?.business_id) return null;
+
+  const { data: biz } = await supabase
+    .from('businesses')
+    .select('id')
+    .eq('id', claim.business_id)
+    .eq('site_id', siteId)
+    .single();
+
+  return biz ? claim : null;
+}
+
+export async function approveClaim(claimId: string, siteId: string) {
+  const supabase = db();
+  const claim = await ensureClaimInSite(supabase, claimId, siteId);
+
   if (!claim) {
-    return { error: 'Claim not found' };
+    return { error: 'Claim not found for current site' };
   }
 
   // Update claim status
@@ -167,7 +185,8 @@ export async function approveClaim(claimId: string) {
   const { error: bizError } = await supabase
     .from('businesses')
     .update({ status: 'claimed' })
-    .eq('id', claim.business_id);
+    .eq('id', claim.business_id)
+    .eq('site_id', siteId);
 
   revalidatePath('/admin/businesses');
 
@@ -177,8 +196,10 @@ export async function approveClaim(claimId: string) {
   return { error: null };
 }
 
-export async function rejectClaim(claimId: string) {
+export async function rejectClaim(claimId: string, siteId: string) {
   const supabase = db();
+  const claim = await ensureClaimInSite(supabase, claimId, siteId);
+  if (!claim) return { error: 'Claim not found for current site' };
 
   const { error } = await supabase
     .from('business_claim_requests')
@@ -193,13 +214,14 @@ export async function rejectClaim(claimId: string) {
   return { error: null };
 }
 
-export async function toggleFeatured(bizId: string, featured: boolean) {
+export async function toggleFeatured(bizId: string, featured: boolean, siteId: string) {
   const supabase = db();
 
   const { error } = await supabase
     .from('businesses')
     .update({ is_featured: featured })
-    .eq('id', bizId);
+    .eq('id', bizId)
+    .eq('site_id', siteId);
 
   revalidatePath('/admin/businesses');
 

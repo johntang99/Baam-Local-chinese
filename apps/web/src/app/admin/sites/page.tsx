@@ -51,9 +51,9 @@ export default async function AdminSitesPage() {
       continue;
     }
     const [a, b, t] = await Promise.all([
-      supabase.from('articles').select('*', { count: 'exact', head: true }).eq('editorial_status', 'published').in('region_id', regionIds),
-      supabase.from('businesses').select('*', { count: 'exact', head: true }).eq('is_active', true),
-      supabase.from('forum_threads').select('*', { count: 'exact', head: true }).eq('status', 'published').in('region_id', regionIds),
+      supabase.from('articles').select('*', { count: 'exact', head: true }).eq('editorial_status', 'published').eq('site_id', site.id).in('region_id', regionIds),
+      supabase.from('businesses').select('*', { count: 'exact', head: true }).eq('site_id', site.id).eq('is_active', true),
+      supabase.from('forum_threads').select('*', { count: 'exact', head: true }).eq('site_id', site.id).eq('status', 'published').in('region_id', regionIds),
     ]);
     siteCounts[site.id] = { articles: a.count || 0, businesses: b.count || 0, threads: t.count || 0 };
   }

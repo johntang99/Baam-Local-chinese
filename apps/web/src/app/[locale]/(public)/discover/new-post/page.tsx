@@ -1,6 +1,8 @@
 import { getCurrentUser } from '@/lib/auth';
+import { getCurrentSite } from '@/lib/sites';
 import { createClient } from '@/lib/supabase/server';
 import { Link } from '@/lib/i18n/routing';
+import { PageContainer } from '@/components/layout/page-shell';
 import { VoicePostForm } from './form';
 import type { Metadata } from 'next';
 
@@ -15,6 +17,7 @@ interface Props {
 
 export default async function DiscoverNewPostPage({ searchParams }: Props) {
   const user = await getCurrentUser();
+  const site = await getCurrentSite();
   const sp = await searchParams;
 
   // If a business slug is provided, fetch it for pre-linking
@@ -27,6 +30,7 @@ export default async function DiscoverNewPostPage({ searchParams }: Props) {
       .from('businesses')
       .select('id, slug, display_name, display_name_zh, short_desc_zh, address_full')
       .eq('slug', sp.business)
+      .eq('site_id', site.id)
       .eq('status', 'active')
       .single();
     prelinkedBusiness = data;
@@ -34,7 +38,7 @@ export default async function DiscoverNewPostPage({ searchParams }: Props) {
 
   return (
     <main>
-      <div className="max-w-3xl mx-auto px-4 py-6 sm:py-8">
+      <PageContainer className="max-w-3xl py-6 sm:py-8">
         {/* Header */}
         <div className="flex items-center gap-4 mb-6">
           <Link href="/discover" className="flex items-center gap-2 text-gray-500 hover:text-gray-900 transition">
@@ -48,7 +52,7 @@ export default async function DiscoverNewPostPage({ searchParams }: Props) {
         </div>
 
         <VoicePostForm isLoggedIn={!!user} prelinkedBusiness={prelinkedBusiness} />
-      </div>
+      </PageContainer>
     </main>
   );
 }
