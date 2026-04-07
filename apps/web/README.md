@@ -100,3 +100,5 @@ Copy `.env.local.example` to `.env.local` and fill in the values. Key variables:
 - [Shared packages](../../packages/) — Shared types and utilities
 - [Database schema](../../document/Baam_Supabase_Schema.sql) — Full Supabase schema
 - [Business data pipeline](../../document/business-data-pipeline.md) — Import/enrichment scripts
+
+try to do it.
