@@ -257,9 +257,19 @@ export default async function HomePage({ params }: Props) {
               </div>
             </div>
             <div className="flex items-center gap-2 mb-5 overflow-x-auto pb-1 scrollbar-hide">
-              {['美食', '健康', '美妆', '穿搭', '影视', '职场', '走走', '家居', '小窍门'].map((tag) => (
-                <span key={tag} className="px-3 py-1 text-xs fw-medium text-text-secondary bg-bg-page border border-border-light r-full whitespace-nowrap hover:text-primary hover:border-primary-200 transition cursor-pointer">
-                  {tag}
+              {[
+                { label: '美食', icon: '🍲' },
+                { label: '健康', icon: '🌸' },
+                { label: '美妆', icon: '💄' },
+                { label: '穿搭', icon: '👗' },
+                { label: '影视', icon: '🎬' },
+                { label: '职场', icon: '💼' },
+                { label: '走走', icon: '✈️' },
+                { label: '家居', icon: '🏠' },
+                { label: '小窍门', icon: '💡' },
+              ].map((tag) => (
+                <span key={tag.label} className="px-3 py-1 text-xs fw-medium text-text-secondary bg-bg-page border border-border-light r-full whitespace-nowrap hover:text-primary hover:border-primary-200 transition cursor-pointer">
+                  {tag.icon} {tag.label}
                 </span>
               ))}
             </div>
