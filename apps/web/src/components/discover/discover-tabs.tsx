@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { usePathname } from '@/lib/i18n/routing';
+import Link from 'next/link';
 
 const tabs = [
   { key: 'recommend', label: '推荐' },
@@ -30,20 +31,34 @@ export function DiscoverTabs() {
   };
 
   return (
-    <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-hide">
+    <div className="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-hide border-b border-border">
       {tabs.map((tab) => (
         <button
           key={tab.key}
           onClick={() => handleTabClick(tab.key)}
-          className={`px-4 py-2 text-sm font-medium r-full whitespace-nowrap transition-colors ${
+          className={`relative px-3 py-2.5 text-sm whitespace-nowrap transition-colors ${
             activeTab === tab.key
-              ? 'bg-gray-900 text-white'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              ? 'text-text-primary fw-semibold'
+              : 'text-text-secondary hover:text-text-primary fw-medium'
           }`}
         >
           {tab.label}
+          {activeTab === tab.key && (
+            <span className="absolute left-0 right-0 -bottom-px h-0.5 bg-primary r-full" />
+          )}
         </button>
       ))}
+
+      {/* Publish Button */}
+      <Link
+        href="/discover/new-post"
+        className="ml-auto flex items-center gap-1.5 px-4 py-2 bg-primary text-white text-sm fw-semibold r-xl hover:bg-primary/90 transition-colors flex-shrink-0"
+      >
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+        </svg>
+        发布晒晒
+      </Link>
     </div>
   );
 }

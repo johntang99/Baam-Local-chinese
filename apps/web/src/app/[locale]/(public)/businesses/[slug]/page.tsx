@@ -223,7 +223,7 @@ export default async function BusinessDetailPage({ params }: Props) {
         </nav>
       </PageContainer>
 
-      {/* Hero / Cover Image */}
+      {/* Hero / Cover Image — compact when no photo */}
       <PageContainer>
         <div className="relative r-xl overflow-hidden">
           {coverPhoto ? (
@@ -235,28 +235,21 @@ export default async function BusinessDetailPage({ params }: Props) {
               />
             </div>
           ) : (
-            <div className="relative w-full bg-gradient-to-br from-secondary-light via-blue-100 to-teal-100" style={{ aspectRatio: '16/9' }}>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-center text-blue-300">
-                  <svg className="w-16 h-16 mx-auto mb-2 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  <p className="text-sm opacity-40">商家图片</p>
-                </div>
-              </div>
+            <div className="relative w-full h-32 sm:h-40 bg-gradient-to-br from-primary-50 via-backdrop-primary to-secondary-50">
+              <div className="absolute inset-0 pointer-events-none opacity-70" style={{ backgroundImage: 'radial-gradient(circle at 20% 30%, color-mix(in srgb, var(--primary) 12%, transparent), transparent 55%), radial-gradient(circle at 80% 70%, color-mix(in srgb, var(--secondary) 10%, transparent), transparent 50%)' }} />
             </div>
           )}
-          {/* Logo overlay */}
-          <div className="absolute -bottom-10 left-6 w-20 h-20 sm:w-24 sm:h-24 r-xl border-4 border-border-light bg-gradient-to-br from-secondary to-blue-600 elev-lg flex items-center justify-center">
-            <span className="text-3xl sm:text-4xl text-text-inverse fw-bold">
-              {(name || '').charAt(0)}
+          {/* Logo overlay — soft brand style */}
+          <div className="absolute -bottom-8 left-6 w-16 h-16 sm:w-20 sm:h-20 r-xl border-4 border-bg-card bg-bg-card elev-lg flex items-center justify-center overflow-hidden">
+            <span className="text-2xl sm:text-3xl fw-bold text-primary-dark">
+              {(name || '').charAt(0) || '🏢'}
             </span>
           </div>
         </div>
       </PageContainer>
 
       {/* Business Header */}
-      <PageContainer className="pt-14 sm:pt-16 pb-6">
+      <PageContainer className="pt-10 sm:pt-12 pb-6">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
             {/* Name + Verified */}
@@ -934,6 +927,36 @@ export default async function BusinessDetailPage({ params }: Props) {
 
         </div>
       </PageContainer>
+
+      {/* Sticky bottom CTA on mobile — quick contact actions */}
+      {(biz.phone || biz.website_url || biz.website) && (
+        <div className="lg:hidden fixed inset-x-0 bottom-0 z-40 bg-bg-card/95 backdrop-blur border-t border-border elev-lg">
+          <div className="flex items-center gap-2 px-4 py-3 max-w-3xl mx-auto">
+            {biz.phone && (
+              <a
+                href={`tel:${biz.phone.replace(/[^+\d]/g, '')}`}
+                className={cn(buttonVariants(), 'flex-1 h-11')}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                拨打电话
+              </a>
+            )}
+            {(biz.website_url || biz.website) && (
+              <a
+                href={biz.website_url || biz.website}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={cn(buttonVariants({ variant: 'outline' }), 'flex-1 h-11')}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg>
+                访问网站
+              </a>
+            )}
+          </div>
+        </div>
+      )}
+      {/* Spacer so sticky bar doesn't hide footer on mobile */}
+      {(biz.phone || biz.website_url || biz.website) && <div className="lg:hidden h-20" aria-hidden="true" />}
     </main>
   );
 }

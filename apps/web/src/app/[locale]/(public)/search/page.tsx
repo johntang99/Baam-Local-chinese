@@ -19,6 +19,43 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Highlight occurrences of `query` inside `text`. Returns a ReactNode with
+ * matches wrapped in a styled <mark>. Safe on server because it only renders
+ * React primitives (string + span).
+ */
+function highlightMatch(text: string | null | undefined, query: string) {
+  const value = String(text ?? '');
+  if (!value) return null;
+  const trimmed = query.trim();
+  if (!trimmed || trimmed.length < 1) return value;
+  const tokens = trimmed
+    .split(/\s+/)
+    .filter((t) => t.length >= 1)
+    .map(escapeRegex);
+  if (tokens.length === 0) return value;
+  const pattern = new RegExp(`(${tokens.join('|')})`, 'gi');
+  const parts = value.split(pattern);
+  return parts.map((part, index) => {
+    if (!part) return null;
+    const isMatch = tokens.some((t) => new RegExp(`^${t}$`, 'i').test(part));
+    return isMatch ? (
+      <mark
+        key={`${part}-${index}`}
+        className="bg-primary-100 text-primary-dark r-base px-0.5 py-px"
+      >
+        {part}
+      </mark>
+    ) : (
+      <span key={`${part}-${index}`}>{part}</span>
+    );
+  });
+}
+
 const searchTabs = [
   { key: 'all', label: '全部' },
   { key: 'biz', label: '商家' },
@@ -198,23 +235,15 @@ export default async function SearchPage({ searchParams }: Props) {
           </form>
         </div>
 
-        {/* Tab Navigation — now functional links with counts */}
+        {/* Tab chips with counts */}
         {query && (
-          <div className="flex gap-1 mb-6 overflow-x-auto pb-2">
+          <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
             {searchTabs.map((tab) => {
               const count = counts[tab.key] || 0;
               const href = tab.key === 'all' ? `/search?q=${encodeURIComponent(query)}` : `/search?q=${encodeURIComponent(query)}&tab=${tab.key}`;
 
               return (
-                <Link
-                  key={tab.key}
-                  href={href}
-                  className={cn(buttonVariants({ size: 'sm' }), 'r-full whitespace-nowrap', `${
-                    activeTab === tab.key
-                      ? 'bg-primary text-text-inverse'
-                      : 'bg-border-light text-text-secondary hover:bg-border-light'
-                  }`)}
-                >
+                <Link key={tab.key} href={href} className={cn('chip flex-shrink-0', activeTab === tab.key && 'active')}>
                   {tab.label}
                   {query && count > 0 && <span className="ml-1 text-xs opacity-75">({count})</span>}
                 </Link>
@@ -234,11 +263,7 @@ export default async function SearchPage({ searchParams }: Props) {
               <p className="text-sm text-text-muted mb-3">热门搜索</p>
               <div className="flex flex-wrap justify-center gap-2">
                 {['家庭医生', '报税', '中文律师', '装修', '搬家', '驾照', '月嫂', '学区'].map((term) => (
-                  <Link
-                    key={term}
-                    href={`/search?q=${encodeURIComponent(term)}`}
-                    className={cn(buttonVariants({ variant: 'secondary', size: 'sm' }), 'h-auto py-1.5 r-full')}
-                  >
+                  <Link key={term} href={`/search?q=${encodeURIComponent(term)}`} className="chip">
                     {term}
                   </Link>
                 ))}
@@ -278,7 +303,9 @@ export default async function SearchPage({ searchParams }: Props) {
                       <div className="flex items-center gap-3 mb-2">
                         <div className="w-10 h-10 r-lg bg-primary/10 flex items-center justify-center text-lg flex-shrink-0">🏢</div>
                         <div className="min-w-0">
-                          <h3 className="fw-semibold text-sm truncate">{biz.display_name || biz.name_zh}</h3>
+                          <h3 className="fw-semibold text-sm truncate">
+                            {highlightMatch(biz.display_name_zh || biz.display_name || biz.name_zh, query)}
+                          </h3>
                           {biz.category_name && <span className="text-xs text-text-muted">{biz.category_name}</span>}
                         </div>
                       </div>
@@ -288,7 +315,7 @@ export default async function SearchPage({ searchParams }: Props) {
                           <span className="text-text-muted">{biz.avg_rating?.toFixed(1)} ({biz.review_count || 0})</span>
                         </div>
                       )}
-                      {biz.short_desc_zh && <p className="text-xs text-text-muted line-clamp-2">{biz.short_desc_zh}</p>}
+                      {biz.short_desc_zh && <p className="text-xs text-text-muted line-clamp-2">{highlightMatch(biz.short_desc_zh, query)}</p>}
                       </Card>
                     </Link>
                   ))}
@@ -309,9 +336,9 @@ export default async function SearchPage({ searchParams }: Props) {
                   {news.map((article) => (
                     <Link key={article.id} href={`/news/${article.slug}`} className="block">
                       <Card className="p-4">
-                      <h3 className="fw-semibold text-sm mb-1 line-clamp-2">{article.title_zh || article.title_en}</h3>
+                      <h3 className="fw-semibold text-sm mb-1 line-clamp-2">{highlightMatch(article.title_zh || article.title_en, query)}</h3>
                       {(article.ai_summary_zh || article.summary_zh) && (
-                        <p className="text-xs text-text-secondary line-clamp-2">{article.ai_summary_zh || article.summary_zh}</p>
+                        <p className="text-xs text-text-secondary line-clamp-2">{highlightMatch(article.ai_summary_zh || article.summary_zh, query)}</p>
                       )}
                       <span className="text-xs text-text-muted mt-1 block">{article.source_name || ''}</span>
                       </Card>
@@ -334,9 +361,9 @@ export default async function SearchPage({ searchParams }: Props) {
                   {guides.map((guide) => (
                     <Link key={guide.id} href={`/guides/${guide.slug}`} className="block">
                       <Card className="p-4">
-                      <h3 className="fw-semibold text-sm mb-1 line-clamp-2">{guide.title_zh || guide.title_en}</h3>
+                      <h3 className="fw-semibold text-sm mb-1 line-clamp-2">{highlightMatch(guide.title_zh || guide.title_en, query)}</h3>
                       {(guide.ai_summary_zh || guide.summary_zh) && (
-                        <p className="text-xs text-text-secondary line-clamp-2">{guide.ai_summary_zh || guide.summary_zh}</p>
+                        <p className="text-xs text-text-secondary line-clamp-2">{highlightMatch(guide.ai_summary_zh || guide.summary_zh, query)}</p>
                       )}
                       {guide.audience_tags && Array.isArray(guide.audience_tags) && (
                         <div className="flex gap-1 mt-1">
@@ -365,7 +392,7 @@ export default async function SearchPage({ searchParams }: Props) {
                   {threads.map((thread) => (
                     <Link key={thread.id} href={`/forum/${thread.board_slug || 'general'}/${thread.slug}`} className="block">
                       <Card className="p-4">
-                      <h3 className="fw-semibold text-sm mb-1 line-clamp-1">{thread.title_zh || thread.title}</h3>
+                      <h3 className="fw-semibold text-sm mb-1 line-clamp-1">{highlightMatch(thread.title_zh || thread.title, query)}</h3>
                       <div className="flex items-center gap-3 text-xs text-text-muted">
                         <span>{thread.author_name || '匿名'}</span>
                         <span>💬 {thread.reply_count || 0}</span>

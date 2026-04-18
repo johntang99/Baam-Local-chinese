@@ -9,6 +9,7 @@ import { RelatedDiscoverPosts } from '@/components/discover/related-posts';
 import { DiscoverCard } from '@/components/discover/discover-card';
 import { PostActions } from '@/components/discover/post-actions';
 import { LayoutToggle } from '@/components/discover/layout-toggle';
+import { TrendingTopics } from '@/components/discover/trending-topics';
 import { PageContainer } from '@/components/layout/page-shell';
 import { Badge } from '@/components/ui/badge';
 import { buttonVariants } from '@/components/ui/button';
@@ -68,6 +69,16 @@ export default async function DiscoverPostDetailPage({ params, searchParams }: P
   const supabase = await createClient();
   const site = await getCurrentSite();
   const currentUser = await getCurrentUser().catch(() => null);
+
+  // Fetch trending topics for header
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: rawTopics } = await (supabase as any)
+    .from('discover_topics')
+    .select('*')
+    .eq('is_trending', true)
+    .order('sort_order', { ascending: true })
+    .limit(15);
+  const topics = (rawTopics || []) as AnyRow[];
 
   const decodedSlug = decodeURIComponent(slug);
 
@@ -173,6 +184,21 @@ export default async function DiscoverPostDetailPage({ params, searchParams }: P
   if (isClassic) {
     return (
       <main>
+        {/* ===== Discover Header ===== */}
+        <div className="bg-bg-card border-b border-border-light shadow-sm sticky top-14 z-40">
+          <PageContainer className="pt-5 pb-3">
+            <div className="relative max-w-xl mb-3">
+              <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <Link href="/ask" className="flex items-center w-full h-11 pl-11 pr-4 bg-bg-page border border-border r-full text-sm text-text-muted hover:bg-bg-card hover:border-border transition">
+                搜索笔记、视频、话题...
+              </Link>
+            </div>
+            <TrendingTopics topics={topics} />
+          </PageContainer>
+        </div>
+
         <LayoutToggle />
         <PageContainer className="max-w-4xl py-6">
           {isPendingReview && (
@@ -380,12 +406,27 @@ export default async function DiscoverPostDetailPage({ params, searchParams }: P
 
   return (
     <main className="bg-bg-card min-h-screen">
+      {/* ===== Discover Header (search + trending) ===== */}
+      <div className="bg-bg-card border-b border-border-light shadow-sm sticky top-14 z-40">
+        <PageContainer className="pt-5 pb-3">
+          <div className="relative max-w-xl mb-3">
+            <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <Link href="/ask" className="flex items-center w-full h-11 pl-11 pr-4 bg-bg-page border border-border r-full text-sm text-text-muted hover:bg-bg-card hover:border-border transition">
+              搜索笔记、视频、话题...
+            </Link>
+          </div>
+          <TrendingTopics topics={topics} />
+        </PageContainer>
+      </div>
+
       <LayoutToggle />
 
-      <div className="max-w-7xl mx-auto lg:flex lg:min-h-[calc(100vh-64px)]">
+      <div className="max-w-7xl mx-auto lg:flex" style={{ minHeight: 'calc(100vh - 56px)' }}>
 
-        {/* ===== LEFT: Media Column (sticky on desktop) ===== */}
-        <div className="relative lg:w-[55%] lg:flex-shrink-0 lg:sticky lg:top-16 lg:h-[calc(100vh-64px)] lg:overflow-hidden bg-black flex items-center justify-center">
+        {/* ===== LEFT: Media Column (viewport-locked, like XiaoHongShu) ===== */}
+        <div className="relative lg:w-[55%] lg:flex-shrink-0 lg:sticky lg:top-14 lg:self-start bg-black flex items-center justify-center overflow-hidden" style={{ height: '100svh', maxHeight: 'calc(100svh - 56px)' }}>
           {isVideo && post.video_url ? (
             <video
               src={post.video_url}

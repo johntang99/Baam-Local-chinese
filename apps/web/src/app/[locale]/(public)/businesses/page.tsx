@@ -287,7 +287,7 @@ export default async function BusinessListPage({ searchParams }: Props) {
       </section>
 
       {/* Search + Category Filter */}
-      <section className="bg-bg-card border-b border-border sticky top-16 z-40">
+      <section className="bg-bg-card border-b border-border sticky top-14 z-40">
         <PageContainer className="pt-3 pb-0">
           <div className="flex items-center gap-2 pb-3 -mx-4 px-4">
             {/* Search + Near Me grouped together */}
@@ -308,13 +308,11 @@ export default async function BusinessListPage({ searchParams }: Props) {
               </Link>
             </div>
 
-            {/* Category pills */}
+            {/* Category chips */}
             <div className="flex gap-2 overflow-x-auto scrollbar-hide">
               <Link
                 href={`/businesses${viewMode === 'map' ? '?view=map' : ''}`}
-                className={cn('flex-shrink-0 r-full', buttonVariants({ size: 'sm' }), `${
-                  !activeCat ? 'bg-primary text-text-inverse' : 'bg-border-light text-text-secondary hover:bg-primary/10 hover:text-primary'
-                }`)}
+                className={cn('chip flex-shrink-0', !activeCat && 'active')}
               >
                 全部
               </Link>
@@ -322,11 +320,9 @@ export default async function BusinessListPage({ searchParams }: Props) {
                 <Link
                   key={cat.id}
                   href={`/businesses?cat=${cat.slug}${viewParam}`}
-                  className={cn('flex-shrink-0 whitespace-nowrap r-full', buttonVariants({ size: 'sm' }), `${
-                    activeCat === cat.slug ? 'bg-primary text-text-inverse' : 'bg-border-light text-text-secondary hover:bg-primary/10 hover:text-primary'
-                  }`)}
+                  className={cn('chip flex-shrink-0', activeCat === cat.slug && 'active')}
                 >
-                  {cat.icon && <span className="mr-1">{cat.icon}</span>}
+                  {cat.icon && <span className="mr-0.5">{cat.icon}</span>}
                   {cat.name_zh}
                 </Link>
               ))}
@@ -341,9 +337,7 @@ export default async function BusinessListPage({ searchParams }: Props) {
               <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-4 px-4">
                 <Link
                   href={`/businesses?cat=${activeCat}${viewParam}`}
-                  className={cn('flex-shrink-0 r-full', buttonVariants({ variant: 'secondary', size: 'sm' }), `${
-                    !activeSub ? 'bg-primary/15 text-primary border border-primary/30' : 'text-text-secondary hover:text-primary hover:bg-primary/5'
-                  }`)}
+                  className={cn('chip flex-shrink-0', !activeSub && 'active')}
                 >
                   全部{activeParent?.name_zh}
                 </Link>
@@ -351,9 +345,7 @@ export default async function BusinessListPage({ searchParams }: Props) {
                   <Link
                     key={sub.id}
                     href={`/businesses?cat=${activeCat}&sub=${sub.slug}${viewParam}`}
-                    className={cn('flex-shrink-0 whitespace-nowrap r-full', buttonVariants({ variant: 'secondary', size: 'sm' }), `${
-                      activeSub === sub.slug ? 'bg-primary/15 text-primary border border-primary/30' : 'text-text-secondary hover:text-primary hover:bg-primary/5'
-                    }`)}
+                    className={cn('chip flex-shrink-0', activeSub === sub.slug && 'active')}
                   >
                     {sub.icon && <span className="mr-0.5">{sub.icon}</span>}
                     {sub.name_zh}
@@ -398,7 +390,7 @@ export default async function BusinessListPage({ searchParams }: Props) {
                 <p className="text-text-muted text-sm mt-1">商家将在这里显示</p>
               </div>
             ) : (
-              <div className="grid lg:grid-cols-2 gap-5">
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
                 {businesses.map((biz) => (
                   <BusinessCard key={biz.id} biz={biz} />
                 ))}
@@ -444,6 +436,34 @@ export default async function BusinessListPage({ searchParams }: Props) {
   );
 }
 
+// Deterministic palette for business card banner based on name
+const CARD_BANNER_PALETTES = [
+  'from-primary-100 via-primary-50 to-bg-card',
+  'from-secondary-50 via-secondary-50 to-bg-card',
+  'from-accent-green-light via-emerald-50 to-bg-card',
+  'from-accent-purple-light via-violet-50 to-bg-card',
+  'from-accent-yellow/20 via-amber-50 to-bg-card',
+  'from-accent-red-light via-rose-50 to-bg-card',
+  'from-cyan-100 via-sky-50 to-bg-card',
+  'from-pink-100 via-rose-50 to-bg-card',
+];
+
+const CATEGORY_EMOJI: Record<string, string> = {
+  '餐饮美食': '🍜', '医疗健康': '🏥', '法律移民': '⚖️', '地产保险': '🏠',
+  '教育培训': '📚', '购物零售': '🛍️', '装修家居': '🔧', '汽车服务': '🚗',
+  '财税服务': '💼', '美容保健': '💆', '其他服务': '🏢', '商家': '🏢',
+  '书店文具': '📖', '百货商场': '🏬', '旅行社': '✈️', '电子产品': '📱',
+  '韩餐': '🍲', '搬家': '📦', '超市杂货': '🛒', 'SPA按摩': '💆‍♀️',
+  '火锅烧烤': '🥘', '中餐': '🍚', '礼品特色': '🎁', '酒吧夜生活': '🍷',
+  '眼科验光': '👓', '泰餐': '🍛', '烘焙甜品': '🧁',
+};
+
+function pickPalette(seed: string) {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i += 1) hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
+  return CARD_BANNER_PALETTES[hash % CARD_BANNER_PALETTES.length];
+}
+
 function BusinessCard({ biz, featured = false }: { biz: AnyRow; featured?: boolean }) {
   const aiTags = (biz.ai_tags || []).filter((t: string) => t !== 'GBP已认领') as string[];
   const name = pickBusinessDisplayName(biz, '');
@@ -460,83 +480,79 @@ function BusinessCard({ biz, featured = false }: { biz: AnyRow; featured?: boole
     ? biz.business_categories.map((bc: AnyRow) => bc.categories?.name_zh).filter(Boolean)
     : [];
   const primaryCat = cats[0] || '商家';
-
-  const cardContent = (
-    <>
-      {/* Name + verified */}
-      <div className="flex items-center gap-2 mb-1">
-        <h3 className={`${featured ? 'fw-bold text-base' : 'fw-semibold text-sm'} truncate`}>{name}</h3>
-        {biz.is_verified && (
-          <svg className="w-4 h-4 text-secondary flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-          </svg>
-        )}
-      </div>
-
-      {/* Category + Rating */}
-      <div className="flex items-center gap-2 text-sm mb-2">
-        <Badge variant="outline" className="text-xs">{primaryCat}</Badge>
-        {cats[1] && <Badge variant="outline" className="text-xs">{cats[1]}</Badge>}
-        <div className="flex items-center gap-1">
-          <span className="text-accent-yellow text-xs">{renderStars(biz.avg_rating || 0)}</span>
-          <span className="text-xs text-text-secondary fw-medium">{biz.avg_rating?.toFixed(1) || '—'}</span>
-          <span className="text-xs text-text-muted">({biz.review_count || 0})</span>
-        </div>
-      </div>
-
-      {/* Tags */}
-      {aiTags.length > 0 && (
-        <div className="flex flex-wrap gap-1 mb-2">
-          {aiTags.slice(0, 3).map((tag) => (
-            <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
-          ))}
-        </div>
-      )}
-
-      {/* Address + Contact row */}
-      <div className="space-y-1 text-xs text-text-muted">
-        {address && (
-          <p className="flex items-center gap-1 truncate">
-            <span>📍</span> {address}
-          </p>
-        )}
-        {(biz.phone || websiteLabel) && (
-          <p className="flex items-center gap-3 flex-wrap">
-            {biz.phone && <span className="inline-flex items-center gap-1"><span>📞</span>{biz.phone}</span>}
-            {websiteLabel && <span className="inline-flex items-center gap-1"><span>🌐</span>Website</span>}
-          </p>
-        )}
-      </div>
-    </>
-  );
-
-  if (featured) {
-    return (
-      <Link href={`/businesses/${biz.slug}`} className="block">
-        <Card className="relative overflow-hidden border-primary/40 bg-gradient-to-br from-primary/5 to-white hover:elev-md transition-shadow">
-          <div className="absolute top-0 left-0 bg-primary text-text-inverse text-xs fw-bold px-3 py-1 r-lg">推荐</div>
-          <div className="p-5 sm:p-6">
-            <div className="flex items-start gap-4">
-              <div className="w-14 h-14 r-xl bg-gradient-to-br from-primary/20 to-primary/5 flex-shrink-0 flex items-center justify-center text-2xl">
-                {name[0] || '🏢'}
-              </div>
-              <div className="flex-1 min-w-0">{cardContent}</div>
-            </div>
-          </div>
-        </Card>
-      </Link>
-    );
-  }
+  const emoji = CATEGORY_EMOJI[primaryCat] || '🏢';
+  const palette = pickPalette(String(biz.id || biz.slug || name));
+  const rating = typeof biz.avg_rating === 'number' ? biz.avg_rating : Number(biz.avg_rating || 0);
+  const reviewCount = typeof biz.review_count === 'number' ? biz.review_count : Number(biz.review_count || 0);
 
   return (
-    <Link href={`/businesses/${biz.slug}`} className="block">
-      <Card className="hover:border-primary/30 transition-colors">
-        <div className="p-4">
-          <div className="flex items-start gap-3">
-            <div className="w-11 h-11 r-lg bg-gradient-to-br from-primary/15 to-primary/5 flex-shrink-0 flex items-center justify-center text-lg">
-              {name[0] || '🏢'}
+    <Link href={`/businesses/${biz.slug}`} className="group block h-full">
+      <Card className={cn('relative overflow-hidden h-full flex flex-col hover:elev-md transition-shadow', (featured || biz.is_featured) && 'card-featured')}>
+        {/* Banner */}
+        <div className={cn('relative h-24 bg-gradient-to-br flex items-center justify-center', palette)}>
+          <div className="w-16 h-16 r-xl bg-bg-card/90 backdrop-blur flex items-center justify-center text-3xl elev-sm border border-border-light">
+            <span aria-hidden="true">{emoji}</span>
+          </div>
+          {(featured || biz.is_featured) && (
+            <span className="absolute top-2 right-2 inline-flex items-center gap-1 bg-bg-card/90 backdrop-blur text-primary-dark text-[11px] fw-semibold px-2 py-0.5 r-full border border-primary-100 elev-sm">
+              <span className="w-1 h-1 r-full bg-primary" /> 推荐
+            </span>
+          )}
+        </div>
+
+        {/* Content */}
+        <div className="p-4 flex-1 flex flex-col gap-2.5">
+          {/* Name + verified */}
+          <div className="flex items-start gap-1.5">
+            <h3 className="fw-semibold text-sm leading-snug line-clamp-2 flex-1 group-hover:text-primary transition-colors">{name || '未命名商家'}</h3>
+            {biz.is_verified && (
+              <svg className="w-4 h-4 text-secondary flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20" aria-label="已认证">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+            )}
+          </div>
+
+          {/* Rating row */}
+          {reviewCount > 0 ? (
+            <div className="flex items-center gap-1 text-xs">
+              <span className="text-accent-yellow">★</span>
+              <span className="fw-semibold text-text-primary">{rating ? rating.toFixed(1) : '—'}</span>
+              <span className="text-text-muted">({reviewCount} 评价)</span>
             </div>
-            <div className="flex-1 min-w-0">{cardContent}</div>
+          ) : (
+            <p className="text-xs text-text-muted">暂无评价</p>
+          )}
+
+          {/* Category + AI tags (combined) */}
+          <div className="flex flex-wrap gap-1.5">
+            <span className="chip chip-ghost text-[11px] bg-bg-page border-border-light">{primaryCat}</span>
+            {aiTags.slice(0, 2).map((tag) => (
+              <span key={tag} className="chip chip-ghost text-[11px] bg-bg-page border-border-light text-text-secondary">
+                {tag}
+              </span>
+            ))}
+          </div>
+
+          {/* Address */}
+          {address && (
+            <p className="text-xs text-text-muted flex items-start gap-1 line-clamp-2">
+              <span className="flex-shrink-0">📍</span>
+              <span className="truncate">{address}</span>
+            </p>
+          )}
+
+          {/* Bottom contact row */}
+          <div className="mt-auto pt-2 border-t border-border-light flex items-center gap-3 text-xs text-text-secondary">
+            {biz.phone ? (
+              <span className="inline-flex items-center gap-1 truncate"><span aria-hidden="true">📞</span>{biz.phone}</span>
+            ) : (
+              <span className="text-text-muted">电话 —</span>
+            )}
+            {websiteLabel && (
+              <span className="inline-flex items-center gap-1 text-secondary ml-auto">
+                <span aria-hidden="true">🌐</span>官网
+              </span>
+            )}
           </div>
         </div>
       </Card>

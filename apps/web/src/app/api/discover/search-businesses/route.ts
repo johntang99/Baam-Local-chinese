@@ -21,13 +21,16 @@ export async function GET(request: Request) {
   const host = request.headers.get('host');
   const site = await getSiteByHost(host);
 
+  // Search by name, Chinese name, and address — increased limit for better results
+  const safeQuery = query.replace(/[,%]/g, '');
   const { data, error } = await supabase
     .from('businesses')
     .select('id, slug, display_name, display_name_zh, short_desc_zh, address_full')
-    .or(`display_name.ilike.%${query}%,display_name_zh.ilike.%${query}%`)
+    .or(`display_name.ilike.%${safeQuery}%,display_name_zh.ilike.%${safeQuery}%,address_full.ilike.%${safeQuery}%`)
     .eq('site_id', site?.id ?? '')
     .eq('status', 'active')
-    .limit(8);
+    .order('avg_rating', { ascending: false })
+    .limit(20);
 
   if (error) {
     return NextResponse.json({ businesses: [], error: error.message }, { status: 500 });

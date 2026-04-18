@@ -55,8 +55,6 @@ const FEATURED_CATEGORIES = [
       '推荐法拉盛好喝的奶茶店',
       '华埠哪家早茶点心最好？',
       '法拉盛哪里有好吃的韩餐？',
-      '法拉盛有什么日料推荐？',
-      '布鲁克林有哪些火锅店？',
     ],
   },
   {
@@ -81,8 +79,6 @@ const FEATURED_CATEGORIES = [
       '孩子上学怎么选学区？',
       '怎么申请白卡医疗保险？',
       '在纽约怎么坐地铁最划算？',
-      '最近法拉盛有什么活动？',
-      '纽约垃圾分类怎么分？',
     ],
   },
   {
@@ -109,6 +105,8 @@ const SIDE_CATEGORIES = [
       '需要办理移民，找什么律师？',
       '收到交通罚单怎么处理？',
       '离婚需要准备什么材料？',
+      '绿卡面谈前要准备哪些文件？',
+      '申请入籍要满足什么条件？',
     ],
   },
   {
@@ -119,6 +117,8 @@ const SIDE_CATEGORIES = [
       '推荐法拉盛靠谱的报税会计',
       '买房贷款找谁比较好？',
       '新移民怎么开始建立信用？',
+      '小生意怎么注册公司和报税？',
+      '首次买房首付一般要准备多少？',
     ],
   },
   {
@@ -129,6 +129,8 @@ const SIDE_CATEGORIES = [
       '孩子学钢琴哪里比较好？',
       '附近有中文的幼儿园吗？',
       '哪里可以学英语？',
+      'SAT/SHSAT 培训班怎么选？',
+      '孩子作业跟不上，有推荐辅导班吗？',
     ],
   },
   {
@@ -139,9 +141,13 @@ const SIDE_CATEGORIES = [
       '法拉盛哪家理发店剪得好？',
       '想做个SPA放松一下，去哪里？',
       '哪里做半永久眉毛比较好？',
+      '皮肤管理做哪些项目比较值？',
+      '有靠谱的医美诊所推荐吗？',
     ],
   },
 ];
+
+const ALL_CATEGORIES = [...FEATURED_CATEGORIES, ...SIDE_CATEGORIES];
 
 const LOADING_MESSAGES = [
   '先帮你抓重点结论...',
@@ -551,43 +557,28 @@ export function Helper2Chat({ initialQuery }: Helper2ChatProps) {
 
       <div className="space-y-4 mb-6 min-h-[220px]">
         {messages.length === 0 && !loading && !renderingAnswer && (
-          <div className="max-w-6xl mx-auto">
-            <p className="text-center text-text-muted text-sm mb-6">
-              有什么可以帮你的？
-            </p>
-            {/* Featured categories — 2x2 grid, each with 2-column questions */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              {FEATURED_CATEGORIES.map((cat) => (
-                <div key={cat.label}>
+          <div className="max-w-5xl mx-auto">
+            {/* Even section layout: same width + same card height */}
+            <div className="grid gap-4 lg:grid-cols-2 auto-rows-fr">
+              {ALL_CATEGORIES.map((cat) => (
+                <div key={cat.label} className="h-full bg-bg-card border border-border r-xl p-3">
                   <div className="flex items-center gap-1.5 px-1 mb-2">
-                    <span className="text-base">{cat.icon}</span>
-                    <span className="text-xs fw-semibold text-primary">{cat.label}</span>
+                    <span className="text-base" aria-hidden="true">{cat.icon}</span>
+                    <span className="text-xs fw-semibold text-text-primary">{cat.label}</span>
                   </div>
-                  <div className="grid grid-cols-2 gap-1.5">
+                  <div className="grid grid-cols-2 gap-2">
                     {cat.questions.map((q) => (
-                      <button key={q} type="button" onClick={() => void handleAsk(q)} disabled={loading}
-                        className="text-left text-[13px] leading-snug text-text-primary bg-bg-card border border-border r-xl px-3 py-2.5 hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-colors disabled:opacity-50">
+                      <button
+                        key={q}
+                        type="button"
+                        onClick={() => void handleAsk(q)}
+                        disabled={loading}
+                        className="w-full text-left text-[13px] leading-snug text-text-primary bg-bg-card border border-border r-full px-4 py-2 hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-colors disabled:opacity-50"
+                      >
                         {q}
                       </button>
                     ))}
                   </div>
-                </div>
-              ))}
-            </div>
-            {/* Regular categories — 4-column grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {SIDE_CATEGORIES.map((cat) => (
-                <div key={cat.label} className="space-y-1.5">
-                  <div className="flex items-center gap-1.5 px-1 mb-2">
-                    <span className="text-base">{cat.icon}</span>
-                    <span className="text-xs fw-semibold text-primary">{cat.label}</span>
-                  </div>
-                  {cat.questions.map((q) => (
-                    <button key={q} type="button" onClick={() => void handleAsk(q)} disabled={loading}
-                      className="w-full text-left text-[13px] leading-snug text-text-primary bg-bg-card border border-border r-xl px-3 py-2.5 hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-colors disabled:opacity-50">
-                      {q}
-                    </button>
-                  ))}
                 </div>
               ))}
             </div>

@@ -396,6 +396,90 @@ export async function deleteDiscoverPost(formData: FormData) {
   return { success: true };
 }
 
+// ─── Update Discover Post ─────────────────────────────────────────────
+
+export async function updateDiscoverPost(formData: FormData) {
+  const user = await getCurrentUser();
+  if (!user) return { error: 'UNAUTHORIZED' };
+
+  const postId = formData.get('post_id') as string;
+  if (!postId) return { error: '缺少帖子ID' };
+
+  const supabase = createAdminClient();
+  const site = await getCurrentSite();
+
+  // Verify ownership
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: post } = await (supabase as any)
+    .from('voice_posts')
+    .select('id, author_id, slug')
+    .eq('id', postId)
+    .eq('site_id', site.id)
+    .single();
+
+  if (!post || post.author_id !== user.id) {
+    return { error: '无权编辑此帖子' };
+  }
+
+  const title = (formData.get('title') as string)?.trim();
+  const content = (formData.get('content') as string)?.trim();
+  const tagsRaw = (formData.get('tags') as string)?.trim();
+  const coverImagesRaw = (formData.get('cover_images') as string)?.trim();
+  const videoUrl = (formData.get('video_url') as string)?.trim() || null;
+  const videoThumbnailUrl = (formData.get('video_thumbnail_url') as string)?.trim() || null;
+  const locationText = (formData.get('location_text') as string)?.trim() || null;
+  const businessIdsRaw = (formData.get('business_ids') as string)?.trim();
+
+  if (!content && !title) {
+    return { error: '请输入标题或内容' };
+  }
+
+  const tags = tagsRaw
+    ? tagsRaw.split(/[,，]/).map(t => t.trim()).filter(Boolean).slice(0, 5)
+    : [];
+
+  const coverImages = coverImagesRaw
+    ? JSON.parse(coverImagesRaw) as string[]
+    : [];
+
+  const businessIds = businessIdsRaw
+    ? JSON.parse(businessIdsRaw) as string[]
+    : [];
+
+  // Update post
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
+    .from('voice_posts')
+    .update({
+      title: title || null,
+      content: content || '',
+      topic_tags: tags,
+      cover_images: coverImages.length > 0 ? coverImages : null,
+      cover_image_url: coverImages[0] || videoThumbnailUrl || null,
+      video_url: videoUrl,
+      video_thumbnail_url: videoThumbnailUrl,
+      location_text: locationText,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', postId);
+
+  if (error) return { error: '更新失败：' + error.message };
+
+  // Update linked businesses
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase as any).from('discover_post_businesses').delete().eq('post_id', postId);
+  if (businessIds.length > 0) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any).from('discover_post_businesses').insert(
+      businessIds.map((bizId, idx) => ({ post_id: postId, business_id: bizId, sort_order: idx }))
+    );
+  }
+
+  revalidatePath(`/discover/${post.slug}`);
+  revalidatePath('/discover');
+  return { success: true, slug: post.slug };
+}
+
 // ─── Follow / Unfollow ────────────────────────────────────────────────
 
 export async function toggleFollow(formData: FormData) {

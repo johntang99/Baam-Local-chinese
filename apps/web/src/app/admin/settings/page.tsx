@@ -2,8 +2,11 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { CategoryTree } from './CategoryTree';
 import { ContentCategoryTable } from './ContentCategoryTable';
 import { ThemeEditor } from './ThemeEditor';
+import { SiteSettingsEditor } from './SiteSettingsEditor';
 import Link from 'next/link';
 import { baamTheme } from '@/lib/theme';
+import { getAllSiteSettings } from '@/lib/site-settings';
+import { getAdminSiteContext } from '@/lib/admin-context';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyRow = Record<string, any>;
@@ -13,6 +16,10 @@ interface Props {
 }
 
 const TABS = [
+  { key: 'header', label: 'Header 设置' },
+  { key: 'navigation', label: '导航管理' },
+  { key: 'footer', label: 'Footer 页脚' },
+  { key: 'seo', label: 'SEO 搜索优化' },
   { key: 'regions', label: '地区管理' },
   { key: 'business', label: '商家分类' },
   { key: 'guides', label: 'Guide 分类' },
@@ -34,9 +41,11 @@ function toSiteScopeRows(rows: AnyRow[], siteScope: 'zh' | 'en') {
 export default async function AdminSettingsPage({ searchParams }: Props) {
   const params = await searchParams;
   const activeTabParam = typeof params.tab === 'string' ? params.tab : '';
-  const activeTab = TABS.some((t) => t.key === activeTabParam) ? activeTabParam : 'regions';
+  const activeTab = TABS.some((t) => t.key === activeTabParam) ? activeTabParam : 'header';
 
   const supabase = createAdminClient();
+  const ctx = await getAdminSiteContext(params);
+  const siteSettings = await getAllSiteSettings(ctx.siteId);
 
   const [
     { data: rawRegions },
@@ -99,6 +108,15 @@ export default async function AdminSettingsPage({ searchParams }: Props) {
       </div>
 
       <div className="p-6 space-y-8">
+        {/* Site Settings Tabs: Header, Navigation, Footer, SEO */}
+        {(activeTab === 'header' || activeTab === 'navigation' || activeTab === 'footer' || activeTab === 'seo') && (
+          <SiteSettingsEditor
+            siteId={ctx.siteId}
+            settingKey={activeTab as 'header' | 'navigation' | 'footer' | 'seo'}
+            initialValue={siteSettings[activeTab as keyof typeof siteSettings]}
+          />
+        )}
+
         {activeTab === 'regions' && (
           <section>
           <h2 className="text-lg font-semibold mb-4">地区管理</h2>

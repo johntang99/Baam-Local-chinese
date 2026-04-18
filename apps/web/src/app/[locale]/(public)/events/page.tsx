@@ -100,9 +100,9 @@ export default async function EventsListPage({ searchParams }: Props) {
           <h1 className="text-2xl fw-bold">本地活动</h1>
         </div>
 
-        {/* Filter Tabs */}
-        <div className="flex items-center gap-4 mb-6">
-          <div className="flex gap-1 overflow-x-auto pb-2">
+        {/* Filter chips */}
+        <div className="flex items-center gap-3 mb-6 flex-wrap">
+          <div className="flex gap-2 overflow-x-auto pb-1">
             {dateTabs.map((tab) => {
               const params = new URLSearchParams();
               if (tab.key !== 'all') params.set('period', tab.key);
@@ -113,18 +113,14 @@ export default async function EventsListPage({ searchParams }: Props) {
                 <Link
                   key={tab.key}
                   href={href}
-                  className={cn(buttonVariants({ size: 'sm' }), 'r-full', `${
-                    period === tab.key
-                      ? 'bg-primary text-text-inverse'
-                      : 'bg-border-light text-text-secondary hover:bg-border-light'
-                  }`)}
+                  className={cn('chip flex-shrink-0', period === tab.key && 'active')}
                 >
                   {tab.label}
                 </Link>
               );
             })}
           </div>
-          <div className="flex gap-1 ml-auto">
+          <div className="flex gap-2 ml-auto">
             {[
               { key: '', label: '全部' },
               { key: 'free', label: '免费' },
@@ -139,11 +135,7 @@ export default async function EventsListPage({ searchParams }: Props) {
                 <Link
                   key={opt.key}
                   href={href}
-                  className={cn(buttonVariants({ size: 'sm', variant: 'secondary' }), 'h-auto py-1.5 r-full', `${
-                    priceFilter === opt.key
-                      ? 'bg-primary/10 text-primary'
-                      : 'bg-border-light text-text-secondary hover:bg-border-light'
-                  }`)}
+                  className={cn('chip flex-shrink-0', priceFilter === opt.key && 'active')}
                 >
                   {opt.label}
                 </Link>

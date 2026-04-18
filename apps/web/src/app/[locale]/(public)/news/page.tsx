@@ -24,12 +24,27 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-const verticalConfig: Record<string, { label: string; className: string; key: string }> = {
-  news_alert: { label: '快报', className: 'bg-accent-red-light text-accent-red', key: 'alert' },
-  news_brief: { label: '简报', className: 'bg-accent-blue-light text-secondary-dark', key: 'brief' },
-  news_explainer: { label: '政策解读', className: 'bg-accent-purple-light text-accent-purple', key: 'explainer' },
-  news_roundup: { label: '周度汇总', className: 'bg-primary-100 text-primary-700', key: 'roundup' },
-  news_community: { label: '社区新闻', className: 'bg-accent-green-light text-accent-green', key: 'community' },
+const verticalConfig: Record<string, { label: string; className: string; key: string; gradient: string; emoji: string }> = {
+  news_alert: {
+    label: '快报', className: 'bg-accent-red-light text-accent-red', key: 'alert',
+    gradient: 'from-accent-red/20 via-accent-red-light to-accent-red-light/60', emoji: '🚨',
+  },
+  news_brief: {
+    label: '简报', className: 'bg-accent-blue-light text-secondary-dark', key: 'brief',
+    gradient: 'from-secondary/20 via-accent-blue-light to-accent-blue-light/60', emoji: '📄',
+  },
+  news_explainer: {
+    label: '政策解读', className: 'bg-accent-purple-light text-accent-purple', key: 'explainer',
+    gradient: 'from-accent-purple/20 via-accent-purple-light to-accent-purple-light/60', emoji: '📖',
+  },
+  news_roundup: {
+    label: '周度汇总', className: 'bg-primary-100 text-primary-700', key: 'roundup',
+    gradient: 'from-primary-200 via-primary-100 to-primary-50', emoji: '📊',
+  },
+  news_community: {
+    label: '社区新闻', className: 'bg-accent-green-light text-accent-green', key: 'community',
+    gradient: 'from-accent-green/20 via-accent-green-light to-accent-green-light/60', emoji: '👥',
+  },
 };
 
 const filterTabs = [
@@ -122,19 +137,13 @@ export default async function NewsListPage({ searchParams }: Props) {
 
         <div className="lg:flex gap-8">
           <div className="flex-1">
-            {/* Filter Tabs — now functional links */}
-            <div className="flex gap-1 mb-6 overflow-x-auto pb-2">
+            {/* Filter chips */}
+            <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
               {filterTabs.map((tab) => (
                 <Link
                   key={tab.key}
                   href={tab.key === 'all' ? '/news' : `/news?type=${tab.key}`}
-                  className={cn(
-                    buttonVariants({ size: 'sm' }),
-                    'r-full',
-                    activeType === tab.key
-                      ? 'bg-primary text-text-inverse'
-                      : 'bg-border-light text-text-secondary hover:bg-border-light hover:text-text-primary'
-                  )}
+                  className={cn('chip flex-shrink-0', activeType === tab.key && 'active')}
                 >
                   {tab.label}
                 </Link>
@@ -151,11 +160,14 @@ export default async function NewsListPage({ searchParams }: Props) {
                 <p className="text-text-muted text-sm mt-1">新闻将在这里显示</p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
                 {articles.map((article) => {
                   const vertical = verticalConfig[article.content_vertical] || {
                     label: '新闻',
                     className: 'bg-bg-page text-text-secondary',
+                    gradient: 'from-bg-page via-bg-page to-bg-page',
+                    emoji: '📰',
+                    key: 'other',
                   };
                   const summary = article.ai_summary_zh || article.summary_zh;
                   const timeAgo = formatTimeAgo(article.published_at);
@@ -164,31 +176,49 @@ export default async function NewsListPage({ searchParams }: Props) {
                     <Link
                       key={article.id}
                       href={`/news/${article.slug}`}
-                      className="block cursor-pointer"
+                      className="group block cursor-pointer h-full"
                     >
-                      <Card
-                        className={cn(
-                          'p-5 hover:elev-md transition-shadow',
-                          article.content_vertical === 'news_alert'
-                            ? 'border-l-4 border-l-accent-red bg-accent-red-light/30'
-                            : ''
+                      <Card className="overflow-hidden h-full flex flex-col hover:elev-md transition-shadow">
+                        {/* 16:9 cover or colored placeholder */}
+                        {article.cover_image_url ? (
+                          <div className="relative aspect-[16/9] overflow-hidden">
+                            <img
+                              src={article.cover_image_url}
+                              alt={article.title_zh || article.title_en || ''}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                              loading="lazy"
+                            />
+                            <span className={cn('absolute top-2 left-2 text-xs fw-semibold px-2 py-0.5 r-full bg-bg-card/90 backdrop-blur elev-sm', vertical.className)}>
+                              {vertical.label}
+                            </span>
+                          </div>
+                        ) : (
+                          <div className={cn('relative aspect-[16/9] bg-gradient-to-br flex items-center justify-center', vertical.gradient)}>
+                            <span className="text-5xl opacity-80" aria-hidden="true">{vertical.emoji}</span>
+                            <span className={cn('absolute top-2 left-2 text-xs fw-semibold px-2 py-0.5 r-full bg-bg-card/90 backdrop-blur elev-sm', vertical.className)}>
+                              {vertical.label}
+                            </span>
+                          </div>
                         )}
-                      >
-                      <div className="flex items-center gap-2 mb-2">
-                        <Badge className={cn('text-xs', vertical.className)}>{vertical.label}</Badge>
-                        <span className="text-xs text-text-muted">{timeAgo}</span>
-                        {article.source_name && (
-                          <Badge variant="muted" className="text-xs">
-                            {article.source_name}
-                          </Badge>
-                        )}
-                      </div>
-                      <h3 className="fw-semibold text-base mb-2 line-clamp-2">
-                        {article.title_zh || article.title_en}
-                      </h3>
-                      {summary && (
-                        <p className="text-sm text-text-secondary line-clamp-2">{summary}</p>
-                      )}
+
+                        {/* Content */}
+                        <div className="p-4 flex-1 flex flex-col gap-2">
+                          <h3 className="fw-semibold text-sm leading-snug line-clamp-2 group-hover:text-primary transition-colors">
+                            {article.title_zh || article.title_en}
+                          </h3>
+                          {summary && (
+                            <p className="text-xs text-text-secondary line-clamp-3">{summary}</p>
+                          )}
+                          <div className="mt-auto pt-2 border-t border-border-light flex items-center gap-2 text-xs text-text-muted">
+                            <span>{timeAgo}</span>
+                            {article.source_name && (
+                              <>
+                                <span>·</span>
+                                <span className="truncate">{article.source_name}</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
                       </Card>
                     </Link>
                   );

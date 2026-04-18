@@ -7,6 +7,7 @@ import { ImageUploader } from '@/components/discover/image-uploader';
 import { VideoUploader } from '@/components/discover/video-uploader';
 import { BusinessSearchInput } from '@/components/discover/business-search-input';
 import { TagInput } from '@/components/discover/tag-input';
+import { VoiceButton } from '@/components/shared/voice-button';
 import { buttonVariants } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
@@ -122,7 +123,12 @@ export function VoicePostForm({ isLoggedIn, prelinkedBusiness }: CreatePostFormP
           <button
             key={type.key}
             type="button"
-            onClick={() => setPostType(type.key)}
+            onClick={() => {
+              setPostType(type.key);
+              // Clear other media type when switching
+              if (type.key === 'video') { setImages([]); }
+              if (type.key !== 'video') { setVideoUrl(null); setVideoThumbnailUrl(null); setVideoDuration(null); }
+            }}
             className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 text-sm fw-medium r-xl transition-colors ${
               postType === type.key
                 ? 'bg-bg-sidebar text-text-inverse'
@@ -161,20 +167,26 @@ export function VoicePostForm({ isLoggedIn, prelinkedBusiness }: CreatePostFormP
         <label className="text-sm fw-semibold text-text-primary mb-3 block">
           标题 <span className="text-red-400">*</span>
         </label>
-        <input
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="写一个吸引人的标题..."
-          maxLength={50}
-          className="w-full h-12 px-4 border border-border r-xl text-base fw-medium focus:ring-2 focus:ring-primary focus:border-primary outline-none transition"
-        />
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="写一个吸引人的标题..."
+            maxLength={50}
+            className="flex-1 h-12 px-4 border border-border r-xl text-base fw-medium focus:ring-2 focus:ring-primary focus:border-primary outline-none transition"
+          />
+          <VoiceButton onResult={(text) => setTitle(prev => (prev + text).slice(0, 50))} />
+        </div>
         <p className="text-xs text-text-muted mt-2 text-right">{title.length} / 50</p>
       </div>
 
       {/* Content — 小红书 style plain text editor */}
       <div className="bg-bg-card r-xl border border-border p-5 sm:p-6">
-        <label className="text-sm fw-semibold text-text-primary mb-3 block">正文内容</label>
+        <div className="flex items-center justify-between mb-3">
+          <label className="text-sm fw-semibold text-text-primary">正文内容</label>
+          <VoiceButton onResult={(text) => setContent(prev => prev + text)} className="w-8 h-8 r-full" />
+        </div>
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}

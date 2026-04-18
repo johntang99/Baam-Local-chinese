@@ -10,7 +10,6 @@ interface PostActionsProps {
 }
 
 export function PostActions({ postId, postSlug }: PostActionsProps) {
-  const [open, setOpen] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -31,53 +30,47 @@ export function PostActions({ postId, postSlug }: PostActionsProps) {
     router.push('/zh/discover');
   };
 
-  return (
-    <div className="relative">
-      <button
-        onClick={() => setOpen(!open)}
-        className="w-8 h-8 r-full flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition"
-      >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01" />
-        </svg>
-      </button>
+  if (confirming) {
+    return (
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-gray-500">确定删除？</span>
+        <button
+          onClick={() => setConfirming(false)}
+          className="px-3 py-1.5 text-xs text-gray-600 bg-gray-100 r-lg hover:bg-gray-200 transition"
+        >
+          取消
+        </button>
+        <button
+          onClick={handleDelete}
+          disabled={loading}
+          className="px-3 py-1.5 text-xs text-white bg-red-500 r-lg hover:bg-red-600 transition disabled:opacity-50"
+        >
+          {loading ? '删除中...' : '确定删除'}
+        </button>
+      </div>
+    );
+  }
 
-      {open && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={() => { setOpen(false); setConfirming(false); }} />
-          <div className="absolute right-0 top-full mt-1 w-40 bg-white border border-gray-200 r-xl shadow-lg z-50 py-1">
-            {!confirming ? (
-              <>
-                <button
-                  onClick={() => { setConfirming(true); }}
-                  className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition"
-                >
-                  删除帖子
-                </button>
-              </>
-            ) : (
-              <div className="px-4 py-3">
-                <p className="text-xs text-gray-500 mb-2">确定删除？此操作不可撤销</p>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setConfirming(false)}
-                    className="flex-1 py-1.5 text-xs bg-gray-100 r-lg hover:bg-gray-200 transition"
-                  >
-                    取消
-                  </button>
-                  <button
-                    onClick={handleDelete}
-                    disabled={loading}
-                    className="flex-1 py-1.5 text-xs bg-red-500 text-white r-lg hover:bg-red-600 transition disabled:opacity-50"
-                  >
-                    {loading ? '...' : '确定'}
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </>
-      )}
+  return (
+    <div className="flex items-center gap-2">
+      <button
+        onClick={() => router.push(`/zh/discover/${postSlug}/edit`)}
+        className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 bg-gray-100 r-lg hover:bg-gray-200 transition"
+      >
+        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+        </svg>
+        编辑
+      </button>
+      <button
+        onClick={() => setConfirming(true)}
+        className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-red-500 bg-red-50 r-lg hover:bg-red-100 transition"
+      >
+        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+        删除
+      </button>
     </div>
   );
 }

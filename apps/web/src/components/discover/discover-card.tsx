@@ -1,4 +1,7 @@
+'use client';
+
 import { Link } from '@/lib/i18n/routing';
+import { useDiscoverFeed } from './discover-feed-client';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyRow = Record<string, any>;
@@ -33,9 +36,12 @@ interface DiscoverCardProps {
   post: AnyRow;
   author?: AnyRow;
   index?: number;
+  currentUserId?: string | null;
 }
 
-export function DiscoverCard({ post, author, index = 0 }: DiscoverCardProps) {
+export function DiscoverCard({ post, author, index = 0, currentUserId }: DiscoverCardProps) {
+  const feed = useDiscoverFeed();
+  const isOwner = currentUserId && post.author_id === currentUserId;
   const postType = post.post_type as string;
   const isVideo = postType === 'video';
   const coverImages = post.cover_images as string[] | null;
@@ -49,13 +55,31 @@ export function DiscoverCard({ post, author, index = 0 }: DiscoverCardProps) {
   const authorInitial = authorName[0] || '?';
   const likeCount = post.like_count || 0;
 
-  const href = `/discover/${post.slug || post.id}`;
+  const slug = post.slug || post.id;
+  const href = `/discover/${slug}`;
+
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Only open modal on desktop (md+) when feed context is available
+    if (!feed) return; // No context — fall through to Link navigation
+    const isDesktop = window.innerWidth >= 768;
+    if (!isDesktop) return; // On mobile, use normal navigation
+
+    e.preventDefault();
+    feed.openModal({
+      slug,
+      preview: {
+        title: post.title,
+        coverImage: coverImage || undefined,
+        authorName,
+      },
+    });
+  };
 
   return (
-    <Link href={href} className="block break-inside-avoid mb-3 sm:mb-4">
+    <div className="block break-inside-avoid mb-3 sm:mb-4">
       <div className="bg-white r-lg overflow-hidden transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.1)]">
         {/* Cover */}
-        <div className="relative">
+        <Link href={href} onClick={handleCardClick} className="block relative">
           {hasImage ? (
             <img
               src={coverImage}
@@ -102,10 +126,25 @@ export function DiscoverCard({ post, author, index = 0 }: DiscoverCardProps) {
               {coverImages.length}
             </div>
           )}
-        </div>
+        </Link>
+
+        {/* Owner edit badge — outside the Link to avoid nested <a> */}
+        {isOwner && (
+          <div className="px-3 pt-2 flex justify-end">
+            <a
+              href={`/zh/discover/${post.slug}/edit`}
+              className="inline-flex items-center gap-1 px-2 py-1 text-[11px] text-gray-500 hover:text-primary hover:bg-primary/5 r-md transition-colors"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+              编辑
+            </a>
+          </div>
+        )}
 
         {/* Content */}
-        <div className="p-3">
+        <Link href={href} onClick={handleCardClick} className="block p-3">
           {post.title && (
             <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 mb-2 leading-snug">
               {post.title}
@@ -138,9 +177,9 @@ export function DiscoverCard({ post, author, index = 0 }: DiscoverCardProps) {
               </svg>
             )}
           </div>
-        </div>
+        </Link>
       </div>
-    </Link>
+    </div>
   );
 }
 

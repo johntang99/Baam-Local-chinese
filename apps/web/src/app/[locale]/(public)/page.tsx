@@ -3,12 +3,15 @@ import { getCurrentSite } from '@/lib/sites';
 import { getTranslations } from 'next-intl/server';
 import { Link } from '@/lib/i18n/routing';
 import { PageContainer, SectionBlock, SectionHeader } from '@/components/layout/page-shell';
+import { VideoHoverCard } from '@/components/discover/video-hover-card';
+import { HeartButton } from '@/components/discover/heart-button';
 import { NewsletterForm } from '@/components/shared/newsletter-form';
 import { Badge } from '@/components/ui/badge';
 import { buttonVariants } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { pickBusinessDisplayName } from '@/lib/business-name';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyRow = Record<string, any>;
@@ -137,23 +140,40 @@ export default async function HomePage({ params }: Props) {
     { data: rNews }, { data: rGuides }, { data: rBiz },
     { data: rThreads }, { data: rEvents }, { data: rVoices },
     { data: rAlerts }, { data: rCategories }, { data: rBoardsScoped },
-    { data: rDiscoverPosts },
+    { data: rDiscoverPosts }, { data: rBizCategories },
   ] = await Promise.all([
     newsQuery,
     guidesQuery,
-    supabase.from('businesses').select('*').eq('site_id', site.id).eq('is_active', true).eq('status', 'active').order('is_featured', { ascending: false }).order('total_score', { ascending: false, nullsFirst: false }).limit(6),
+    supabase.from('businesses').select('*').eq('site_id', site.id).eq('is_active', true).eq('status', 'active').order('is_featured', { ascending: false }).order('total_score', { ascending: false, nullsFirst: false }).limit(10),
     supabase.from('forum_threads').select('*').eq('site_id', site.id).eq('status', 'published').order('reply_count', { ascending: false }).limit(5),
     supabase.from('events').select('*').eq('site_id', site.id).eq('status', 'published').order('start_at', { ascending: true }).limit(4),
     supabase.from('profiles').select('*').in('profile_type', ['creator','expert','professional','community_leader','business_owner']).order('follower_count', { ascending: false }).limit(4),
     alertsQuery,
     supabase.from('categories_guide').select('id, slug, name_zh').eq('site_scope', siteScope),
     supabase.from('categories_forum').select('id, slug, name_zh, name_en').eq('site_scope', siteScope),
-    supabase.from('voice_posts').select('*, profiles!voice_posts_author_id_fkey(display_name, username)').eq('site_id', site.id).eq('status', 'published').eq('visibility', 'public').order('published_at', { ascending: false }).limit(6),
+    supabase.from('voice_posts').select('*, profiles!voice_posts_author_id_fkey(display_name, username)').eq('site_id', site.id).eq('status', 'published').eq('visibility', 'public').order('published_at', { ascending: false }).limit(5),
+    supabase.from('categories').select('slug, name_zh, icon').eq('type', 'business').is('parent_id', null).eq('is_active', true).eq('site_scope', siteScope).order('sort_order', { ascending: true }),
   ]);
 
   const news = (rNews || []) as AnyRow[];
   const guides = (rGuides || []) as AnyRow[];
   const businesses = (rBiz || []) as AnyRow[];
+
+  // Fetch cover photos from Supabase Storage for each business
+  const adminSupa = createAdminClient();
+  const bizCoverMap: Record<string, string> = {};
+  await Promise.all(
+    businesses.map(async (biz) => {
+      const folder = `businesses/${biz.slug}`;
+      const { data: files } = await adminSupa.storage.from('media').list(folder, { limit: 1, sortBy: { column: 'name', order: 'asc' } });
+      const first = (files || []).find((f) => f.name && /\.(jpg|jpeg|png|webp|gif)$/i.test(f.name));
+      if (first) {
+        const { data: urlData } = adminSupa.storage.from('media').getPublicUrl(`${folder}/${first.name}`);
+        bizCoverMap[biz.id] = urlData.publicUrl;
+      }
+    })
+  );
+
   const threads = (rThreads || []) as AnyRow[];
   const events = (rEvents || []) as AnyRow[];
   const voices = (rVoices || []) as AnyRow[];
@@ -168,6 +188,7 @@ export default async function HomePage({ params }: Props) {
     boards = (rBoardsZh || []) as AnyRow[];
   }
   const discoverPosts = (rDiscoverPosts || []) as AnyRow[];
+  const bizCategories = (rBizCategories || []) as AnyRow[];
 
   // Maps
   const catNameMap: Record<string, string> = {};
@@ -177,29 +198,42 @@ export default async function HomePage({ params }: Props) {
 
   return (
     <main>
-      {/* Alert Banner */}
+      {/* Alert Banner (soft warning) */}
       {alerts.length > 0 && (
-        <div className="bg-gradient-to-r from-accent-red to-accent-red text-text-inverse px-4 py-2.5 text-sm flex items-center gap-2">
-          <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          <span className="flex-1"><strong>紧急提醒：</strong>{isEnglishSite ? (alerts[0].title_en || alerts[0].title_zh) : (alerts[0].title_zh || alerts[0].title_en)}</span>
-          <Link href={`/news/${alerts[0].slug}`} className="text-text-inverse/80 hover:text-text-inverse underline text-xs ml-2">详情 →</Link>
+        <div className="alert-banner">
+          <svg className="alert-icon w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <span className="flex-1 text-text-primary">
+            <strong className="fw-semibold">提醒：</strong>
+            <span className="text-text-secondary ml-1">{isEnglishSite ? (alerts[0].title_en || alerts[0].title_zh) : (alerts[0].title_zh || alerts[0].title_en)}</span>
+          </span>
+          <Link href={`/news/${alerts[0].slug}`} className="text-xs fw-medium text-primary hover:text-primary-dark ml-2">详情 →</Link>
         </div>
       )}
 
-      {/* Hero */}
-      <section className="bg-gradient-to-br from-primary to-primary-dark text-text-inverse py-8 sm:py-10">
-        <PageContainer className="max-w-3xl text-center">
-          <h1 className="text-2xl sm:text-3xl fw-bold mb-2">{t('home.heroTitle')}</h1>
-          <p className="text-primary-100 mb-5 text-sm sm:text-base">{t('home.heroSubtitle')}</p>
+      {/* Hero — soft pastel gradient with dark text */}
+      <section className="relative overflow-hidden bg-gradient-to-br from-primary-50 via-bg-card to-backdrop-secondary py-12 sm:py-16">
+        <div className="absolute inset-0 pointer-events-none opacity-60" style={{ backgroundImage: 'radial-gradient(circle at 15% 20%, color-mix(in srgb, var(--primary) 10%, transparent), transparent 55%), radial-gradient(circle at 85% 80%, color-mix(in srgb, var(--secondary) 10%, transparent), transparent 50%)' }} />
+        <PageContainer className="relative max-w-3xl text-center">
+          <div className="inline-flex items-center gap-2 px-3 py-1 r-full bg-primary-50 text-primary-dark text-xs fw-medium mb-4 border border-primary-100">
+            <span className="w-1.5 h-1.5 r-full bg-primary animate-pulse" />
+            AI 驱动 · 纽约华人本地生活
+          </div>
+          <h1 className="text-3xl sm:text-4xl fw-bold mb-3 text-text-primary leading-tight">{t('home.heroTitle')}</h1>
+          <p className="text-text-secondary mb-6 text-sm sm:text-base">{t('home.heroSubtitle')}</p>
           <form action="/zh/ask" className="relative max-w-2xl mx-auto">
-            <input type="text" name="q" placeholder="问我任何本地问题... 例如「法拉盛中文牙医推荐」" className="w-full h-12 pl-5 pr-14 r-xl bg-bg-card text-text-primary text-sm elev-lg border-0 focus:ring-2 focus:ring-orange-300 placeholder:text-text-muted" />
+            <input
+              type="text"
+              name="q"
+              placeholder="问我任何本地问题... 例如「法拉盛中文牙医推荐」"
+              className="w-full h-12 pl-5 pr-14 r-xl bg-bg-card text-text-primary text-sm elev-md border border-border focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-text-muted"
+            />
             <button type="submit" className={cn(buttonVariants(), 'absolute right-1 top-1 w-10 h-10 px-0')}>
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
             </button>
           </form>
           <div className="flex flex-wrap justify-center gap-2 mt-5">
             {['中文家庭医生', '报税服务', '驾照路考', '周末活动', '租房'].map(tag => (
-              <Link key={tag} href={`/ask?q=${encodeURIComponent(tag)}`} className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'bg-bg-card/20 text-text-inverse/90 hover:bg-bg-card/30 hover:text-text-inverse r-full')}>
+              <Link key={tag} href={`/ask?q=${encodeURIComponent(tag)}`} className="chip">
                 {tag}
               </Link>
             ))}
@@ -208,6 +242,72 @@ export default async function HomePage({ params }: Props) {
       </section>
 
       <PageContainer className="py-8 space-y-12">
+
+        {/* ===== DISCOVER (逛逛晒晒) ===== */}
+        {discoverPosts.length > 0 && (
+          <section>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-xl fw-bold flex items-center gap-2">📝 逛逛晒晒</h2>
+              <div className="flex items-center gap-3">
+                <Link href="/discover/new-post" className="inline-flex items-center gap-1 px-3 py-1.5 bg-primary text-text-inverse text-xs fw-semibold r-full hover:bg-primary-dark transition-colors">
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+                  发布晒晒
+                </Link>
+                <Link href="/discover" className="text-sm text-primary fw-medium hover:underline">{t('home.viewMore')} →</Link>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 mb-5 overflow-x-auto pb-1 scrollbar-hide">
+              {['美食', '健康', '美妆', '穿搭', '影视', '职场', '走走', '家居', '小窍门'].map((tag) => (
+                <span key={tag} className="px-3 py-1 text-xs fw-medium text-text-secondary bg-bg-page border border-border-light r-full whitespace-nowrap hover:text-primary hover:border-primary-200 transition cursor-pointer">
+                  {tag}
+                </span>
+              ))}
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+              {discoverPosts.map((post, i) => {
+                const coverImage = post.cover_images?.[0] || post.cover_image_url || post.video_thumbnail_url;
+                const authorName = post.profiles?.display_name || '匿名';
+                const isVideo = post.post_type === 'video';
+                const gradients = [
+                  'from-rose-200 to-pink-100', 'from-emerald-200 to-teal-100',
+                  'from-violet-200 to-accent-purple-light', 'from-sky-200 to-secondary-light',
+                  'from-amber-200 to-primary-100',
+                ];
+                return (
+                  <Link key={post.id} href={`/discover/${post.slug || post.id}`} className="group">
+                    <div className="r-xl overflow-hidden bg-bg-card border border-border-light hover:elev-md transition-shadow">
+                      <div className="aspect-[3/4] overflow-hidden relative">
+                        {isVideo && post.video_url ? (
+                          <VideoHoverCard
+                            thumbnailUrl={coverImage}
+                            videoUrl={post.video_url}
+                            alt={post.title || ''}
+                          />
+                        ) : coverImage ? (
+                          <img src={coverImage} alt={post.title || ''} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
+                        ) : (
+                          <div className={`w-full h-full bg-gradient-to-br ${gradients[i % gradients.length]} flex items-center justify-center`}>
+                            <span className="text-3xl opacity-70" aria-hidden="true">{post.title?.[0] || '📝'}</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="p-2.5">
+                        <h3 className="text-xs fw-semibold text-text-primary line-clamp-2 leading-snug">{post.title}</h3>
+                        <div className="flex items-center gap-1.5 mt-1.5">
+                          <span className="w-4 h-4 r-full bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center text-[8px] fw-bold text-primary-dark flex-shrink-0">
+                            {authorName.charAt(0)}
+                          </span>
+                          <p className="text-[10px] text-text-muted truncate flex-1">{authorName}</p>
+                          <HeartButton postId={post.id} initialCount={post.like_count || 0} />
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
         {/* ===== TODAY'S NEWS ===== */}
         {news.length > 0 && (
@@ -292,42 +392,6 @@ export default async function HomePage({ params }: Props) {
           </SectionBlock>
         )}
 
-        {/* ===== DISCOVER (replaces Local Voices) ===== */}
-        {discoverPosts.length > 0 && (
-          <section>
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-xl fw-bold flex items-center gap-2">📝 社区发现</h2>
-              <Link href="/discover" className="text-sm text-primary fw-medium hover:underline">{t('home.viewMore')} →</Link>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-              {discoverPosts.map((post, i) => {
-                const coverImage = post.cover_images?.[0] || post.cover_image_url;
-                const authorName = post.profiles?.display_name || '匿名';
-                const gradients = ['from-rose-200 to-pink-100', 'from-emerald-200 to-teal-100', 'from-violet-200 to-accent-purple-light', 'from-sky-200 to-secondary-light', 'from-amber-200 to-primary-100', 'from-fuchsia-200 to-pink-100'];
-                return (
-                  <Link key={post.id} href={`/discover/${post.slug || post.id}`} className="group">
-                    <div className="r-xl overflow-hidden bg-bg-card border border-border hover:elev-md transition-shadow">
-                      <div className="aspect-[3/4] overflow-hidden">
-                        {coverImage ? (
-                          <img src={coverImage} alt={post.title || ''} className="w-full h-full object-cover group-hover:scale-105 transition-transform" loading="lazy" />
-                        ) : (
-                          <div className={`w-full h-full bg-gradient-to-br ${gradients[i % gradients.length]} flex items-center justify-center`}>
-                            <span className="text-text-inverse/50 text-2xl fw-bold">{post.title?.[0] || '📝'}</span>
-                          </div>
-                        )}
-                      </div>
-                      <div className="p-2.5">
-                        <h3 className="text-xs fw-semibold text-text-primary line-clamp-2 leading-snug">{post.title}</h3>
-                        <p className="text-[10px] text-text-muted mt-1">{authorName}</p>
-                      </div>
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-          </section>
-        )}
-
         {/* ===== WEEKEND EVENTS ===== */}
         {events.length > 0 && (
           <section>
@@ -368,48 +432,98 @@ export default async function HomePage({ params }: Props) {
         {/* ===== RECOMMENDED BUSINESSES ===== */}
         {businesses.length > 0 && (
           <section>
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-xl fw-bold flex items-center gap-2">🏪 {t('home.recommendedBusinesses')}</h2>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-xl fw-bold flex items-center gap-2">🏪 推荐商家</h2>
               <Link href="/businesses" className="text-sm text-primary fw-medium hover:underline">{t('home.browseDirectory')} →</Link>
             </div>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {businesses.map((biz) => {
+            <div className="flex items-center gap-2 mb-5 overflow-x-auto pb-1 scrollbar-hide">
+              {bizCategories.map((cat) => (
+                <Link key={cat.slug} href={`/businesses?category=${cat.slug}`} className="px-3 py-1 text-xs fw-medium text-text-secondary bg-bg-page border border-border-light r-full whitespace-nowrap hover:text-primary hover:border-primary-200 transition">
+                  {cat.icon} {cat.name_zh}
+                </Link>
+              ))}
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+              {businesses.map((biz, i) => {
                 const bizName = pickBusinessDisplayName(biz, '商家');
+                const firstChar = (bizName || '').charAt(0) || '🏢';
+                const coverPhoto = bizCoverMap[biz.id] || null;
+                const gradients = [
+                  'from-primary-100 to-primary-50', 'from-secondary-50 to-cyan-50',
+                  'from-accent-green-light to-emerald-50', 'from-accent-purple-light to-violet-50',
+                  'from-amber-100 to-primary-50',
+                ];
+                const street = (biz.address_full || '').replace(/,?\s*(NY|New York)\s*\d{0,5},?\s*(USA|美国)?$/i, '').trim().replace(/,\s*$/, '');
+                const streetCity = [street, biz.city].filter(Boolean).join(', ');
+                const bizHref = `/businesses/${biz.slug}`;
+                const tags = (biz.ai_tags as string[] | null)?.slice(0, 2) || [];
                 return (
-                <Link key={biz.id} href={`/businesses/${biz.slug}`} className="block">
-                  <Card className={cn('p-5 h-full hover:elev-md transition-shadow', biz.is_featured ? 'border-2 border-primary relative' : '')}>
-                  {biz.is_featured && (
-                    <span className="absolute top-3 right-0 bg-primary text-text-inverse text-xs fw-semibold px-3 py-1 r-base">推荐</span>
-                  )}
-                  <div className="flex items-start gap-4">
-                    <div className="w-14 h-14 r-lg bg-gradient-to-br from-secondary-light to-secondary-light flex-shrink-0 flex items-center justify-center text-xl">
-                      {bizName.charAt(0)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <h3 className="fw-semibold text-sm truncate">{bizName}</h3>
-                        {biz.verification_status === 'verified' && (
-                          <svg className="w-4 h-4 text-secondary flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/></svg>
+                  <div key={biz.id} className="r-xl overflow-hidden bg-bg-card border border-border-light hover:shadow-[0_8px_30px_rgba(0,0,0,0.08)] hover:-translate-y-0.5 transition-all duration-300 group">
+                    {/* Cover Photo */}
+                    <Link href={bizHref} className="block relative">
+                      <div className="aspect-[4/3] overflow-hidden">
+                        {coverPhoto ? (
+                          <img src={coverPhoto} alt={bizName} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
+                        ) : (
+                          <div className={`w-full h-full bg-gradient-to-br ${gradients[i % gradients.length]} flex items-center justify-center`}>
+                            <span className="text-4xl fw-bold text-primary-dark/20">{firstChar}</span>
+                          </div>
                         )}
                       </div>
+                      {/* Rating pill */}
                       {biz.avg_rating && (
-                        <div className="flex items-center gap-1 mt-1">
-                          <span className="text-accent-yellow text-xs">{'★'.repeat(Math.round(Number(biz.avg_rating)))}</span>
-                          <span className="text-xs text-text-muted">{Number(biz.avg_rating).toFixed(1)} ({biz.review_count}评价)</span>
+                        <div className="absolute bottom-2 right-2 bg-white/90 backdrop-blur-sm text-[11px] fw-semibold px-2 py-0.5 r-md shadow-sm flex items-center gap-1">
+                          <span className="text-amber-500">★</span>
+                          <span className="text-text-primary">{Number(biz.avg_rating).toFixed(1)}</span>
+                          <span className="text-text-muted">({biz.review_count})</span>
                         </div>
                       )}
-                      {biz.ai_tags && (biz.ai_tags as string[]).length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 mt-2">
-                          {(biz.ai_tags as string[]).slice(0, 3).map((tag: string) => (
-                            <Badge key={tag} className="text-xs bg-secondary-50 text-secondary-dark">{tag}</Badge>
+                    </Link>
+
+                    {/* Content */}
+                    <div className="p-3">
+                      <Link href={bizHref}>
+                        <h3 className="text-sm fw-semibold text-text-primary line-clamp-1 leading-snug group-hover:text-primary transition-colors">{bizName}</h3>
+                      </Link>
+
+                      {/* Tags */}
+                      {tags.length > 0 && (
+                        <div className="flex items-center gap-1.5 mt-1.5">
+                          {tags.map((tag) => (
+                            <span key={tag} className="px-1.5 py-0.5 bg-primary-50 text-primary-dark text-[10px] r-md">{tag}</span>
                           ))}
                         </div>
                       )}
-                      <p className="text-xs text-text-muted mt-2">{biz.short_desc_zh || ''}</p>
+
+                      {biz.short_desc_zh && (
+                        <p className="text-[11px] text-text-secondary line-clamp-2 mt-1.5 leading-relaxed">{biz.short_desc_zh}</p>
+                      )}
+
+                      {/* Address */}
+                      {streetCity && (
+                        <p className="text-[11px] text-text-secondary mt-2 truncate flex items-center gap-1">
+                          <svg className="w-3.5 h-3.5 flex-shrink-0 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                          {streetCity}
+                        </p>
+                      )}
+
+                      {/* Phone & Website */}
+                      <div className="flex items-center gap-2 mt-2 pt-2 border-t border-border-light">
+                        {biz.phone && (
+                          <a href={`tel:${biz.phone}`} className="flex items-center gap-1 text-[11px] text-text-secondary hover:text-primary transition-colors truncate">
+                            <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                            {biz.phone}
+                          </a>
+                        )}
+                        {biz.website_url && (
+                          <a href={biz.website_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[11px] text-primary hover:text-primary-dark transition-colors ml-auto flex-shrink-0">
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                            官网
+                          </a>
+                        )}
+                      </div>
                     </div>
                   </div>
-                  </Card>
-                </Link>
                 );
               })}
             </div>

@@ -4,6 +4,7 @@ import { PageContainer } from '@/components/layout/page-shell';
 import { DiscoverCard } from '@/components/discover/discover-card';
 import { MasonryGrid } from '@/components/discover/masonry-grid';
 import { DiscoverTabs } from '@/components/discover/discover-tabs';
+import { DiscoverFeedClient } from '@/components/discover/discover-feed-client';
 import { TrendingTopics, TrendingSidebar, WeeklyPicks } from '@/components/discover/trending-topics';
 import { Pagination } from '@/components/shared/pagination';
 import { buttonVariants } from '@/components/ui/button';
@@ -11,6 +12,7 @@ import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import type { Metadata } from 'next';
 import { getCurrentSite } from '@/lib/sites';
+import { getCurrentUser } from '@/lib/auth';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyRow = Record<string, any>;
@@ -50,6 +52,7 @@ export default async function DiscoverPage({ searchParams }: Props) {
 
   const supabase = await createClient();
   const site = await getCurrentSite();
+  const currentUser = await getCurrentUser().catch(() => null);
 
   // Fetch trending topics
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -147,8 +150,8 @@ export default async function DiscoverPage({ searchParams }: Props) {
   return (
     <main className="bg-bg-page min-h-screen">
       {/* ===== Sticky Search + Trending Bar ===== */}
-      <div className="bg-bg-card border-b border-border-light sticky top-16 z-40">
-        <PageContainer className="py-3">
+      <div className="bg-bg-card border-b border-border-light shadow-sm sticky top-14 z-40">
+        <PageContainer className="pt-8 pb-4">
           <div className="relative max-w-xl mb-3">
             <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -170,7 +173,7 @@ export default async function DiscoverPage({ searchParams }: Props) {
         </PageContainer>
       </div>
 
-      <PageContainer className="py-6">
+      <PageContainer className="pt-8 pb-6">
         {/* Active Topic Banner */}
         {activeTopic && (
           <Card className="mb-6 p-4 bg-primary-50 flex items-center justify-between">
@@ -190,38 +193,41 @@ export default async function DiscoverPage({ searchParams }: Props) {
         <div className="lg:flex lg:gap-8">
           {/* ===== Main Feed ===== */}
           <div className="flex-1 min-w-0">
-            {posts.length === 0 ? (
-              <div className="py-16 text-center">
-                <p className="text-4xl mb-4">📝</p>
-                <p className="text-text-muted">暂无内容</p>
-                <p className="text-sm text-text-muted mt-1">成为第一个发布内容的人吧！</p>
-                <Link href="/discover/new-post" className="inline-block mt-4 px-5 py-2 bg-primary text-text-inverse text-sm fw-medium r-lg hover:bg-primary-dark transition-colors">
-                  发布笔记
-                </Link>
-              </div>
-            ) : (
-              <>
-                {/* Masonry Grid — 3 columns, natural image heights */}
-                <MasonryGrid>
-                  {gridPosts.map((post, i) => (
-                    <DiscoverCard
-                      key={post.id}
-                      post={post}
-                      author={post.profiles}
-                      index={i}
-                    />
-                  ))}
-                </MasonryGrid>
+            <DiscoverFeedClient isLoggedIn={!!currentUser} currentUserId={currentUser?.id}>
+              {posts.length === 0 ? (
+                <div className="py-16 text-center">
+                  <p className="text-4xl mb-4">📝</p>
+                  <p className="text-text-muted">暂无内容</p>
+                  <p className="text-sm text-text-muted mt-1">成为第一个发布内容的人吧！</p>
+                  <Link href="/discover/new-post" className="inline-block mt-4 px-5 py-2 bg-primary text-text-inverse text-sm fw-medium r-lg hover:bg-primary-dark transition-colors">
+                    发布笔记
+                  </Link>
+                </div>
+              ) : (
+                <>
+                  {/* Masonry Grid — 3 columns, natural image heights */}
+                  <MasonryGrid>
+                    {gridPosts.map((post, i) => (
+                      <DiscoverCard
+                        key={post.id}
+                        post={post}
+                        author={post.profiles}
+                        index={i}
+                        currentUserId={currentUser?.id}
+                      />
+                    ))}
+                  </MasonryGrid>
 
-                {/* Load More / Pagination */}
-                <Pagination
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  basePath="/discover"
-                  searchParams={preservedParams}
-                />
-              </>
-            )}
+                  {/* Load More / Pagination */}
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    basePath="/discover"
+                    searchParams={preservedParams}
+                  />
+                </>
+              )}
+            </DiscoverFeedClient>
           </div>
 
           {/* ===== Sidebar (Desktop) ===== */}

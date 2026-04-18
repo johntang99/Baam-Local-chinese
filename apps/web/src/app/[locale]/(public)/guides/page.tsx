@@ -126,30 +126,19 @@ export default async function GuidesListPage({ params, searchParams }: Props) {
       </section>
 
       {/* Category Tab Bar */}
-      <div className="bg-bg-card border-b border-border sticky top-16 z-40">
+      <div className="bg-bg-card border-b border-border sticky top-14 z-40">
         <PageContainer>
-          <div className="flex gap-1 overflow-x-auto py-3" style={{ WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
-            <Link
-              href="/guides"
-              className={`flex-shrink-0 px-4 py-2 text-sm fw-medium r-full ${
-                !activeCategoryId
-                  ? 'bg-primary text-text-inverse'
-                  : 'text-text-secondary bg-border-light hover:bg-primary-50 hover:text-primary transition'
-              }`}
-            >
+          <div className="flex gap-2 overflow-x-auto py-3" style={{ WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
+            <Link href="/guides" className={cn('chip flex-shrink-0', !activeCategoryId && 'active')}>
               全部
             </Link>
             {visibleCategories.map((cat) => (
               <Link
                 key={cat.id}
                 href={`/guides?cat=${cat.slug}`}
-                className={`flex-shrink-0 px-4 py-2 text-sm fw-medium r-full ${
-                  activeCategoryId === String(cat.id)
-                    ? 'bg-primary text-text-inverse'
-                    : 'text-text-secondary bg-border-light hover:bg-primary-50 hover:text-primary transition'
-                }`}
+                className={cn('chip flex-shrink-0', activeCategoryId === String(cat.id) && 'active')}
               >
-                {cat.icon && <span className="mr-1">{cat.icon}</span>}
+                {cat.icon && <span className="mr-0.5">{cat.icon}</span>}
                 {cat.name_zh || cat.name_en}
               </Link>
             ))}
@@ -174,7 +163,7 @@ export default async function GuidesListPage({ params, searchParams }: Props) {
                   <div className="grid lg:grid-cols-5 gap-5">
                     <Link href={`/guides/${featuredGuide.slug}`} className="lg:col-span-3 block">
                       <Card className="cursor-pointer group overflow-hidden">
-                        <div className={`relative h-56 sm:h-72 ${featuredGuide.cover_image_url ? '' : `bg-gradient-to-br ${getGradient(0)}`} flex items-end`}>
+                        <div className={`relative h-48 sm:h-60 ${featuredGuide.cover_image_url ? '' : `bg-gradient-to-br ${getGradient(0)}`} flex items-end`}>
                           {featuredGuide.cover_image_url && (
                             <img
                               src={featuredGuide.cover_image_url}
@@ -337,7 +326,7 @@ export default async function GuidesListPage({ params, searchParams }: Props) {
                         ... 更多
                       </Link>
                     </div>
-                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
                       {group.guides.map((guide, idx) => {
                         const vertical = verticalConfig[guide.content_vertical] || { label: '指南', className: 'bg-bg-page text-text-secondary' };
                         return (

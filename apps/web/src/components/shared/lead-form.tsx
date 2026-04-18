@@ -13,11 +13,12 @@ interface LeadFormProps {
 export function LeadForm({ businessId, sourceType = 'business_page', sourceArticleId, className = '' }: LeadFormProps) {
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('');
+  const [showMore, setShowMore] = useState(false);
 
   if (status === 'success') {
     return (
-      <div className={`p-4 bg-green-50 border border-green-200 r-lg text-center ${className}`}>
-        <p className="text-sm text-green-700 font-medium">{message}</p>
+      <div className={`p-4 bg-accent-green-light border border-accent-green/30 r-lg text-center ${className}`}>
+        <p className="text-sm text-accent-green fw-medium">{message}</p>
       </div>
     );
   }
@@ -40,32 +41,18 @@ export function LeadForm({ businessId, sourceType = 'business_page', sourceArtic
   };
 
   return (
-    <form action={handleSubmit} className={`space-y-3 ${className}`}>
+    <form action={handleSubmit} className={`space-y-2.5 ${className}`}>
       {status === 'error' && (
-        <p className="text-xs text-red-500">{message}</p>
+        <p className="text-xs text-accent-red">{message}</p>
       )}
-      <div>
-        <input
-          type="text"
-          name="name"
-          placeholder="你的姓名"
-          className="w-full h-9 px-3 border border-border r-lg text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none"
-        />
-      </div>
+      {/* Required fields: phone + message */}
       <div>
         <input
           type="tel"
           name="phone"
-          placeholder="手机号码"
-          className="w-full h-9 px-3 border border-border r-lg text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none"
-        />
-      </div>
-      <div>
-        <input
-          type="email"
-          name="email"
-          placeholder="邮箱（可选）"
-          className="w-full h-9 px-3 border border-border r-lg text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none"
+          placeholder="手机号码 *"
+          required
+          className="w-full h-10 px-3 border border-border r-lg text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none"
         />
       </div>
       <div>
@@ -73,9 +60,36 @@ export function LeadForm({ businessId, sourceType = 'business_page', sourceArtic
           name="message"
           placeholder="简单描述你的需求..."
           rows={3}
-          className="w-full px-3 py-2 border border-border r-lg text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none resize-none"
+          className="w-full px-3 py-2 border border-border r-lg text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none resize-none"
         />
       </div>
+
+      {/* Optional: name + email collapsed by default */}
+      {showMore ? (
+        <>
+          <input
+            type="text"
+            name="name"
+            placeholder="你的姓名（可选）"
+            className="w-full h-10 px-3 border border-border r-lg text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none"
+          />
+          <input
+            type="email"
+            name="email"
+            placeholder="邮箱（可选）"
+            className="w-full h-10 px-3 border border-border r-lg text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none"
+          />
+        </>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setShowMore(true)}
+          className="text-xs text-text-muted hover:text-primary transition-colors"
+        >
+          + 添加姓名 / 邮箱（可选）
+        </button>
+      )}
+
       <button
         type="submit"
         disabled={status === 'loading'}
