@@ -76,8 +76,8 @@ export function DiscoverCard({ post, author, index = 0, currentUserId }: Discove
   };
 
   return (
-    <div className="block break-inside-avoid mb-3 sm:mb-4">
-      <div className="bg-white r-lg overflow-hidden transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.1)]">
+    <div className="block break-inside-avoid">
+      <div className="bg-white r-lg overflow-hidden border border-gray-100 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.1)]">
         {/* Cover */}
         <Link href={href} onClick={handleCardClick} className="block relative">
           {hasImage ? (
@@ -85,16 +85,22 @@ export function DiscoverCard({ post, author, index = 0, currentUserId }: Discove
               src={coverImage}
               alt={post.title || ''}
               className="w-full block"
+              style={{ maxHeight: 360, objectFit: 'cover' }}
               loading="lazy"
             />
           ) : (
             <div
-              className={`w-full bg-gradient-to-br ${gradient} flex items-center justify-center`}
+              className={`w-full bg-gradient-to-br ${gradient} flex flex-col items-center justify-center gap-2`}
               style={{ aspectRatio: '3/4' }}
             >
-              <span className="text-white/50 text-5xl font-bold">
+              <span className="text-white/60 text-4xl font-bold">
                 {post.title?.[0] || '📝'}
               </span>
+              {post.title && (
+                <p className="text-white/40 text-xs font-medium px-4 text-center line-clamp-2">
+                  {post.title.slice(0, 20)}
+                </p>
+              )}
             </div>
           )}
 
@@ -160,9 +166,13 @@ export function DiscoverCard({ post, author, index = 0, currentUserId }: Discove
 
           {/* Author + Likes */}
           <div className="flex items-center gap-2">
-            <div className={`w-5 h-5 r-full ${avatarColor} flex items-center justify-center text-[10px] font-bold flex-shrink-0`}>
-              {authorInitial}
-            </div>
+            {authorProfile?.avatar_url ? (
+              <img src={authorProfile.avatar_url} alt="" className="w-5 h-5 r-full object-cover flex-shrink-0" />
+            ) : (
+              <div className={`w-5 h-5 r-full ${avatarColor} flex items-center justify-center text-[10px] font-bold flex-shrink-0`}>
+                {authorInitial}
+              </div>
+            )}
             <span className="text-xs text-gray-500 truncate flex-1">
               {authorName}
             </span>

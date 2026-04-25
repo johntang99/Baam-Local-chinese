@@ -3,19 +3,16 @@
 import { revalidatePath } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getAdminSiteContext } from '@/lib/admin-context';
+import { generateSeoSlug } from '@/lib/slug-generator';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = () => createAdminClient() as any;
-
-function generateSlug(title: string): string {
-  const base = title.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^\w\u4e00-\u9fa5-]/g, '').slice(0, 80);
-  return `${base}-${Date.now().toString(36)}`;
-}
 
 export async function createClassified(formData: FormData) {
   const supabase = db();
   const ctx = await getAdminSiteContext();
   const title = formData.get('title') as string;
+  const slug = await generateSeoSlug(title || 'listing', null, supabase, 'classifieds');
 
   const metadata: Record<string, unknown> = {};
   const category = formData.get('category') as string;
@@ -40,7 +37,7 @@ export async function createClassified(formData: FormData) {
   const { data, error } = await supabase
     .from('classifieds')
     .insert({
-      slug: generateSlug(title || 'listing'),
+      slug,
       site_id: ctx.siteId,
       title,
       body: formData.get('body') as string || null,

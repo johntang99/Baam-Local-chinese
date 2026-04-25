@@ -2,20 +2,10 @@
 
 import { revalidatePath } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { generateSeoSlug } from '@/lib/slug-generator';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = () => createAdminClient() as any;
-
-function generateSlug(name: string): string {
-  const base = name
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, '-')
-    .replace(/[^\w\u4e00-\u9fa5-]/g, '')
-    .slice(0, 80);
-  const suffix = Date.now().toString(36);
-  return `${base}-${suffix}`;
-}
 
 function extractBusinessFields(formData: FormData) {
   return {
@@ -79,7 +69,7 @@ export async function createBusiness(formData: FormData) {
   const fields = extractBusinessFields(formData);
   const siteId = (formData.get('site_id') as string) || '';
   if (!siteId) return { id: null, error: 'Missing site_id' };
-  const slug = generateSlug(fields.display_name || 'business');
+  const slug = await generateSeoSlug(fields.display_name_zh || fields.display_name || 'business', fields.display_name, supabase, 'businesses');
   const categoryIds = parseCategoryIds(formData);
 
   const { data, error } = await supabase

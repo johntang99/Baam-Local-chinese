@@ -3,26 +3,20 @@
 import { revalidatePath } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getAdminSiteContext } from '@/lib/admin-context';
+import { generateSeoSlug } from '@/lib/slug-generator';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = () => createAdminClient() as any;
 
-function generateSlug(title: string): string {
-  const base = title
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, '-')
-    .replace(/[^\w\u4e00-\u9fa5-]/g, '')
-    .slice(0, 80);
-  const suffix = Date.now().toString(36);
-  return `${base}-${suffix}`;
-}
 
 export async function createArticle(formData: FormData) {
   const supabase = db();
   const ctx = await getAdminSiteContext();
   const titleZh = formData.get('title_zh') as string;
-  const slug = (formData.get('slug') as string) || generateSlug(titleZh || 'article');
+  const titleEn = formData.get('title_en') as string;
+  const manualSlug = formData.get('slug') as string;
+  // Use SEO-friendly slug: English title → AI translation → fallback
+  const slug = manualSlug || await generateSeoSlug(titleZh || 'article', titleEn, supabase, 'articles');
 
   const { data, error } = await supabase
     .from('articles')
