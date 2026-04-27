@@ -159,6 +159,7 @@ export function InspectionsClient() {
               onBlur={() => setTimeout(() => setShowHistory(false), 200)}
               placeholder={convert('搜索餐厅名称（中文或英文）')}
               className="w-full h-11 px-4 border border-border r-xl text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none transition"
+              style={{ background: '#ffffff' }}
               required
             />
 

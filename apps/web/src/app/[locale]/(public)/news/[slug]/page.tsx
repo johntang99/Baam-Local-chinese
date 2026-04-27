@@ -7,6 +7,7 @@ import { EditorialContainer } from '@/components/editorial/container';
 import { EditorialCard } from '@/components/editorial/card';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { BrowsingTracker } from '@/components/shared/browsing-tracker';
 import type { Metadata } from 'next';
 
 interface Props {
@@ -86,6 +87,7 @@ export default async function NewsDetailPage({ params }: Props) {
 
   return (
     <main>
+      <BrowsingTracker title={article.title_zh || article.title_en || ''} source="新闻" />
       {/* Hero header with cover image */}
       {article.cover_image_url ? (
         <div className="relative" style={{ height: 'clamp(280px, 40vw, 440px)', overflow: 'hidden' }}>

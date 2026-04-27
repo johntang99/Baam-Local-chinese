@@ -10,6 +10,7 @@ import { pickBusinessDisplayName } from '@/lib/business-name';
 import ReactMarkdown from 'react-markdown';
 import type { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { BrowsingTracker } from '@/components/shared/browsing-tracker';
 import type { Metadata } from 'next';
 
 interface Props {
@@ -185,6 +186,7 @@ export default async function GuideDetailPage({ params }: Props) {
 
   return (
     <main>
+      <BrowsingTracker title={article.title_zh || article.title_en || ''} source="生活资讯" />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }} />
       {faqJsonLd && faqJsonLd.mainEntity.length > 0 && (
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />

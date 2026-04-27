@@ -41,12 +41,12 @@ export default function PropertyTaxPage() {
     <main>
       <PageContainer className="max-w-4xl py-8">
       {/* Breadcrumb */}
-      <nav className="text-sm text-text-muted mb-6">
-        <Link href="/" className="hover:text-primary">首页</Link>
+      <nav className="text-sm mb-6" style={{ color: 'var(--ed-ink-soft)' }}>
+        <Link href="/" className="hover:text-primary" style={{ fontWeight: 500 }}>首页</Link>
         <span className="mx-2">/</span>
-        <Link href="/services" className="hover:text-primary">实用工具</Link>
+        <Link href="/services" className="hover:text-primary" style={{ fontWeight: 500 }}>实用工具</Link>
         <span className="mx-2">/</span>
-        <span className="text-text-secondary">房产税查询</span>
+        <span style={{ color: 'var(--ed-ink)', fontWeight: 500 }}>房产税查询</span>
       </nav>
 
       {/* Header */}
@@ -56,6 +56,11 @@ export default function PropertyTaxPage() {
         <p className="text-text-muted">New York State Property Tax & Assessment Lookup</p>
         <p className="text-xs text-text-muted mt-1">覆盖纽约市五区 · 长岛 · 威彻斯特 · 全纽约州62个郡</p>
       </div>
+
+      {/* Search Tool */}
+      <Suspense fallback={<div className="h-40 bg-bg-page r-xl animate-pulse" />}>
+        <PropertyTaxClient />
+      </Suspense>
 
       {/* Guide Content (SEO) */}
       <Card className="r-xl p-6 mb-8">
@@ -89,11 +94,6 @@ export default function PropertyTaxPage() {
         <p>可向税务审查委员会（Tax Commission）申诉，截止日期为每年3月。约40%的申诉获得下调，平均每年可节省$1,000-$5,000。需提供市场价值证据。</p>
         </article>
       </Card>
-
-      {/* Search Tool */}
-      <Suspense fallback={<div className="h-40 bg-bg-page r-xl animate-pulse" />}>
-        <PropertyTaxClient />
-      </Suspense>
 
       {/* FAQ */}
       <div className="mt-8">

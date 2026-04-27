@@ -17,6 +17,7 @@ import { buttonVariants } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { formatTimeAgo } from '@/lib/utils';
+import { BrowsingTracker } from '@/components/shared/browsing-tracker';
 import type { Metadata } from 'next';
 
 interface Props {
@@ -412,6 +413,7 @@ export default async function DiscoverPostDetailPage({ params, searchParams }: P
 
   return (
     <main className="bg-bg-card min-h-screen">
+      <BrowsingTracker title={post.title || ''} source="逛逛晒晒" />
       {/* ===== Discover Header (search + trending) ===== */}
       <div className="bg-bg-card border-b border-border-light shadow-sm sticky top-14 z-40">
         <PageContainer className="pt-5 pb-3">

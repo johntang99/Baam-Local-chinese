@@ -3,11 +3,8 @@ import { getCurrentUser } from '@/lib/auth';
 import { getCurrentSite } from '@/lib/sites';
 import { notFound } from 'next/navigation';
 import { Link } from '@/lib/i18n/routing';
-import { PageContainer } from '@/components/layout/page-shell';
-import { Badge } from '@/components/ui/badge';
-import { buttonVariants } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
+import { DiscoverCard } from '@/components/discover/discover-card';
+import { MasonryGrid } from '@/components/discover/masonry-grid';
 import type { Metadata } from 'next';
 
 interface Props {
@@ -17,177 +14,138 @@ interface Props {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyRow = Record<string, any>;
 
+const profileTypeLabels: Record<string, string> = {
+  creator: '创作者', expert: '认证专家', professional: '专业人士',
+  community_leader: '社区领袖', business_owner: '商家主理人',
+};
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { username } = await params;
   const supabase = await createClient();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (supabase as any)
-    .from('profiles')
-    .select('display_name')
-    .eq('username', username)
-    .single();
-
+  const { data } = await supabase.from('profiles').select('display_name, headline').eq('username', username).single();
+  const profile = data as AnyRow | null;
+  if (!profile) return { title: 'Not Found' };
   return {
-    title: data ? `${data.display_name} · Baam` : 'Not Found',
+    title: `${profile.display_name || username} · Baam`,
+    description: profile.headline || '',
   };
 }
 
-export default async function UserProfilePage({ params }: Props) {
+export default async function ProfilePage({ params }: Props) {
   const { username } = await params;
   const supabase = await createClient();
   const site = await getCurrentSite();
-  const currentUser = await getCurrentUser().catch(() => null);
 
-  // Fetch profile
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: profileData, error } = await (supabase as any)
-    .from('profiles')
-    .select('*')
-    .eq('username', username)
-    .single();
-
-  const profile = profileData as AnyRow | null;
+  const { data, error } = await supabase.from('profiles').select('*').eq('username', username).single();
+  const profile = data as AnyRow | null;
   if (error || !profile) notFound();
 
-  const isOwnProfile = currentUser?.id === profile.id;
+  const currentUser = await getCurrentUser().catch(() => null);
+  const isOwner = currentUser?.id === profile.id;
 
-  // Fetch user's forum threads
-  const { data: threads } = await supabase
-    .from('forum_threads')
-    .select('id, slug, title, reply_count, created_at')
-    .eq('author_id', profile.id)
-    .eq('site_id', site.id)
-    .eq('status', 'published')
-    .order('created_at', { ascending: false })
-    .limit(5);
-
-  // Fetch user's voice posts
-  const { data: posts } = await supabase
+  // Fetch posts
+  const { data: rawPosts } = await supabase
     .from('voice_posts')
-    .select('id, slug, title, like_count, comment_count, published_at')
+    .select('*, profiles:author_id(id, username, display_name, avatar_url, is_verified)')
     .eq('author_id', profile.id)
     .eq('site_id', site.id)
     .eq('status', 'published')
     .order('published_at', { ascending: false })
-    .limit(5);
+    .limit(30);
+  const posts = (rawPosts || []) as AnyRow[];
 
-  const memberSince = new Date(profile.created_at).toLocaleDateString('zh-CN', {
-    year: 'numeric', month: 'long',
-  });
+  // Total likes
+  const totalLikes = posts.reduce((s: number, p: AnyRow) => s + (p.like_count || 0), 0);
 
-  const profileTypeLabels: Record<string, string> = {
-    user: '社区成员',
-    creator: '内容创作者',
-    expert: '认证专家',
-    professional: '专业人士',
-    community_leader: '社区领袖',
-    business_owner: '商家',
-  };
+  const avatarInitial = profile.display_name?.[0] || '?';
 
   return (
     <main>
-      <PageContainer className="max-w-4xl py-8">
-        {/* Profile Header */}
-        <Card className="p-6 sm:p-8 mb-6">
-          <div className="flex items-start gap-6">
-            <div className="w-20 h-20 sm:w-24 sm:h-24 r-full bg-primary/10 flex items-center justify-center text-3xl sm:text-4xl flex-shrink-0">
-              {profile.display_name?.[0] || '?'}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-3 mb-1">
-                <h1 className="text-2xl fw-bold">{profile.display_name}</h1>
-                {profile.is_verified && <Badge className="text-xs bg-accent-blue-light text-secondary-dark">已认证</Badge>}
-              </div>
-              <p className="text-sm text-text-muted mb-2">@{profile.username}</p>
-              <p className="text-sm text-text-secondary mb-3">
-                {profileTypeLabels[profile.profile_type] || '社区成员'} · 加入于 {memberSince}
-              </p>
-              {profile.bio && (
-                <p className="text-sm text-text-primary leading-relaxed mb-4">{profile.bio}</p>
+      {/* Cover */}
+      <div style={{ height: 180, background: 'linear-gradient(135deg, var(--ed-paper-warm) 0%, #E8D5BE 40%, #D4C4A8 100%)', position: 'relative' }}>
+        {isOwner && (
+          <button style={{ position: 'absolute', bottom: 12, right: 12, padding: '5px 12px', borderRadius: 'var(--ed-radius-pill)', background: 'rgba(0,0,0,0.4)', color: '#fff', fontSize: 11, border: 'none', cursor: 'pointer' }}>编辑封面</button>
+        )}
+      </div>
+
+      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 16px 80px' }}>
+        {/* Profile head */}
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16, marginTop: -40, position: 'relative', zIndex: 2 }}>
+          <div style={{
+            width: 88, height: 88, borderRadius: '50%', border: '4px solid var(--ed-paper)',
+            background: 'var(--ed-accent)', color: '#fff',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontFamily: 'var(--ed-font-serif)', fontSize: 34, fontWeight: 700, flexShrink: 0,
+          }}>{avatarInitial}</div>
+          <div style={{ paddingBottom: 8 }}>
+            <h1 style={{ fontFamily: 'var(--ed-font-serif)', fontSize: 22, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
+              {profile.display_name}
+              {profile.is_verified && (
+                <span style={{ width: 18, height: 18, borderRadius: '50%', background: '#3B82F6', color: '#fff', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 10 }}>✓</span>
               )}
-              <div className="flex items-center gap-6 text-sm">
-                <span><strong>{profile.follower_count || 0}</strong> <span className="text-text-muted">关注者</span></span>
-                <span><strong>{profile.following_count || 0}</strong> <span className="text-text-muted">关注</span></span>
-                <span><strong>{profile.post_count || 0}</strong> <span className="text-text-muted">帖子</span></span>
-              </div>
+            </h1>
+            <div style={{ fontSize: 13, color: 'var(--ed-ink-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
+              @{profile.username}
+              {profile.location_text && <> · {profile.location_text}</>}
+              {profile.profile_type && profile.profile_type !== 'user' && (
+                <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 'var(--ed-radius-pill)', background: 'rgba(199,62,29,0.06)', color: 'var(--ed-accent)', fontWeight: 500 }}>
+                  {profileTypeLabels[profile.profile_type] || profile.profile_type}
+                </span>
+              )}
             </div>
-            {isOwnProfile && (
-              <Link href="/settings" className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'h-9 px-4 text-sm flex-shrink-0')}>
-                编辑资料
-              </Link>
-            )}
           </div>
-        </Card>
-
-        <div className="grid lg:grid-cols-3 gap-6">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Voice Posts */}
-            {posts && posts.length > 0 && (
-              <Card className="p-5">
-                <h2 className="fw-bold text-base mb-4">发布的内容</h2>
-                <div className="space-y-3">
-                  {(posts as AnyRow[]).map((post) => (
-                    <Link
-                      key={post.id}
-                      href={`/voices/${username}/posts/${post.slug}`}
-                      className="block p-3 r-lg hover:bg-bg-page transition-colors"
-                    >
-                      <h3 className="fw-medium text-sm line-clamp-1">{post.title || '无标题'}</h3>
-                      <div className="flex gap-3 text-xs text-text-muted mt-1">
-                        <span>❤️ {post.like_count || 0}</span>
-                        <span>💬 {post.comment_count || 0}</span>
-                        {post.published_at && (
-                          <span>{new Date(post.published_at).toLocaleDateString('zh-CN')}</span>
-                        )}
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              </Card>
-            )}
-
-            {/* Forum Threads */}
-            {threads && threads.length > 0 && (
-              <Card className="p-5">
-                <h2 className="fw-bold text-base mb-4">论坛帖子</h2>
-                <div className="space-y-3">
-                  {(threads as AnyRow[]).map((thread) => (
-                    <div key={thread.id} className="p-3 r-lg hover:bg-bg-page transition-colors">
-                      <h3 className="fw-medium text-sm line-clamp-1">{thread.title}</h3>
-                      <div className="flex gap-3 text-xs text-text-muted mt-1">
-                        <span>💬 {thread.reply_count || 0} 回复</span>
-                        <span>{new Date(thread.created_at).toLocaleDateString('zh-CN')}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-            )}
-
-            {/* Empty State */}
-            {(!posts || posts.length === 0) && (!threads || threads.length === 0) && (
-              <Card className="p-8 text-center">
-                <p className="text-text-muted">还没有发布内容</p>
-              </Card>
-            )}
-          </div>
-
-          {/* Sidebar */}
-          <aside className="space-y-6">
-            {profile.interest_tags && Array.isArray(profile.interest_tags) && profile.interest_tags.length > 0 && (
-              <Card className="p-5">
-                <h3 className="fw-semibold text-sm mb-3">兴趣标签</h3>
-                <div className="flex flex-wrap gap-1.5">
-                  {profile.interest_tags.map((tag: string) => (
-                    <Badge key={tag} variant="muted" className="text-xs">{tag}</Badge>
-                  ))}
-                </div>
-              </Card>
-            )}
-          </aside>
         </div>
-      </PageContainer>
+
+        {/* Bio */}
+        {profile.bio && (
+          <p style={{ fontSize: 13, color: 'var(--ed-ink-soft)', margin: '12px 0 0', lineHeight: 1.6 }}>{profile.bio}</p>
+        )}
+
+        {/* Stats */}
+        <div style={{ display: 'flex', gap: 24, margin: '16px 0', padding: '16px 0', borderBottom: '1px solid var(--ed-line)' }}>
+          {[
+            { num: posts.length, label: '笔记' },
+            { num: profile.following_count || 0, label: '关注' },
+            { num: profile.follower_count || 0, label: '粉丝' },
+            { num: totalLikes, label: '获赞与收藏' },
+          ].map(s => (
+            <div key={s.label} style={{ textAlign: 'center' }}>
+              <div style={{ fontFamily: 'var(--ed-font-serif)', fontSize: 18, fontWeight: 700 }}>{s.num >= 1000 ? `${(s.num / 1000).toFixed(1)}k` : s.num}</div>
+              <div style={{ fontSize: 11, color: 'var(--ed-ink-muted)', marginTop: 1 }}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Action buttons */}
+        <div style={{ display: 'flex', gap: 8, margin: '0 0 20px' }}>
+          {isOwner ? (
+            <>
+              <Link href="/me?tab=settings" style={{ flex: 1, height: 36, borderRadius: 'var(--ed-radius-pill)', border: '1px solid var(--ed-line-strong)', background: 'transparent', color: 'var(--ed-ink-soft)', fontSize: 13, fontWeight: 500, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>编辑资料</Link>
+              <Link href="/discover/new-post" style={{ flex: 1, height: 36, borderRadius: 'var(--ed-radius-pill)', border: '1px solid var(--ed-line-strong)', background: 'transparent', color: 'var(--ed-ink-soft)', fontSize: 13, fontWeight: 500, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+ 发布笔记</Link>
+            </>
+          ) : (
+            <>
+              <button style={{ flex: 1, height: 36, borderRadius: 'var(--ed-radius-pill)', border: 'none', background: 'var(--ed-accent)', color: '#fff', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>+ 关注</button>
+              <button style={{ flex: 1, height: 36, borderRadius: 'var(--ed-radius-pill)', border: '1px solid var(--ed-line-strong)', background: 'transparent', color: 'var(--ed-ink-soft)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>私信</button>
+            </>
+          )}
+        </div>
+
+        {/* Posts grid — 4 columns matching Discover */}
+        {posts.length > 0 ? (
+          <MasonryGrid>
+            {posts.map((post, i) => (
+              <DiscoverCard key={post.id} post={post} author={profile} index={i} />
+            ))}
+          </MasonryGrid>
+        ) : (
+          <div style={{ textAlign: 'center', padding: '64px 0' }}>
+            <p style={{ fontSize: 40, opacity: 0.4, marginBottom: 12 }}>📝</p>
+            <p style={{ fontSize: 14, color: 'var(--ed-ink-muted)' }}>还没有发布内容</p>
+            {isOwner && <Link href="/discover/new-post" style={{ fontSize: 13, color: 'var(--ed-accent)', fontWeight: 500, marginTop: 8, display: 'inline-block' }}>发布第一篇笔记 →</Link>}
+          </div>
+        )}
+      </div>
     </main>
   );
 }

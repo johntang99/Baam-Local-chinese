@@ -85,14 +85,14 @@ export default async function PropertyDetailPage({ params, searchParams }: Props
     <main>
       <PageContainer className="max-w-4xl py-8">
       {/* Breadcrumb */}
-      <nav className="text-sm text-text-muted mb-6">
-        <Link href="/" className="hover:text-primary">首页</Link>
+      <nav className="text-sm mb-6" style={{ color: 'var(--ed-ink-soft)' }}>
+        <Link href="/" className="hover:text-primary" style={{ fontWeight: 500 }}>首页</Link>
         <span className="mx-2">/</span>
-        <Link href="/services" className="hover:text-primary">实用工具</Link>
+        <Link href="/services" className="hover:text-primary" style={{ fontWeight: 500 }}>实用工具</Link>
         <span className="mx-2">/</span>
-        <Link href="/services/property-tax" className="hover:text-primary">房产税查询</Link>
+        <Link href="/services/property-tax" className="hover:text-primary" style={{ fontWeight: 500 }}>房产税查询</Link>
         <span className="mx-2">/</span>
-        <span className="text-text-secondary">{p.address}</span>
+        <span style={{ color: 'var(--ed-ink)', fontWeight: 500 }}>{p.address}</span>
       </nav>
 
       {/* Property Header */}
@@ -100,10 +100,10 @@ export default async function PropertyDetailPage({ params, searchParams }: Props
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
             <h1 className="text-xl sm:text-2xl fw-bold text-text-primary mb-1">{p.address}</h1>
-            <p className="text-sm text-text-muted mb-2">{location}</p>
-            <p className="text-xs text-text-muted">业主: {p.ownerName || p.owner}</p>
+            <p className="text-sm text-text-secondary mb-2">{location}</p>
+            <p className="text-xs text-text-secondary">业主: {p.ownerName || p.owner}</p>
             {isNYS && p.schoolDistrict && (
-              <p className="text-xs text-text-muted">学区: {p.schoolDistrict}</p>
+              <p className="text-xs text-text-secondary">学区: {p.schoolDistrict}</p>
             )}
           </div>
           <span className="text-[10px] fw-semibold px-3 py-1.5 r-full flex-shrink-0 self-start bg-accent-purple-light text-accent-purple max-w-[180px] text-right">
@@ -115,7 +115,7 @@ export default async function PropertyDetailPage({ params, searchParams }: Props
         </div>
 
         {/* Property Details */}
-        <div className="flex flex-wrap gap-4 mt-4 text-xs text-text-muted">
+        <div className="flex flex-wrap gap-4 mt-4 text-xs text-text-secondary">
           {bldgClassLabel && <span>🏢 {bldgClassLabel}</span>}
           {p.yearBuilt && <span>📅 建于 {p.yearBuilt}</span>}
           {p.numFloors && <span>🏗️ {p.numFloors}层</span>}
@@ -136,25 +136,25 @@ export default async function PropertyDetailPage({ params, searchParams }: Props
           </h3>
           <div className="space-y-3">
             <div className="flex justify-between items-center">
-              <span className="text-sm text-text-muted">土地评估值</span>
+              <span className="text-sm text-text-secondary">土地评估值</span>
               <span className="text-sm fw-semibold text-text-primary">{formatMoney(p.assessedLand)}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-sm text-text-muted">总评估值</span>
+              <span className="text-sm text-text-secondary">总评估值</span>
               <span className="text-sm fw-bold text-text-primary">{formatMoney(p.assessedTotal)}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-sm text-text-muted">市场估值</span>
+              <span className="text-sm text-text-secondary">市场估值</span>
               <span className="text-sm fw-bold text-secondary-dark">{formatMoney(p.marketValue)}</span>
             </div>
             {p.exemptTotal > 0 && (
               <div className="flex justify-between items-center">
-                <span className="text-sm text-text-muted">减免金额</span>
+                <span className="text-sm text-text-secondary">减免金额</span>
                 <span className="text-sm fw-semibold text-accent-green">-{formatMoney(p.exemptTotal)}</span>
               </div>
             )}
             <div className="pt-2 border-t border-border-light">
-              <div className="flex justify-between items-center text-xs text-text-muted">
+              <div className="flex justify-between items-center text-xs text-text-secondary">
                 <span>{isNYS ? '均衡税率 (Equalization Rate)' : '评估值/市场值比率'}</span>
                 <span>{p.equalizationRate || assessmentRatio}%</span>
               </div>
@@ -179,25 +179,25 @@ export default async function PropertyDetailPage({ params, searchParams }: Props
             {isNYS && p.estimatedTotalTax > 0 ? (
               <>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-text-muted">年度总税额估算</span>
+                  <span className="text-sm text-text-secondary">年度总税额估算</span>
                   <span className="text-lg fw-bold text-primary">{formatMoney(p.estimatedTotalTax)}</span>
                 </div>
                 <div className="border-t border-border-light pt-2 mt-2 space-y-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-xs text-text-muted">郡税 (County) <span className="text-text-muted">{p.taxRateInfo?.countyRate ? `${p.taxRateInfo.countyRate}/‰` : ''}</span></span>
-                    <span className="text-sm text-text-secondary">{formatMoney(p.countyTax)}</span>
+                    <span className="text-xs text-text-secondary">郡税 (County) <span className="text-text-secondary">{p.taxRateInfo?.countyRate ? `${p.taxRateInfo.countyRate}/‰` : ''}</span></span>
+                    <span className="text-sm text-text-primary">{formatMoney(p.countyTax)}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-xs text-text-muted">市/镇税 (Municipal) <span className="text-text-muted">{p.taxRateInfo?.municipalRate ? `${p.taxRateInfo.municipalRate}/‰` : ''}</span></span>
-                    <span className="text-sm text-text-secondary">{formatMoney(p.municipalTax)}</span>
+                    <span className="text-xs text-text-secondary">市/镇税 (Municipal) <span className="text-text-secondary">{p.taxRateInfo?.municipalRate ? `${p.taxRateInfo.municipalRate}/‰` : ''}</span></span>
+                    <span className="text-sm text-text-primary">{formatMoney(p.municipalTax)}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-xs text-text-muted">学区税 (School) <span className="text-text-muted">{p.taxRateInfo?.schoolRate ? `${p.taxRateInfo.schoolRate.toFixed(2)}/‰` : ''}</span></span>
-                    <span className="text-sm text-text-secondary">{formatMoney(p.schoolTax)}</span>
+                    <span className="text-xs text-text-secondary">学区税 (School) <span className="text-text-secondary">{p.taxRateInfo?.schoolRate ? `${p.taxRateInfo.schoolRate.toFixed(2)}/‰` : ''}</span></span>
+                    <span className="text-sm text-text-primary">{formatMoney(p.schoolTax)}</span>
                   </div>
                 </div>
                 <div className="flex justify-between items-center pt-2 border-t border-border-light mt-2">
-                  <span className="text-sm text-text-muted">每月约</span>
+                  <span className="text-sm text-text-secondary">每月约</span>
                   <span className="text-sm fw-semibold text-text-primary">{formatMoney(Math.round(p.estimatedTotalTax / 12))} / 月</span>
                 </div>
                 {p.taxRateInfo && (
@@ -209,15 +209,15 @@ export default async function PropertyDetailPage({ params, searchParams }: Props
             ) : p.estimatedTax > 0 ? (
               <>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-text-muted">年度房产税估算</span>
+                  <span className="text-sm text-text-secondary">年度房产税估算</span>
                   <span className="text-lg fw-bold text-primary">{formatMoney(p.estimatedTax)}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-text-muted">税率 (Class {p.taxClass})</span>
+                  <span className="text-sm text-text-secondary">税率 (Class {p.taxClass})</span>
                   <span className="text-sm text-text-secondary">{(p.taxRate * 100).toFixed(3)}%</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-text-muted">每月约</span>
+                  <span className="text-sm text-text-secondary">每月约</span>
                   <span className="text-sm fw-semibold text-text-primary">{formatMoney(monthlyTax)} / 月</span>
                 </div>
               </>
@@ -225,13 +225,13 @@ export default async function PropertyDetailPage({ params, searchParams }: Props
               <>
                 {p.countyTaxable > 0 && (
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-text-muted">郡应税价值 (County)</span>
+                    <span className="text-sm text-text-secondary">郡应税价值 (County)</span>
                     <span className="text-sm fw-semibold text-text-primary">{formatMoney(p.countyTaxable)}</span>
                   </div>
                 )}
                 {p.schoolTaxable > 0 && (
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-text-muted">学区应税价值 (School)</span>
+                    <span className="text-sm text-text-secondary">学区应税价值 (School)</span>
                     <span className="text-sm fw-semibold text-text-primary">{formatMoney(p.schoolTaxable)}</span>
                   </div>
                 )}
@@ -269,7 +269,7 @@ export default async function PropertyDetailPage({ params, searchParams }: Props
             ))}
           </div>
         ) : isNYS ? (
-          <p className="text-sm text-text-muted">无减免记录</p>
+          <p className="text-sm text-text-secondary">无减免记录</p>
         ) : (
           <div className="space-y-2">
             {[
@@ -298,9 +298,9 @@ export default async function PropertyDetailPage({ params, searchParams }: Props
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border-light">
-                  <th className="text-left py-2 text-xs text-text-muted fw-medium">年度</th>
-                  <th className="text-right py-2 text-xs text-text-muted fw-medium">评估值</th>
-                  <th className="text-right py-2 text-xs text-text-muted fw-medium">市场估值</th>
+                  <th className="text-left py-2 text-xs text-text-secondary fw-medium">年度</th>
+                  <th className="text-right py-2 text-xs text-text-secondary fw-medium">评估值</th>
+                  <th className="text-right py-2 text-xs text-text-secondary fw-medium">市场估值</th>
                 </tr>
               </thead>
               <tbody>
@@ -327,9 +327,9 @@ export default async function PropertyDetailPage({ params, searchParams }: Props
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border-light">
-                  <th className="text-left py-2 text-xs text-text-muted fw-medium">交易日期</th>
-                  <th className="text-right py-2 text-xs text-text-muted fw-medium">成交价格</th>
-                  <th className="text-right py-2 text-xs text-text-muted fw-medium">类型</th>
+                  <th className="text-left py-2 text-xs text-text-secondary fw-medium">交易日期</th>
+                  <th className="text-right py-2 text-xs text-text-secondary fw-medium">成交价格</th>
+                  <th className="text-right py-2 text-xs text-text-secondary fw-medium">类型</th>
                 </tr>
               </thead>
               <tbody>

@@ -11,6 +11,7 @@ import { LeadForm } from '@/components/shared/lead-form';
 import { NewsletterForm } from '@/components/shared/newsletter-form';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { BrowsingTracker } from '@/components/shared/browsing-tracker';
 import type { Metadata } from 'next';
 
 interface Props {
@@ -137,6 +138,7 @@ export default async function BusinessDetailPage({ params }: Props) {
 
   return (
     <main>
+      <BrowsingTracker title={name} source="商家详情" />
       {/* Hero / Cover */}
       {coverPhoto ? (
         <div className="relative" style={{ height: 'clamp(240px, 35vw, 380px)', overflow: 'hidden' }}>

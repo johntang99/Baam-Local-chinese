@@ -138,8 +138,8 @@ export function ScreenerClient() {
     return (
       <div className="bg-bg-card border border-border r-xl p-12 text-center">
         <div className="w-16 h-16 border-4 border-primary border-t-transparent r-full animate-spin mx-auto mb-6" />
-        <h3 className="text-lg fw-bold text-text-primary mb-2">{convert('AI正在分析你的情况...')}</h3>
-        <p className="text-sm text-text-muted">{convert('基于你提供的信息，我们的AI助手正在评估可能适合你的签证类别')}</p>
+        <h3 className="text-lg fw-bold text-text-primary mb-2">{convert('正在分析你的情况...')}</h3>
+        <p className="text-sm text-text-secondary">{convert('基于你提供的信息，我们正在评估可能适合你的签证类别')}</p>
       </div>
     );
   }
@@ -170,7 +170,7 @@ export function ScreenerClient() {
       <div>
         {/* User Info Summary */}
         <div className="bg-bg-page border border-border r-xl p-4 mb-6">
-          <div className="text-xs fw-semibold text-text-muted mb-2">{convert('你的基本信息：')}</div>
+          <div className="text-sm fw-bold text-text-primary mb-2">{convert('你的基本信息：')}</div>
           <div className="flex flex-wrap gap-2">
             {summaryItems.map((item, i) => (
               <span key={i} className="inline-flex items-center gap-1 text-xs bg-bg-card border border-border r-full px-2.5 py-1">
@@ -187,7 +187,7 @@ export function ScreenerClient() {
             <svg className="w-8 h-8 text-accent-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
           </div>
           <h2 className="text-xl fw-bold text-text-primary mb-1">{convert('你的签证资格评估结果')}</h2>
-          <p className="text-sm text-text-muted">{convert('基于你的个人情况，以下是可能适合你的签证类别')}</p>
+          <p className="text-sm text-text-secondary">{convert('基于你的个人情况，以下是可能适合你的签证类别')}</p>
         </div>
 
         {/* Category Cards */}
@@ -261,9 +261,21 @@ export function ScreenerClient() {
               ))}
             </div>
             {result.nextSteps && (
-              <div className="flex items-start gap-2 text-sm text-text-secondary mt-2 pt-2 border-t border-border-light">
-                <span className="text-secondary flex-shrink-0">📋</span>
-                <span>{result.nextSteps}</span>
+              <div className="mt-3 pt-3 border-t border-border-light">
+                <div className="flex items-center gap-2 text-sm fw-bold text-text-primary mb-2">
+                  <span>📋</span>
+                  <span>{convert('建议行动')}</span>
+                </div>
+                <div
+                  className="text-sm text-text-secondary leading-relaxed prose prose-sm max-w-none [&_strong]:text-text-primary [&_strong]:fw-bold [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:mb-1"
+                  dangerouslySetInnerHTML={{
+                    __html: result.nextSteps
+                      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                      .replace(/^\d+\.\s+/gm, (m) => `<li>${m.replace(/^\d+\.\s+/, '')}`)
+                      .replace(/^[-–]\s+/gm, '• ')
+                      .replace(/\n/g, '<br />')
+                  }}
+                />
               </div>
             )}
           </div>
@@ -305,7 +317,7 @@ export function ScreenerClient() {
       {/* Previous Answers Summary (shown from step 2+) */}
       {step > 1 && (
         <div className="bg-bg-page border border-border r-xl p-4 mb-6">
-          <div className="text-xs fw-semibold text-text-muted mb-2">{convert('你填写的信息：')}</div>
+          <div className="text-sm fw-bold text-text-primary mb-2">{convert('你填写的信息：')}</div>
           <div className="flex flex-wrap gap-2">
             {getSummaryItems().map((item, i) => (
               <span key={i} className="inline-flex items-center gap-1 text-xs bg-bg-card border border-border r-full px-2.5 py-1">

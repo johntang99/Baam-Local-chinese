@@ -149,6 +149,7 @@ export function PropertyTaxClient() {
               onBlur={() => setTimeout(() => setShowHistory(false), 200)}
               placeholder={convert('输入地址 (如 36-40 Main Street 或 23 Rivervale Rd, Middletown)')}
               className="w-full h-11 px-4 border border-border r-xl text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none transition"
+              style={{ background: '#ffffff' }}
               required
             />
             {showHistory && history.length > 0 && (
@@ -265,6 +266,13 @@ export function PropertyTaxClient() {
                         </div>
                       )}
                     </div>
+                    {detailHref && (
+                      <div className="mt-4 pt-3 border-t border-border-light text-center">
+                        <span className="inline-flex items-center gap-1.5 px-5 py-2 bg-primary text-white text-sm fw-semibold r-lg group-hover:bg-primary/90 transition">
+                          {convert('查看房产税详情')} →
+                        </span>
+                      </div>
+                    )}
                   </Wrapper>
                 );
               })}
