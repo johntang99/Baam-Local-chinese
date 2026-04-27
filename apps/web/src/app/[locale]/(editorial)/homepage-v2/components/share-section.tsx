@@ -2,6 +2,7 @@ import { Link } from '@/lib/i18n/routing';
 import { SectionHeader } from './section-header';
 import { HeartButton } from '@/components/discover/heart-button';
 import { ShareVideoMedia } from './share-video-media';
+import { ShareSectionClient, ShareCardLink } from './share-section-client';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyRow = Record<string, any>;
@@ -9,6 +10,8 @@ type AnyRow = Record<string, any>;
 interface ShareSectionProps {
   posts: AnyRow[];
   categories?: AnyRow[];
+  isLoggedIn?: boolean;
+  currentUserId?: string | null;
 }
 
 const gradients = [
@@ -30,7 +33,7 @@ const defaultCategoryTabs = [
   { label: '穿搭', slug: 'fashion' },
 ];
 
-export function ShareSection({ posts, categories = [] }: ShareSectionProps) {
+export function ShareSection({ posts, categories = [], isLoggedIn = false, currentUserId }: ShareSectionProps) {
   if (posts.length === 0) return null;
 
   // Build category tabs from DB categories, with "推荐" as first tab
@@ -96,18 +99,20 @@ export function ShareSection({ posts, categories = [] }: ShareSectionProps) {
           ))}
         </div>
 
-        {/* Bento Grid: 1 feature (1.8fr, spans 2 rows) + 6 smalls (3 cols) */}
-        <div
-          className="grid gap-2.5 sm:gap-7 grid-cols-2 sm:grid-cols-[1.8fr_repeat(3,1fr)] sm:[grid-auto-rows:1fr]"
-        >
-          {/* Feature Card */}
-          <FeatureCard post={feature} />
+        {/* Bento Grid wrapped in modal-enabled client */}
+        <ShareSectionClient isLoggedIn={isLoggedIn} currentUserId={currentUserId}>
+          <div
+            className="grid gap-2.5 sm:gap-7 grid-cols-2 sm:grid-cols-[1.8fr_repeat(3,1fr)] sm:[grid-auto-rows:1fr]"
+          >
+            {/* Feature Card */}
+            <FeatureCard post={feature} />
 
-          {/* Small Cards */}
-          {smalls.map((post, i) => (
-            <SmallCard key={post.id} post={post} index={i + 1} />
-          ))}
-        </div>
+            {/* Small Cards */}
+            {smalls.map((post, i) => (
+              <SmallCard key={post.id} post={post} index={i + 1} />
+            ))}
+          </div>
+        </ShareSectionClient>
       </div>
     </section>
   );
@@ -117,11 +122,16 @@ function FeatureCard({ post }: { post: AnyRow }) {
   const coverImage = post.cover_images?.[0] || post.cover_image_url || post.video_thumbnail_url;
   const isVideo = post.post_type === 'video';
   const authorName = post.profiles?.display_name || '匿名';
-  const href = `/discover/${post.slug || post.id}`;
+  const slug = post.slug || post.id;
+  const href = `/zh/discover/${slug}`;
 
   return (
-    <Link
+    <ShareCardLink
       href={href}
+      slug={slug}
+      title={post.title}
+      coverImage={coverImage}
+      authorName={authorName}
       className="block transition-transform hover:-translate-y-0.5 col-span-2 sm:col-span-1 sm:row-span-2"
       style={{ borderRadius: 'var(--ed-radius-lg)', overflow: 'hidden', background: 'var(--ed-surface)' }}
     >
@@ -142,7 +152,6 @@ function FeatureCard({ post }: { post: AnyRow }) {
               <div className="absolute inset-0" style={{ opacity: 0.12, background: 'radial-gradient(circle at 20% 30%, rgba(255,255,255,0.5) 0%, transparent 30%), radial-gradient(circle at 80% 70%, rgba(255,255,255,0.3) 0%, transparent 30%)' }} />
             </div>
           )}
-          {/* Gradient overlay for media top */}
           <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(180deg, rgba(0,0,0,0.08) 0%, transparent 25%)' }} />
 
           {/* Badge */}
@@ -180,7 +189,7 @@ function FeatureCard({ post }: { post: AnyRow }) {
           </div>
         </div>
       </div>
-    </Link>
+    </ShareCardLink>
   );
 }
 
@@ -188,12 +197,17 @@ function SmallCard({ post, index }: { post: AnyRow; index: number }) {
   const coverImage = post.cover_images?.[0] || post.cover_image_url || post.video_thumbnail_url;
   const isVideo = post.post_type === 'video';
   const authorName = post.profiles?.display_name || '匿名';
-  const href = `/discover/${post.slug || post.id}`;
+  const slug = post.slug || post.id;
+  const href = `/zh/discover/${slug}`;
   const gradient = gradients[index % gradients.length];
 
   return (
-    <Link
+    <ShareCardLink
       href={href}
+      slug={slug}
+      title={post.title}
+      coverImage={coverImage}
+      authorName={authorName}
       className="block relative transition-transform hover:-translate-y-0.5"
       style={{ aspectRatio: '3/4', borderRadius: 'var(--ed-radius-lg)', overflow: 'hidden', background: 'var(--ed-surface)' }}
     >
@@ -236,6 +250,6 @@ function SmallCard({ post, index }: { post: AnyRow; index: number }) {
           <HeartButton postId={post.id} initialCount={post.like_count || 0} />
         </div>
       </div>
-    </Link>
+    </ShareCardLink>
   );
 }

@@ -78,7 +78,7 @@ export function DiscoverCard({ post, author, index = 0, currentUserId }: Discove
 
   return (
     <div className="block break-inside-avoid group/card">
-      <div className="bg-white r-lg overflow-hidden border border-gray-100 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.1)]">
+      <div className="relative bg-white r-lg overflow-hidden border border-gray-100 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.1)]">
         {/* Cover */}
         <Link href={href} onClick={handleCardClick} className="block relative">
           {hasImage ? (
@@ -135,12 +135,12 @@ export function DiscoverCard({ post, author, index = 0, currentUserId }: Discove
           )}
         </Link>
 
-        {/* Owner edit / Report — outside the Link to avoid nested <a> */}
-        <div className="px-3 pt-2 flex justify-end gap-1">
+        {/* Owner edit / Report — absolute positioned to avoid taking layout space */}
+        <div className="absolute right-2 top-2 z-10 flex gap-1 opacity-0 group-hover/card:opacity-100 transition-opacity">
           {isOwner && (
             <a
               href={`/zh/discover/${post.slug}/edit`}
-              className="inline-flex items-center gap-1 px-2 py-1 text-[11px] text-gray-500 hover:text-primary hover:bg-primary/5 r-md transition-colors"
+              className="inline-flex items-center gap-1 px-2 py-1 text-[11px] text-white bg-black/50 hover:bg-black/70 r-md transition-colors"
             >
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -149,9 +149,7 @@ export function DiscoverCard({ post, author, index = 0, currentUserId }: Discove
             </a>
           )}
           {!isOwner && (
-            <div className="opacity-0 group-hover/card:opacity-100 transition-opacity">
-              <ReportButton contentType="post" contentId={post.id} variant="icon" />
-            </div>
+            <ReportButton contentType="post" contentId={post.id} variant="icon" />
           )}
         </div>
 

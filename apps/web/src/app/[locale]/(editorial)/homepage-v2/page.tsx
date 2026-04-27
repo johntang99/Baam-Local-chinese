@@ -11,6 +11,7 @@ import { DealsSection } from './components/deals-section';
 import { BusinessesSection } from './components/businesses-section';
 import { ClassifiedsSection } from './components/classifieds-section';
 import { NewsletterSection } from './components/newsletter-section';
+import { getCurrentUser } from '@/lib/auth';
 import type { Metadata } from 'next';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -24,6 +25,7 @@ export const metadata: Metadata = {
 export default async function HomepageV2() {
   const supabase = await createClient();
   const site = await getCurrentSite();
+  const currentUser = await getCurrentUser().catch(() => null);
 
   // Parallel data fetching
   const [
@@ -140,7 +142,7 @@ export default async function HomepageV2() {
       <TickerBar items={tickerItems} />
 
       {/* N°01: 逛逛晒晒 */}
-      <ShareSection posts={discoverPosts} />
+      <ShareSection posts={discoverPosts} isLoggedIn={!!currentUser} currentUserId={currentUser?.id} />
 
       {/* N°02: 今日要闻 */}
       <NewsSection news={newsItems} />
