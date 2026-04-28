@@ -103,6 +103,7 @@ export default async function SearchPage({ searchParams }: Props) {
           .eq('status', 'active')
           .or(`display_name.ilike.${searchPattern},display_name_zh.ilike.${searchPattern},short_desc_zh.ilike.${searchPattern},ai_summary_zh.ilike.${searchPattern}`)
           .order('is_featured', { ascending: false })
+          .order('total_score', { ascending: false, nullsFirst: false })
           .limit(activeTab === 'all' ? 6 : 20)
           .then(({ data }) => { businesses = (data || []) as AnyRow[]; })
       );

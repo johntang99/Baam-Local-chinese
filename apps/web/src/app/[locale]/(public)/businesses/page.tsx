@@ -13,6 +13,21 @@ type AnyRow = Record<string, any>;
 
 const PAGE_SIZE = 20;
 
+function extractDomain(url: string): string {
+  try {
+    return new URL(url.startsWith('http') ? url : `https://${url}`).hostname.replace(/^www\./, '');
+  } catch { return url; }
+}
+
+function WebsiteLink({ url, fontSize = 11 }: { url: string; fontSize?: number }) {
+  const href = url.startsWith('http') ? url : `https://${url}`;
+  return (
+    <a href={href} target="_blank" rel="noopener noreferrer" className="hover:underline" style={{ color: 'var(--ed-accent)', fontSize }}>
+      🌐 {extractDomain(url)}
+    </a>
+  );
+}
+
 export async function generateMetadata(): Promise<Metadata> {
   return {
     title: '商家目录 · Baam',
@@ -401,7 +416,7 @@ function renderCategoryPage({ parentCategories, activeParent, subcategories, all
                         {cats[0] && <span style={{ display: 'inline-block', fontSize: 10.5, padding: '2px 8px', borderRadius: 'var(--ed-radius-pill)', background: 'var(--ed-paper-warm)', color: 'var(--ed-ink-soft)', marginTop: 8 }}>{cats[0]}</span>}
                         <div style={{ marginTop: 8, paddingTop: 6, borderTop: '1px solid var(--ed-line)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 11, color: 'var(--ed-ink-soft)' }}>
                           {biz.phone ? <a href={`tel:${biz.phone}`} className="hover:text-[var(--ed-accent)] transition-colors">📞 {biz.phone}</a> : <span>电话 —</span>}
-                          {(biz.website_url || biz.website) && <span style={{ color: 'var(--ed-accent)' }}>🌐 官网</span>}
+                          {(biz.website_url || biz.website) && <WebsiteLink url={biz.website_url || biz.website} />}
                         </div>
                       </div>
                     </EditorialCard>
@@ -542,7 +557,7 @@ function LayoutLeftRight({ businesses, coverMap, direction, catName }: { busines
           {heroAddr && <a href={gmapUrl(heroAddr)} target="_blank" rel="noopener noreferrer" className="block hover:text-[var(--ed-accent)] transition-colors" style={{ fontSize: 12, color: 'var(--ed-ink-soft)', marginTop: 6 }}>📍 {cleanAddr(heroAddr)}</a>}
           <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--ed-line)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12, color: 'var(--ed-ink-soft)' }}>
             {hero.phone ? <a href={`tel:${hero.phone}`} className="hover:text-[var(--ed-accent)] transition-colors">📞 {hero.phone}</a> : <span>电话 —</span>}
-            {(hero.website_url || hero.website) && <span style={{ color: 'var(--ed-accent)' }}>🌐 官网</span>}
+            {(hero.website_url || hero.website) && <WebsiteLink url={hero.website_url || hero.website} />}
           </div>
         </div>
       </EditorialCard>
@@ -590,7 +605,7 @@ function LayoutEven({ businesses, coverMap }: { businesses: AnyRow[]; coverMap: 
                 {biz.address_full && <a href={gmapUrl(biz.address_full)} target="_blank" rel="noopener noreferrer" className="block hover:text-[var(--ed-accent)] transition-colors" style={{ fontSize: 11, color: 'var(--ed-ink-soft)', marginTop: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>📍 {cleanAddr(biz.address_full)}</a>}
                 <div style={{ marginTop: 8, paddingTop: 6, borderTop: '1px solid var(--ed-line)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 11, color: 'var(--ed-ink-soft)' }}>
                   {biz.phone ? <a href={`tel:${biz.phone}`} className="hover:text-[var(--ed-accent)] transition-colors">📞 {biz.phone}</a> : <span>电话 —</span>}
-                  {(biz.website_url || biz.website) && <span style={{ color: 'var(--ed-accent)' }}>🌐 官网</span>}
+                  {(biz.website_url || biz.website) && <WebsiteLink url={biz.website_url || biz.website} />}
                 </div>
               </div>
             </EditorialCard>
@@ -626,7 +641,7 @@ function SmallCard({ biz, coverMap, catName }: { biz: AnyRow; coverMap: Record<s
           {biz.address_full && <a href={gmapUrl(biz.address_full)} target="_blank" rel="noopener noreferrer" className="block hover:text-[var(--ed-accent)] transition-colors" style={{ fontSize: 11, color: 'var(--ed-ink-soft)', marginTop: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>📍 {cleanAddr(biz.address_full)}</a>}
           <div style={{ marginTop: 8, paddingTop: 6, borderTop: '1px solid var(--ed-line)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 11, color: 'var(--ed-ink-soft)' }}>
             {biz.phone ? <a href={`tel:${biz.phone}`} className="hover:text-[var(--ed-accent)] transition-colors">📞 {biz.phone}</a> : <span>电话 —</span>}
-            {website && <span style={{ color: 'var(--ed-accent)' }}>🌐 官网</span>}
+            {website && <WebsiteLink url={website} />}
           </div>
         </div>
       </EditorialCard>
@@ -659,7 +674,7 @@ function RankedRow({ biz, rank }: { biz: AnyRow; rank: number }) {
         </div>
         <div style={{ fontSize: 11, color: 'var(--ed-ink-soft)', marginTop: 3, display: 'flex', alignItems: 'center', gap: 10 }}>
           {biz.phone && <a href={`tel:${biz.phone}`} className="hover:text-[var(--ed-accent)] transition-colors">📞 {biz.phone}</a>}
-          {(biz.website_url || biz.website) && <span style={{ color: 'var(--ed-accent)' }}>🌐 官网</span>}
+          {(biz.website_url || biz.website) && <WebsiteLink url={biz.website_url || biz.website} />}
         </div>
       </div>
       {cats[0] && <span className="flex-shrink-0" style={{ fontSize: 10.5, padding: '2px 8px', borderRadius: 'var(--ed-radius-pill)', border: '1px solid var(--ed-line)', color: 'var(--ed-ink-soft)' }}>{cats[0]}</span>}
@@ -719,7 +734,7 @@ function SubcategoryCard({ biz, rank }: { biz: AnyRow; rank: number }) {
         {/* Bottom */}
         <div className="flex items-center justify-between" style={{ marginTop: 12, paddingTop: 10, borderTop: '1px solid var(--ed-line)' }}>
           <Link href={`/businesses/${biz.slug}`} style={{ fontSize: 12, color: 'var(--ed-accent)', fontWeight: 500 }}>查看详情 →</Link>
-          {website && <span style={{ fontSize: 11, color: 'var(--ed-ink-muted)' }}>🌐 官网</span>}
+          {website && <WebsiteLink url={website} />}
         </div>
         </div>
       </EditorialCard>

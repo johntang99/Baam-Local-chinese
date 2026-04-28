@@ -101,6 +101,7 @@ export default async function AdminBusinessesPage({ searchParams }: Props) {
   let businesses: AnyRow[] = [];
   let totalCount = 0;
   let claims: AnyRow[] = [];
+  let crossSiteMatches: Array<{ siteId: string; siteSlug: string; siteName: string; count: number }> = [];
 
   if (tab === 'claims') {
     // Fetch pending claims scoped to this site
@@ -170,21 +171,56 @@ export default async function AdminBusinessesPage({ searchParams }: Props) {
             if (rawChunkRows?.length) merged.push(...(rawChunkRows as AnyRow[]));
           }
 
-          merged.sort((a, b) => {
-            const ta = Date.parse(String(a.created_at || '1970-01-01T00:00:00Z'));
-            const tb = Date.parse(String(b.created_at || '1970-01-01T00:00:00Z'));
-            return tb - ta;
-          });
+          merged.sort((a, b) => (Number(b.total_score) || 0) - (Number(a.total_score) || 0));
 
           totalCount = merged.length;
           businesses = merged.slice(from, to + 1);
+
+          // Helpful fallback: if current site has no rows, check whether this
+          // category filter has rows in other sites, and surface quick-switch links.
+          if (totalCount === 0) {
+            const siteCounts = new Map<string, number>();
+            const chunkSizeForHints = 200;
+            for (let i = 0; i < bizIds.length; i += chunkSizeForHints) {
+              const chunk = bizIds.slice(i, i + chunkSizeForHints);
+              const { data: siteHintRows } = await supabase
+                .from('businesses')
+                .select('site_id')
+                .in('id', chunk);
+              for (const row of (siteHintRows || []) as AnyRow[]) {
+                const sid = String(row.site_id || '');
+                if (!sid) continue;
+                siteCounts.set(sid, (siteCounts.get(sid) || 0) + 1);
+              }
+            }
+
+            if (siteCounts.size > 0) {
+              const otherSiteIds = Array.from(siteCounts.keys()).filter((sid) => sid !== ctx.siteId);
+              if (otherSiteIds.length > 0) {
+                const { data: rawSites } = await supabase
+                  .from('sites')
+                  .select('id, slug, name')
+                  .in('id', otherSiteIds);
+                const siteRows = (rawSites || []) as AnyRow[];
+                crossSiteMatches = siteRows
+                  .map((site) => ({
+                    siteId: String(site.id || ''),
+                    siteSlug: String(site.slug || ''),
+                    siteName: String(site.name || site.slug || ''),
+                    count: siteCounts.get(String(site.id || '')) || 0,
+                  }))
+                  .filter((site) => site.siteId && site.siteSlug && site.count > 0)
+                  .sort((a, b) => b.count - a.count);
+              }
+            }
+          }
         }
       } else {
         let query = applyBusinessFilters(
           supabase
             .from('businesses')
             .select('*', { count: 'exact' })
-            .order('created_at', { ascending: false }),
+            .order('total_score', { ascending: false, nullsFirst: false }),
         );
         query = query.range(from, to);
         const { data: rawBusinesses, count } = await query;
@@ -196,7 +232,7 @@ export default async function AdminBusinessesPage({ searchParams }: Props) {
         supabase
           .from('businesses')
           .select('*', { count: 'exact' })
-          .order('created_at', { ascending: false }),
+          .order('total_score', { ascending: false, nullsFirst: false }),
       );
       query = query.range(from, to);
       const { data: rawBusinesses, count } = await query;
@@ -353,6 +389,24 @@ export default async function AdminBusinessesPage({ searchParams }: Props) {
           <div className="bg-bg-card border border-border r-xl p-12 text-center">
             <p className="text-text-muted">暂无商家数据</p>
             <p className="text-sm text-text-muted mt-1">切换筛选条件或创建新商家</p>
+            {crossSiteMatches.length > 0 && (
+              <div className="mt-4 space-y-2">
+                <p className="text-sm text-amber-700">
+                  当前筛选在其它站点有数据，点击可直接切换查看：
+                </p>
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  {crossSiteMatches.slice(0, 4).map((site) => (
+                    <Link
+                      key={site.siteId}
+                      href={filterUrl({ region: site.siteSlug, locale: ctx.locale, page: '' })}
+                      className="px-3 py-1.5 text-xs font-medium r-base border border-amber-300 text-amber-800 bg-amber-50 hover:bg-amber-100 transition-colors"
+                    >
+                      切换到 {site.siteName}（{site.count}）
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <BusinessesTable businesses={businesses} siteId={ctx.siteId} siteParams={baseParams.toString()} />
@@ -362,7 +416,9 @@ export default async function AdminBusinessesPage({ searchParams }: Props) {
         {tab !== 'claims' && (
           <div className="flex items-center justify-between text-sm text-text-muted">
             <span>
-              显示 {from + 1}-{Math.min(from + businesses.length, totalCount)} / 共 {totalCount} 条
+              {totalCount === 0
+                ? '显示 0 / 共 0 条'
+                : `显示 ${from + 1}-${Math.min(from + businesses.length, totalCount)} / 共 ${totalCount} 条`}
             </span>
             <div className="flex items-center gap-2">
               {page > 1 && (

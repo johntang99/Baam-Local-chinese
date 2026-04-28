@@ -78,6 +78,21 @@ export function PostModal({ slug, preview, isLoggedIn: serverIsLoggedIn, current
         if (!cancelled) {
           setData(d);
           setLoading(false);
+          // Track browsing history
+          try {
+            const HISTORY_KEY = 'baam-browsing-history';
+            const MAX_HISTORY = 50;
+            const url = `/zh/discover/${slug}`;
+            const existing = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+            const filtered = existing.filter((h: { url: string }) => h.url !== url);
+            filtered.unshift({
+              title: d.post?.title || slug,
+              url,
+              source: '逛逛晒晒',
+              time: new Date().toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+            });
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(filtered.slice(0, MAX_HISTORY)));
+          } catch { /* localStorage might be unavailable */ }
         }
       })
       .catch(() => {

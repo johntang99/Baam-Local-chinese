@@ -63,44 +63,72 @@ export function VideoUploader({ videoUrl, thumbnailUrl, duration, onChange }: Vi
   };
 
   // Extract duration and generate thumbnail from video element
+  // Mobile-safe: adds timeout and handles iOS quirks (HEVC, autoplay restrictions)
   const extractMetadata = useCallback((file: File): Promise<{ duration: number; thumbnail: string | null }> => {
     return new Promise((resolve) => {
+      let resolved = false;
+      const done = (duration: number, thumbnail: string | null) => {
+        if (resolved) return;
+        resolved = true;
+        URL.revokeObjectURL(video.src);
+        resolve({ duration, thumbnail });
+      };
+
+      // Timeout: if metadata extraction takes > 10s, skip it and upload anyway
+      const timer = setTimeout(() => {
+        done(30, null); // Assume 30s default so duration check passes
+      }, 10000);
+
       const video = document.createElement('video');
-      video.preload = 'metadata';
+      video.preload = 'auto'; // 'auto' works better than 'metadata' on iOS
       video.muted = true;
+      video.playsInline = true; // Required for iOS
+      video.setAttribute('playsinline', ''); // Belt and suspenders for iOS
 
       video.onloadedmetadata = () => {
+        clearTimeout(timer);
         const dur = Math.round(video.duration);
+        if (!dur || !isFinite(dur)) {
+          done(30, null); // Can't determine duration, use default
+          return;
+        }
 
-        // Seek to 1 second for thumbnail
-        video.currentTime = Math.min(1, dur * 0.1);
+        // Try to seek for thumbnail
+        try {
+          video.currentTime = Math.min(1, dur * 0.1);
+        } catch {
+          done(dur, null); // Seek failed, return duration without thumbnail
+        }
       };
 
       video.onseeked = () => {
+        clearTimeout(timer);
         try {
           const canvas = document.createElement('canvas');
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
+          canvas.width = video.videoWidth || 640;
+          canvas.height = video.videoHeight || 360;
           const ctx = canvas.getContext('2d');
-          if (ctx) {
+          if (ctx && video.videoWidth > 0) {
             ctx.drawImage(video, 0, 0);
             const thumbnail = canvas.toDataURL('image/jpeg', 0.7);
-            resolve({ duration: Math.round(video.duration), thumbnail });
+            done(Math.round(video.duration), thumbnail);
           } else {
-            resolve({ duration: Math.round(video.duration), thumbnail: null });
+            done(Math.round(video.duration), null);
           }
         } catch {
-          resolve({ duration: Math.round(video.duration), thumbnail: null });
+          done(Math.round(video.duration), null);
         }
-        URL.revokeObjectURL(video.src);
       };
 
       video.onerror = () => {
-        resolve({ duration: 0, thumbnail: null });
-        URL.revokeObjectURL(video.src);
+        clearTimeout(timer);
+        // On mobile, HEVC videos may fail to load in video element but still upload fine
+        done(30, null); // Use default duration, skip thumbnail
       };
 
       video.src = URL.createObjectURL(file);
+      // On iOS, calling load() explicitly helps trigger metadata loading
+      video.load();
     });
   }, []);
 
@@ -123,18 +151,22 @@ export function VideoUploader({ videoUrl, thumbnailUrl, duration, onChange }: Vi
     // Extract metadata first
     const metadata = await extractMetadata(file);
 
-    if (metadata.duration < 5) {
-      setProgress('视频时长不能少于 5 秒');
-      setUploading(false);
-      setUploadPercent(null);
-      return;
-    }
+    // Only enforce duration limits if we could actually extract the duration
+    // (metadata.duration === 30 means extraction failed, use default — skip validation)
+    if (metadata.duration !== 30) {
+      if (metadata.duration < 5) {
+        setProgress('视频时长不能少于 5 秒');
+        setUploading(false);
+        setUploadPercent(null);
+        return;
+      }
 
-    if (metadata.duration > 300) {
-      setProgress('视频时长不能超过 5 分钟');
-      setUploading(false);
-      setUploadPercent(null);
-      return;
+      if (metadata.duration > 300) {
+        setProgress('视频时长不能超过 5 分钟');
+        setUploading(false);
+        setUploadPercent(null);
+        return;
+      }
     }
 
     // Upload video
@@ -286,7 +318,7 @@ export function VideoUploader({ videoUrl, thumbnailUrl, duration, onChange }: Vi
       <input
         ref={fileInputRef}
         type="file"
-        accept="video/mp4,video/webm,video/quicktime,video/*"
+        accept="video/mp4,video/webm,video/quicktime,video/mov,video/*"
         onChange={handleFileInput}
         className="hidden"
       />
