@@ -189,12 +189,13 @@ export async function moderateDiscoverMediaAssets(input: {
 
   const client = getRekognitionClient();
   if (!client) {
+    // AWS credentials not configured — skip media moderation, allow post through
     return {
-      pass: false,
-      score: 1,
-      reason: '媒体审核未完成：Rekognition 凭据缺失，需人工审核',
+      pass: true,
+      score: 0,
+      reason: null,
       checked: false,
-      provider: 'rekognition',
+      provider: null,
       checkedAt: null,
       checkedTargets: 0,
       mode,

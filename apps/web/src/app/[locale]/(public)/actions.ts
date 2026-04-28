@@ -337,6 +337,15 @@ export async function createDiscoverPost(formData: FormData) {
   if (videoNeedsManualReview) moderationReasons.push('视频缺少可审核封面，需人工审核');
   if (needsFullVideoScan && moderationReasons.length === 0) moderationReasons.push('视频内容审核中');
 
+  // DEBUG: Log moderation results (remove after debugging)
+  console.log('[MODERATION DEBUG]', JSON.stringify({
+    textPass: textModeration.pass, textScore: textModeration.score, textReason: textModeration.reason,
+    mediaPass: mediaModeration.pass, mediaScore: mediaModeration.score, mediaReason: mediaModeration.reason,
+    mediaEnabled: mediaModerationConfig.enabled, moderateFullVideo: mediaModerationConfig.moderateFullVideo,
+    needsFullVideoScan, videoNeedsManualReview,
+    moderationReasons, videoUrl: videoUrl?.slice(0, 50), videoThumbnailUrl: videoThumbnailUrl?.slice(0, 50),
+  }));
+
   const postStatus = moderationReasons.length > 0 ? 'pending_review' : 'published';
   const moderationReason = moderationReasons.length > 0 ? moderationReasons.join('；') : null;
   const moderationScore = Math.max(textModeration.score || 0, mediaModeration.score || 0);
