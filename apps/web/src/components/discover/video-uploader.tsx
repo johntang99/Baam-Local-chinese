@@ -14,8 +14,13 @@ export function VideoUploader({ videoUrl, thumbnailUrl, duration, onChange }: Vi
   const [progress, setProgress] = useState('');
   const [uploadPercent, setUploadPercent] = useState<number | null>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [debugLog, setDebugLog] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+
+  const addDebug = (msg: string) => {
+    setDebugLog(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);
+  };
 
   const uploadFile = async (
     file: File,
@@ -43,20 +48,24 @@ export function VideoUploader({ videoUrl, thumbnailUrl, duration, onChange }: Vi
       };
 
       xhr.onload = () => {
+        addDebug(`XHR onload: status=${xhr.status}, responseType=${typeof xhr.response}`);
         const response =
           xhr.response && typeof xhr.response === 'object'
             ? (xhr.response as { url?: string; error?: string; message?: string })
             : null;
+        if (response) addDebug(`Response: ${JSON.stringify(response).slice(0, 200)}`);
         if (xhr.status >= 200 && xhr.status < 300) {
           onProgress?.({ percent: 100, phase: 'done' });
           resolve({ url: response?.url || null });
           return;
         }
+        addDebug(`Upload failed: status=${xhr.status}`);
         resolve({ url: null, error: response?.error || response?.message || '上传失败' });
       };
 
-      xhr.onerror = () => resolve({ url: null, error: '网络错误，上传失败' });
-      xhr.onabort = () => resolve({ url: null, error: '上传已取消' });
+      xhr.onerror = () => { addDebug('XHR onerror fired'); resolve({ url: null, error: '网络错误，上传失败' }); };
+      xhr.onabort = () => { addDebug('XHR onabort fired'); resolve({ url: null, error: '上传已取消' }); };
+      xhr.ontimeout = () => { addDebug('XHR timeout'); resolve({ url: null, error: '上传超时' }); };
 
       xhr.send(formData);
     });
@@ -133,12 +142,17 @@ export function VideoUploader({ videoUrl, thumbnailUrl, duration, onChange }: Vi
   }, []);
 
   const handleFile = useCallback(async (file: File) => {
+    setDebugLog([]);
+    addDebug(`File: ${file.name}, type: ${file.type}, size: ${(file.size / 1024 / 1024).toFixed(1)}MB`);
+
     if (!file.type.startsWith('video/')) {
+      addDebug(`REJECTED: type "${file.type}" doesn't start with video/`);
       setProgress('请选择视频文件');
       return;
     }
 
     if (file.size > 200 * 1024 * 1024) {
+      addDebug('REJECTED: file too large');
       setProgress('视频文件不能超过 200MB');
       setUploadPercent(null);
       return;
@@ -147,9 +161,11 @@ export function VideoUploader({ videoUrl, thumbnailUrl, duration, onChange }: Vi
     setUploading(true);
     setUploadPercent(null);
     setProgress('正在提取视频信息...');
+    addDebug('Extracting metadata...');
 
     // Extract metadata first
     const metadata = await extractMetadata(file);
+    addDebug(`Metadata: duration=${metadata.duration}s, thumbnail=${metadata.thumbnail ? 'yes' : 'no'}`);
 
     // Only enforce duration limits if we could actually extract the duration
     // (metadata.duration === 30 means extraction failed, use default — skip validation)
@@ -172,6 +188,7 @@ export function VideoUploader({ videoUrl, thumbnailUrl, duration, onChange }: Vi
     // Upload video
     setProgress('正在上传视频...');
     setUploadPercent(0);
+    addDebug('Starting upload via XHR...');
     const { url, error } = await uploadFile(file, ({ percent, phase }) => {
       setUploadPercent(percent);
       if (phase === 'processing') {
@@ -180,6 +197,8 @@ export function VideoUploader({ videoUrl, thumbnailUrl, duration, onChange }: Vi
         setProgress('正在上传视频...');
       }
     });
+
+    addDebug(`Upload result: url=${url ? 'yes' : 'no'}, error=${error || 'none'}`);
 
     if (url) {
       // Upload thumbnail if we got one
@@ -322,6 +341,19 @@ export function VideoUploader({ videoUrl, thumbnailUrl, duration, onChange }: Vi
         onChange={handleFileInput}
         className="hidden"
       />
+
+      {/* Debug panel — visible on screen for mobile debugging */}
+      {debugLog.length > 0 && (
+        <div className="mt-4 p-3 bg-gray-50 border border-gray-200 r-lg text-xs font-mono text-gray-600 max-h-48 overflow-y-auto">
+          <div className="flex items-center justify-between mb-1">
+            <span className="font-bold text-gray-800">Debug Log</span>
+            <button onClick={() => setDebugLog([])} className="text-red-400 text-[10px]">清除</button>
+          </div>
+          {debugLog.map((log, i) => (
+            <div key={i} className="py-0.5 border-b border-gray-100 last:border-0 break-all">{log}</div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
