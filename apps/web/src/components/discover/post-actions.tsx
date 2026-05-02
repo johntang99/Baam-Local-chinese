@@ -54,6 +54,15 @@ export function PostActions({ postId, postSlug }: PostActionsProps) {
   return (
     <div className="flex items-center gap-2">
       <button
+        onClick={() => router.push('/zh/discover/new-post')}
+        className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-white bg-primary r-lg hover:bg-primary/90 transition"
+      >
+        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+        </svg>
+        继续发布
+      </button>
+      <button
         onClick={() => router.push(`/zh/discover/${postSlug}/edit`)}
         className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 bg-gray-100 r-lg hover:bg-gray-200 transition"
       >
