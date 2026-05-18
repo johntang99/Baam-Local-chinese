@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { getCurrentSite } from '@/lib/sites';
 import { notFound } from 'next/navigation';
 import { Link } from '@/lib/i18n/routing';
@@ -195,6 +196,7 @@ export default async function ClassifiedCategoryPage({ params, searchParams }: P
   const paginationTokens = buildPaginationTokens(totalPages, currentPage);
 
   let sidebarBusinesses: AnyRow[] = [];
+  let sidebarCoverMap: Record<string, string> = {};
   if (sidebarConfig) {
     const { data: rawBusinessCategories } = await supabase
       .from('categories')
@@ -241,6 +243,24 @@ export default async function ClassifiedCategoryPage({ params, searchParams }: P
 
           const fallbackRows = ((rawFallbackSidebar || []) as AnyRow[]).filter((b) => !pickedIds.has(b.id));
           sidebarBusinesses = [...sidebarBusinesses, ...fallbackRows].slice(0, 10);
+        }
+
+        if (sidebarBusinesses.length > 0) {
+          const adminSupa = createAdminClient();
+          await Promise.all(
+            sidebarBusinesses.map(async (biz) => {
+              const folder = `businesses/${biz.slug}`;
+              const { data: files } = await adminSupa.storage.from('media').list(folder, {
+                limit: 1,
+                sortBy: { column: 'name', order: 'desc' },
+              });
+              const first = (files || []).find((f) => f.name && /\.(jpg|jpeg|png|webp|gif|avif)$/i.test(f.name));
+              if (first) {
+                const { data: urlData } = adminSupa.storage.from('media').getPublicUrl(`${folder}/${first.name}`);
+                sidebarCoverMap[biz.id] = urlData.publicUrl;
+              }
+            }),
+          );
         }
       }
     }
@@ -441,6 +461,7 @@ export default async function ClassifiedCategoryPage({ params, searchParams }: P
                   <div className="space-y-3">
                     {sidebarBusinesses.map((biz) => {
                       const displayName = pickBusinessDisplayName(biz, '');
+                      const cover = sidebarCoverMap[biz.id];
                       const rating = Number(biz.avg_rating || 0);
                       const reviews = Number(biz.review_count || 0);
                       const website = biz.website_url || '';
@@ -451,9 +472,13 @@ export default async function ClassifiedCategoryPage({ params, searchParams }: P
                           className="block transition-colors hover:!bg-[var(--ed-surface)]"
                           style={{ border: '1px solid var(--ed-line)', borderRadius: 'var(--ed-radius-md)', overflow: 'hidden', background: '#fff' }}
                         >
-                          <div className="w-full flex items-center justify-center" style={{ aspectRatio: '16/9', background: 'var(--ed-paper-warm)' }}>
-                            <span style={{ fontSize: 24, opacity: 0.35 }}>{sidebarConfig.icon}</span>
-                          </div>
+                          {cover ? (
+                            <img src={cover} alt={displayName} className="w-full object-cover" style={{ aspectRatio: '16/9' }} />
+                          ) : (
+                            <div className="w-full flex items-center justify-center" style={{ aspectRatio: '16/9', background: 'var(--ed-paper-warm)' }}>
+                              <span style={{ fontSize: 24, opacity: 0.35 }}>{sidebarConfig.icon}</span>
+                            </div>
+                          )}
                           <div style={{ padding: '10px 11px' }}>
                             <h4 style={{ fontSize: 13.5, fontWeight: 700, lineHeight: 1.35 }}>{displayName}</h4>
                             {reviews > 0 && (
