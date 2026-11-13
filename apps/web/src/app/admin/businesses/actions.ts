@@ -46,6 +46,20 @@ function parseCategoryIds(formData: FormData): string[] {
   }
 }
 
+function parseImageUrls(formData: FormData): string[] {
+  const raw = formData.get('image_urls') as string;
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map((value) => String(value || '').trim())
+      .filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
 async function syncBusinessCategories(supabase: ReturnType<typeof db>, businessId: string, categoryIds: string[]) {
   // Delete existing
   await supabase
@@ -64,6 +78,25 @@ async function syncBusinessCategories(supabase: ReturnType<typeof db>, businessI
   }
 }
 
+async function syncBusinessMedia(supabase: ReturnType<typeof db>, businessId: string, imageUrls: string[]) {
+  await supabase
+    .from('business_media')
+    .delete()
+    .eq('business_id', businessId)
+    .eq('media_type', 'image');
+
+  if (imageUrls.length > 0) {
+    const rows = imageUrls.map((url, index) => ({
+      business_id: businessId,
+      media_type: 'image',
+      url,
+      is_cover: index === 0,
+      sort_order: index,
+    }));
+    await supabase.from('business_media').insert(rows);
+  }
+}
+
 export async function createBusiness(formData: FormData) {
   const supabase = db();
   const fields = extractBusinessFields(formData);
@@ -71,6 +104,7 @@ export async function createBusiness(formData: FormData) {
   if (!siteId) return { id: null, error: 'Missing site_id' };
   const slug = await generateSeoSlug(fields.display_name_zh || fields.display_name || 'business', fields.display_name, supabase, 'businesses');
   const categoryIds = parseCategoryIds(formData);
+  const imageUrls = parseImageUrls(formData);
 
   const { data, error } = await supabase
     .from('businesses')
@@ -90,6 +124,7 @@ export async function createBusiness(formData: FormData) {
   // Sync categories
   if (data?.id) {
     await syncBusinessCategories(supabase, data.id, categoryIds);
+    await syncBusinessMedia(supabase, data.id, imageUrls);
   }
 
   revalidatePath('/admin/businesses');
@@ -100,6 +135,7 @@ export async function updateBusiness(bizId: string, siteId: string, formData: Fo
   const supabase = db();
   const fields = extractBusinessFields(formData);
   const categoryIds = parseCategoryIds(formData);
+  const imageUrls = parseImageUrls(formData);
 
   const { error } = await supabase
     .from('businesses')
@@ -114,6 +150,7 @@ export async function updateBusiness(bizId: string, siteId: string, formData: Fo
 
   // Sync categories
   await syncBusinessCategories(supabase, bizId, categoryIds);
+  await syncBusinessMedia(supabase, bizId, imageUrls);
 
   revalidatePath('/admin/businesses');
   return { error: null };

@@ -43,7 +43,15 @@ export default async function HomePage() {
     { data: rClfHelp },
     { data: rDiscoverCategories },
   ] = await Promise.all([
-    supabase.from('articles').select('*').eq('site_id', site.id).eq('editorial_status', 'published').not('title_zh', 'is', null).order('created_at', { ascending: false }).limit(1),
+    supabase
+      .from('articles')
+      .select('*')
+      .eq('site_id', site.id)
+      .eq('editorial_status', 'published')
+      .not('title_zh', 'is', null)
+      .order('is_hero', { ascending: false })
+      .order('created_at', { ascending: false })
+      .limit(1),
     supabase.from('articles').select('*').eq('site_id', site.id).in('content_vertical', ['news_alert', 'news_brief', 'news_explainer', 'news_roundup', 'news_community']).eq('editorial_status', 'published').eq('is_featured', true).not('title_zh', 'is', null).order('created_at', { ascending: false }).limit(6),
     supabase.from('articles').select('*').eq('site_id', site.id).in('content_vertical', ['guide_howto', 'guide_checklist', 'guide_bestof', 'guide_comparison', 'guide_scenario']).eq('editorial_status', 'published').eq('is_featured', true).not('title_zh', 'is', null).order('view_count', { ascending: false }).limit(4),
     supabase.from('voice_posts').select('*, profiles!voice_posts_author_id_fkey(display_name, username)').eq('site_id', site.id).eq('status', 'published').eq('visibility', 'public').order('published_at', { ascending: false }).limit(7),

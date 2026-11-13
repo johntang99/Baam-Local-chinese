@@ -73,6 +73,7 @@ export default function ArticleForm({ article, categories, regions, businesses =
   const [bodyEn, setBodyEn] = useState(article?.body_en || '');
   const [editorialStatus, setEditorialStatus] = useState(article?.editorial_status || 'draft');
   const [isFeatured, setIsFeatured] = useState(article?.is_featured || false);
+  const [isHero, setIsHero] = useState(article?.is_hero || false);
   const [categoryId, setCategoryId] = useState(article?.category_id || '');
   const [regionId, setRegionId] = useState(article?.region_id || '');
   const [sourceType, setSourceType] = useState(article?.source_type || '');
@@ -103,6 +104,7 @@ export default function ArticleForm({ article, categories, regions, businesses =
     fd.set('body_en', bodyEn);
     fd.set('editorial_status', editorialStatus);
     fd.set('is_featured', isFeatured ? 'true' : 'false');
+    fd.set('is_hero', isHero ? 'true' : 'false');
     fd.set('category_id', categoryId);
     fd.set('region_id', regionId);
     fd.set('source_type', sourceType);
@@ -504,6 +506,20 @@ export default function ArticleForm({ article, categories, regions, businesses =
                 className={`relative w-11 h-6 rounded-full transition-colors ${isFeatured ? 'bg-primary' : 'bg-gray-300'}`}
               >
                 <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${isFeatured ? 'translate-x-5' : ''}`} />
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
+              <div>
+                <label className="text-sm font-medium">置顶首页头条</label>
+                <p className="text-xs text-text-muted mt-0.5">开启后显示为首页顶部主文章（同站点仅保留一个）</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsHero(!isHero)}
+                className={`relative w-11 h-6 rounded-full transition-colors ${isHero ? 'bg-[#C73E1D]' : 'bg-gray-300'}`}
+              >
+                <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${isHero ? 'translate-x-5' : ''}`} />
               </button>
             </div>
           </div>

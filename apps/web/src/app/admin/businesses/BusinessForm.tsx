@@ -101,6 +101,7 @@ export default function BusinessForm({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [draftSlug] = useState(`temp-${Date.now()}`);
 
   // Form state — basic info
   const [displayNameZh, setDisplayNameZh] = useState(business?.display_name_zh || '');
@@ -128,6 +129,7 @@ export default function BusinessForm({
 
   // Media
   const [videoUrl, setVideoUrl] = useState(business?.video_url || '');
+  const [images, setImages] = useState<string[]>(existingImages);
 
   // Scores
   const [pScore, setPScore] = useState<number>(business?.p_score ? Number(business.p_score) : 0);
@@ -201,6 +203,7 @@ export default function BusinessForm({
     fd.set('is_featured', isFeatured ? 'true' : 'false');
     fd.set('p_score', String(pScore));
     fd.set('site_id', siteId);
+    fd.set('image_urls', JSON.stringify(images));
     // Send category ids as JSON array — use child if selected, otherwise parent
     const categoryIds = categoryPairs
       .map(pair => pair.childId || pair.parentId)
@@ -478,8 +481,9 @@ export default function BusinessForm({
             <div>
               <label className="block text-xs text-text-muted mb-1">商家图片</label>
               <ImageUploader
-                businessSlug={business?.slug || 'temp-' + Date.now()}
-                existingImages={existingImages}
+                businessSlug={business?.slug || draftSlug}
+                images={images}
+                onChange={setImages}
               />
             </div>
           </div>

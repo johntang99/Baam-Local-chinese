@@ -8,6 +8,30 @@ import { generateSeoSlug } from '@/lib/slug-generator';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = () => createAdminClient() as any;
 
+async function setHeroArticleForSite(
+  supabase: ReturnType<typeof db>,
+  siteId: string,
+  articleId: string
+) {
+  const { error: clearError } = await supabase
+    .from('articles')
+    .update({ is_hero: false })
+    .eq('site_id', siteId)
+    .eq('is_hero', true)
+    .neq('id', articleId);
+
+  if (clearError) return { error: clearError.message };
+
+  const { error: setError } = await supabase
+    .from('articles')
+    .update({ is_hero: true })
+    .eq('id', articleId)
+    .eq('site_id', siteId);
+
+  if (setError) return { error: setError.message };
+  return { error: null };
+}
+
 
 export async function createArticle(formData: FormData) {
   const supabase = db();
@@ -28,6 +52,7 @@ export async function createArticle(formData: FormData) {
       body_en: formData.get('body_en') as string,
       editorial_status: (formData.get('editorial_status') as string) || 'draft',
       is_featured: formData.get('is_featured') === 'true',
+      is_hero: formData.get('is_hero') === 'true',
       category_id: formData.get('category_id') as string || null,
       region_id: formData.get('region_id') as string || null,
       source_type: formData.get('source_type') as string || null,
@@ -52,6 +77,12 @@ export async function createArticle(formData: FormData) {
   // Sync guide_business_links
   if (data?.id) {
     await syncBusinessLinks(supabase, data.id, formData);
+    if (formData.get('is_hero') === 'true') {
+      const heroResult = await setHeroArticleForSite(supabase, ctx.siteId, data.id);
+      if (heroResult.error) {
+        return { id: data.id, error: heroResult.error };
+      }
+    }
   }
 
   return { id: data?.id, error: null };
@@ -77,6 +108,8 @@ async function syncBusinessLinks(supabase: ReturnType<typeof db>, articleId: str
 
 export async function updateArticle(articleId: string, formData: FormData) {
   const supabase = db();
+  const ctx = await getAdminSiteContext();
+  const isHero = formData.get('is_hero') === 'true';
 
   const { error } = await supabase
     .from('articles')
@@ -88,6 +121,7 @@ export async function updateArticle(articleId: string, formData: FormData) {
       body_en: formData.get('body_en') as string,
       editorial_status: formData.get('editorial_status') as string,
       is_featured: formData.get('is_featured') === 'true',
+      is_hero: isHero,
       category_id: formData.get('category_id') as string || null,
       region_id: formData.get('region_id') as string || null,
       source_type: formData.get('source_type') as string || null,
@@ -98,7 +132,8 @@ export async function updateArticle(articleId: string, formData: FormData) {
       cover_image_url: formData.get('cover_image_url') as string || null,
       audience_types: JSON.parse((formData.get('audience_types') as string) || '[]'),
     })
-    .eq('id', articleId);
+    .eq('id', articleId)
+    .eq('site_id', ctx.siteId);
 
   revalidatePath('/admin/articles');
 
@@ -108,6 +143,12 @@ export async function updateArticle(articleId: string, formData: FormData) {
 
   // Sync guide_business_links
   await syncBusinessLinks(supabase, articleId, formData);
+  if (isHero) {
+    const heroResult = await setHeroArticleForSite(supabase, ctx.siteId, articleId);
+    if (heroResult.error) {
+      return { error: heroResult.error };
+    }
+  }
 
   return { error: null };
 }
@@ -222,6 +263,32 @@ export async function toggleFeatured(articleId: string, currentValue: boolean) {
     return { error: error.message };
   }
   return { error: null, is_featured: !currentValue };
+}
+
+export async function toggleHero(articleId: string, currentValue: boolean) {
+  const supabase = db();
+  const ctx = await getAdminSiteContext();
+  const nextValue = !currentValue;
+
+  if (nextValue) {
+    const heroResult = await setHeroArticleForSite(supabase, ctx.siteId, articleId);
+    revalidatePath('/admin/articles');
+    if (heroResult.error) return { error: heroResult.error };
+    return { error: null, is_hero: true };
+  }
+
+  const { error } = await supabase
+    .from('articles')
+    .update({ is_hero: false })
+    .eq('id', articleId)
+    .eq('site_id', ctx.siteId);
+
+  revalidatePath('/admin/articles');
+
+  if (error) {
+    return { error: error.message };
+  }
+  return { error: null, is_hero: false };
 }
 
 export async function generateAISummary(articleId: string) {

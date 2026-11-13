@@ -77,15 +77,30 @@ export default async function EditBusinessPage({ params, searchParams }: Props) 
     .eq('business_id', id);
   const selectedCategoryIds = ((rawBizCats || []) as AnyRow[]).map((r: AnyRow) => r.category_id as string);
 
-  // Fetch existing images from Supabase Storage (admin uploads to storage, not business_media table)
-  const storageFolder = `businesses/${business.slug}`;
-  const { data: storageFiles } = await supabase.storage.from('media').list(storageFolder, { limit: 20, sortBy: { column: 'name', order: 'desc' } });
-  const existingImages = (storageFiles || [])
-    .filter((f: AnyRow) => f.name && /\.(jpg|jpeg|png|webp|gif)$/i.test(f.name))
-    .map((f: AnyRow) => {
-      const { data: urlData } = supabase.storage.from('media').getPublicUrl(`${storageFolder}/${f.name}`);
-      return urlData.publicUrl;
-    });
+  // Prefer business_media records (persisted by admin form), fallback to storage folder for legacy data.
+  const { data: rawMediaRows } = await supabase
+    .from('business_media')
+    .select('url, is_cover, sort_order, created_at')
+    .eq('business_id', id)
+    .eq('media_type', 'image')
+    .order('is_cover', { ascending: false })
+    .order('sort_order', { ascending: true })
+    .order('created_at', { ascending: true });
+
+  let existingImages = ((rawMediaRows || []) as AnyRow[])
+    .map((row: AnyRow) => String(row.url || '').trim())
+    .filter(Boolean);
+
+  if (existingImages.length === 0) {
+    const storageFolder = `businesses/${business.slug}`;
+    const { data: storageFiles } = await supabase.storage.from('media').list(storageFolder, { limit: 20, sortBy: { column: 'name', order: 'desc' } });
+    existingImages = (storageFiles || [])
+      .filter((f: AnyRow) => f.name && /\.(jpg|jpeg|png|webp|gif)$/i.test(f.name))
+      .map((f: AnyRow) => {
+        const { data: urlData } = supabase.storage.from('media').getPublicUrl(`${storageFolder}/${f.name}`);
+        return urlData.publicUrl;
+      });
+  }
 
   // Fetch location data to populate NAP fields
   const { data: rawLocations } = await supabase

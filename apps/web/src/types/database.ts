@@ -70,7 +70,10 @@ export type Database = {
           source_name: string | null;
           source_url: string | null;
           source_type: string | null;
+          site_id: string | null;
           editorial_status: 'draft' | 'ai_drafted' | 'human_reviewed' | 'published' | 'archived';
+          is_featured: boolean;
+          is_hero: boolean;
           trust_score: number;
           ai_summary_en: string | null;
           ai_summary_zh: string | null;

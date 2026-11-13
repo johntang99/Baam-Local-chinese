@@ -42,8 +42,16 @@ export default async function HomepageV2() {
     { data: rClfSecondhand },
     { data: rClfHelp },
   ] = await Promise.all([
-    // Hero: latest published article (any type) for the hero section
-    supabase.from('articles').select('*').eq('site_id', site.id).eq('editorial_status', 'published').not('title_zh', 'is', null).order('created_at', { ascending: false }).limit(1),
+    // Hero: prefer manually pinned hero, fallback to latest published article
+    supabase
+      .from('articles')
+      .select('*')
+      .eq('site_id', site.id)
+      .eq('editorial_status', 'published')
+      .not('title_zh', 'is', null)
+      .order('is_hero', { ascending: false })
+      .order('created_at', { ascending: false })
+      .limit(1),
     // News articles (only featured ones appear on homepage)
     supabase.from('articles').select('*').eq('site_id', site.id).in('content_vertical', ['news_alert', 'news_brief', 'news_explainer', 'news_roundup', 'news_community']).eq('editorial_status', 'published').eq('is_featured', true).not('title_zh', 'is', null).order('created_at', { ascending: false }).limit(6),
     // Guides (only featured ones appear on homepage)

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
-import { bulkPublish, bulkArchive, deleteArticle, generateAISummary, toggleFeatured } from './actions';
+import { bulkPublish, bulkArchive, deleteArticle, generateAISummary, toggleFeatured, toggleHero } from './actions';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyRow = Record<string, any>;
@@ -138,6 +138,7 @@ export default function ArticlesTable({ articles, regionNameMap, categoryNameMap
               <th className="w-10"></th>
               <th>标题</th>
               <th>精选</th>
+              <th>头条</th>
               <th>分类</th>
               <th>类型</th>
               <th>状态</th>
@@ -174,6 +175,18 @@ export default function ArticlesTable({ articles, regionNameMap, categoryNameMap
                       }`}
                     >
                       {a.is_featured ? '⭐ Yes' : 'No'}
+                    </button>
+                  </td>
+                  <td>
+                    <button
+                      onClick={() => startTransition(() => toggleHero(a.id, !!a.is_hero).then(() => router.refresh()))}
+                      className={`text-xs px-2 py-1 rounded-md cursor-pointer transition-colors ${
+                        a.is_hero
+                          ? 'bg-red-100 text-red-700 hover:bg-red-200 font-medium'
+                          : 'bg-gray-100 text-gray-400 hover:bg-red-50 hover:text-red-600'
+                      }`}
+                    >
+                      {a.is_hero ? '🔥 Hero' : 'No'}
                     </button>
                   </td>
                   <td className="text-sm text-text-muted">
