@@ -91,12 +91,33 @@ export default async function BusinessDetailPage({ params }: Props) {
   const dayOrder = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
   const adminClient = createAdminClient();
-  const storageFolder = `businesses/${slug}`;
-  const { data: storageFiles } = await adminClient.storage.from('media').list(storageFolder, { limit: 20, sortBy: { column: 'name', order: 'desc' } });
-  const photos = (storageFiles || []).filter((f) => f.name && /\.(jpg|jpeg|png|webp|gif)$/i.test(f.name)).map((f) => {
-    const { data: urlData } = adminClient.storage.from('media').getPublicUrl(`${storageFolder}/${f.name}`);
-    return { name: f.name, url: urlData.publicUrl };
-  });
+  // Prefer persisted business_media (saved by admin form). Fallback to
+  // storage folder scan for legacy records that predate business_media sync.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: rawMediaRows } = await (adminClient as any)
+    .from('business_media')
+    .select('url, is_cover, sort_order, created_at')
+    .eq('business_id', biz.id)
+    .eq('media_type', 'image')
+    .order('is_cover', { ascending: false })
+    .order('sort_order', { ascending: true })
+    .order('created_at', { ascending: true });
+
+  let photos = ((rawMediaRows || []) as AnyRow[])
+    .map((row: AnyRow, index: number) => ({
+      name: `media-${index}`,
+      url: String(row.url || '').trim(),
+    }))
+    .filter((photo) => Boolean(photo.url));
+
+  if (photos.length === 0) {
+    const storageFolder = `businesses/${slug}`;
+    const { data: storageFiles } = await adminClient.storage.from('media').list(storageFolder, { limit: 20, sortBy: { column: 'name', order: 'desc' } });
+    photos = (storageFiles || []).filter((f) => f.name && /\.(jpg|jpeg|png|webp|gif)$/i.test(f.name)).map((f) => {
+      const { data: urlData } = adminClient.storage.from('media').getPublicUrl(`${storageFolder}/${f.name}`);
+      return { name: f.name, url: urlData.publicUrl };
+    });
+  }
   const coverPhoto = photos[0] || null;
   const galleryPhotos = photos.slice(1);
 

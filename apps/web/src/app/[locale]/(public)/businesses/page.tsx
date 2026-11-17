@@ -13,6 +13,52 @@ type AnyRow = Record<string, any>;
 
 const PAGE_SIZE = 20;
 
+async function resolveBusinessCoverMap(adminSupa: any, businesses: AnyRow[]): Promise<Record<string, string>> {
+  const coverMap: Record<string, string> = {};
+  if (businesses.length === 0) return coverMap;
+
+  const byId = new Map<string, AnyRow>();
+  for (const biz of businesses) {
+    const id = String(biz.id || '');
+    if (!id || byId.has(id)) continue;
+    byId.set(id, biz);
+  }
+  const businessIds = Array.from(byId.keys());
+  if (businessIds.length === 0) return coverMap;
+
+  // Prefer business_media, which matches admin save behavior.
+  const { data: mediaRows } = await adminSupa
+    .from('business_media')
+    .select('business_id, url, is_cover, sort_order, created_at')
+    .eq('media_type', 'image')
+    .in('business_id', businessIds)
+    .order('is_cover', { ascending: false })
+    .order('sort_order', { ascending: true })
+    .order('created_at', { ascending: true });
+
+  for (const row of (mediaRows || []) as AnyRow[]) {
+    const id = String(row.business_id || '');
+    const url = String(row.url || '').trim();
+    if (!id || !url || coverMap[id]) continue;
+    coverMap[id] = url;
+  }
+
+  // Fallback for legacy rows not synced into business_media yet.
+  const missing = businesses.filter((biz) => !coverMap[String(biz.id || '')]);
+  await Promise.all(missing.map(async (biz) => {
+    const slug = String(biz.slug || '').trim();
+    if (!slug) return;
+    const folder = `businesses/${slug}`;
+    const { data: files } = await adminSupa.storage.from('media').list(folder, { limit: 20, sortBy: { column: 'name', order: 'asc' } });
+    const first = (files || []).find((f) => f.name && /\.(jpg|jpeg|png|webp|gif)$/i.test(f.name));
+    if (!first) return;
+    const { data: urlData } = adminSupa.storage.from('media').getPublicUrl(`${folder}/${first.name}`);
+    coverMap[biz.id] = urlData.publicUrl;
+  }));
+
+  return coverMap;
+}
+
 function extractDomain(url: string): string {
   try {
     return new URL(url.startsWith('http') ? url : `https://${url}`).hostname.replace(/^www\./, '');
@@ -143,18 +189,8 @@ export default async function BusinessListPage({ searchParams }: Props) {
             .eq('site_id', site.id)
             .in('id', featuredIds);
           const featured = (featuredRaw || []) as AnyRow[];
-          // Fetch cover photos
           const adminSupa = createAdminClient();
-          const coverMap: Record<string, string> = {};
-          await Promise.all(featured.map(async (biz) => {
-            const folder = `businesses/${biz.slug}`;
-            const { data: files } = await adminSupa.storage.from('media').list(folder, { limit: 1, sortBy: { column: 'name', order: 'desc' } });
-            const first = (files || []).find((f) => f.name && /\.(jpg|jpeg|png|webp|gif)$/i.test(f.name));
-            if (first) {
-              const { data: urlData } = adminSupa.storage.from('media').getPublicUrl(`${folder}/${first.name}`);
-              coverMap[biz.id] = urlData.publicUrl;
-            }
-          }));
+          const coverMap = await resolveBusinessCoverMap(adminSupa, featured);
 
           return renderCategoryPage({
             parentCategories, activeParent, subcategories, allCategories,
@@ -226,9 +262,7 @@ async function renderDirectoryHome(
 
   const layouts = ['left', 'right', 'even'] as const;
 
-  // Fetch cover photos
   const adminSupa = createAdminClient();
-  const coverMap: Record<string, string> = {};
   const displayedBiz: AnyRow[] = [];
   parentCategories.forEach((cat, idx) => {
     const catBiz = bizByCategory[cat.slug] || [];
@@ -237,15 +271,7 @@ async function renderDirectoryHome(
     displayedBiz.push(...catBiz.slice(0, take));
   });
   const uniqueBiz = displayedBiz.filter((b, i, arr) => arr.findIndex(x => x.id === b.id) === i);
-  await Promise.all(uniqueBiz.map(async (biz) => {
-    const folder = `businesses/${biz.slug}`;
-    const { data: files } = await adminSupa.storage.from('media').list(folder, { limit: 1, sortBy: { column: 'name', order: 'desc' } });
-    const first = (files || []).find((f) => f.name && /\.(jpg|jpeg|png|webp|gif)$/i.test(f.name));
-    if (first) {
-      const { data: urlData } = adminSupa.storage.from('media').getPublicUrl(`${folder}/${first.name}`);
-      coverMap[biz.id] = urlData.publicUrl;
-    }
-  }));
+  const coverMap = await resolveBusinessCoverMap(adminSupa, uniqueBiz);
 
   return (
     <main>
