@@ -162,7 +162,7 @@ export default async function BusinessDetailPage({ params }: Props) {
       <BrowsingTracker title={name} source="商家详情" />
       {/* Hero / Cover */}
       {coverPhoto ? (
-        <div className="relative" style={{ height: 'clamp(240px, 35vw, 380px)', overflow: 'hidden' }}>
+        <div className="relative" style={{ height: 'clamp(288px, 42vw, 456px)', overflow: 'hidden' }}>
           <img src={coverPhoto.url} alt={name} className="absolute inset-0 w-full h-full object-cover" />
           <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(31,27,22,0.7) 0%, rgba(31,27,22,0.15) 50%, transparent 100%)' }} />
           <div className="absolute -bottom-10 left-0 right-0" style={{ maxWidth: 'var(--ed-container-max)', margin: '0 auto', padding: '0 16px' }}>
