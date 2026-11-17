@@ -50,7 +50,8 @@ async function resolveBusinessCoverMap(adminSupa: any, businesses: AnyRow[]): Pr
     if (!slug) return;
     const folder = `businesses/${slug}`;
     const { data: files } = await adminSupa.storage.from('media').list(folder, { limit: 20, sortBy: { column: 'name', order: 'asc' } });
-    const first = (files || []).find((f) => f.name && /\.(jpg|jpeg|png|webp|gif)$/i.test(f.name));
+    const storageFiles = (files || []) as Array<{ name?: string }>;
+    const first = storageFiles.find((f) => f.name && /\.(jpg|jpeg|png|webp|gif)$/i.test(f.name));
     if (!first) return;
     const { data: urlData } = adminSupa.storage.from('media').getPublicUrl(`${folder}/${first.name}`);
     coverMap[biz.id] = urlData.publicUrl;
